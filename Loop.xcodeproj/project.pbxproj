@@ -232,6 +232,8 @@
 		4FC8C8011DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC8C8001DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift */; };
 		4FDDD23720DC51DF00D04B16 /* LoopDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FDDD23620DC51DF00D04B16 /* LoopDataManager.swift */; };
 		4FF4D0F81E1725B000846527 /* NibLoadable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434F54561D287FDB002A9274 /* NibLoadable.swift */; };
+		501897E6304BC7A8004897D2 /* GraphDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501897E5304BC7A8004897D2 /* GraphDetailViewModel.swift */; };
+		501897E8304BC7D9004897D2 /* GraphDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501897E7304BC7D9004897D2 /* GraphDetailView.swift */; };
 		505CE3BF303CB78500E6F5CB /* TimeInRangeBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */; };
 		505CE3C0303CB78500E6F5CB /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BC303CB78500E6F5CB /* StatisticsView.swift */; };
 		505CE3C1303CB78500E6F5CB /* AGPChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BB303CB78500E6F5CB /* AGPChartView.swift */; };
@@ -1031,6 +1033,8 @@
 		4FC8C8001DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSUserDefaults+StatusExtension.swift"; sourceTree = "<group>"; };
 		4FDDD23620DC51DF00D04B16 /* LoopDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopDataManager.swift; sourceTree = "<group>"; };
 		4FF4D0FF1E18374700846527 /* WatchContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WatchContext.swift; sourceTree = "<group>"; };
+		501897E5304BC7A8004897D2 /* GraphDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphDetailViewModel.swift; sourceTree = "<group>"; };
+		501897E7304BC7D9004897D2 /* GraphDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphDetailView.swift; sourceTree = "<group>"; };
 		505CE3BB303CB78500E6F5CB /* AGPChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPChartView.swift; sourceTree = "<group>"; };
 		505CE3BC303CB78500E6F5CB /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInRangeBar.swift; sourceTree = "<group>"; };
@@ -2025,6 +2029,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				501897E7304BC7D9004897D2 /* GraphDetailView.swift */,
 				84213C732D932EF400642E78 /* Insulin Delivery Log */,
 				B4001CED28CBBC82002FB414 /* AlertManagementView.swift */,
 				C9A47B0375B13A9543390BC7 /* GlucoseAlertSettingsView.swift */,
@@ -2082,6 +2087,7 @@
 		43F5C2E41B93C5D4003EB13D /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				501897E5304BC7A8004897D2 /* GraphDetailViewModel.swift */,
 				B42D124228D371C400E43D22 /* AlertMuter.swift */,
 				1D6B1B6626866D89009AC446 /* AlertPermissionsChecker.swift */,
 				1DA6499D2441266400F61E75 /* Alerts */,
@@ -3452,6 +3458,7 @@
 				430B29932041F5B300BA9F93 /* UserDefaults+Loop.swift in Sources */,
 				B429CAB42E97C97000FA988E /* LoopStatusModalView.swift in Sources */,
 				43CE7CDE1CA8B63E003CC1B0 /* Data.swift in Sources */,
+				501897E8304BC7D9004897D2 /* GraphDetailView.swift in Sources */,
 				E9BB27AB23B85C3500FB4987 /* SleepStore.swift in Sources */,
 				C1F7822627CC056900C0919A /* SettingsManager.swift in Sources */,
 				1452F4AD2A851F8800F8B9E4 /* HowAbsorptionTimeWorksView.swift in Sources */,
@@ -3487,6 +3494,7 @@
 				C1742332259BEADC00399C9D /* ManualEntryDoseView.swift in Sources */,
 				43F64DD91D9C92C900D24DC6 /* TitleSubtitleTableViewCell.swift in Sources */,
 				84213C8D2D949E8100642E78 /* InsulinDeliveryLogEventRow.swift in Sources */,
+				501897E6304BC7A8004897D2 /* GraphDetailViewModel.swift in Sources */,
 				43FCEEA9221A615B0013DD30 /* StatusChartsManager.swift in Sources */,
 				A9F703752489C9A000C98AD8 /* GlucoseStore+SimulatedCoreData.swift in Sources */,
 				E95D380524EADF78005E2F50 /* GlucoseStoreProtocol.swift in Sources */,
