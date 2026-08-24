@@ -21,18 +21,34 @@ import LoopUI
 struct AGPChartView: View {
     let profile: [AGPBand]
     let unit: LoopUnit
-    var targetLowMgDL: Double = 70
-    var targetHighMgDL: Double = 180
+    var targetLowMgDL: Double = StatisticsRangeSettings.targetLow
+    var targetHighMgDL: Double = StatisticsRangeSettings.targetHigh
 
     private struct Zone { let lo: Double, hi: Double, band: GlucoseBand }
 
     private var topMgDL: Double { max(350, (profile.map { $0.p95 }.max() ?? 350).rounded(.up)) }
     private var zones: [Zone] {
-        [Zone(lo: 0, hi: 54, band: .veryLow),
-         Zone(lo: 54, hi: 70, band: .low),
-         Zone(lo: 70, hi: 180, band: .target),
-         Zone(lo: 180, hi: 250, band: .high),
-         Zone(lo: 250, hi: topMgDL, band: .veryHigh)]
+        let low = StatisticsRangeSettings.targetLow
+        let high = StatisticsRangeSettings.targetHigh
+        let veryHigh = StatisticsRangeSettings.veryHigh
+
+         return [
+             Zone(lo: 0, hi: 54, band: .veryLow),
+             Zone(lo: 54, hi: low, band: .low),
+             Zone(lo: low, hi: high, band: .target),
+             Zone(lo: high, hi: veryHigh, band: .high),
+             Zone(lo: veryHigh, hi: topMgDL, band: .veryHigh)
+         ]
+    }
+    
+    private var glucoseBoundaries: [Double] {
+        [
+            StatisticsRangeSettings.veryLow,
+            StatisticsRangeSettings.targetLow,
+            StatisticsRangeSettings.targetHigh,
+            StatisticsRangeSettings.veryHigh,
+            topMgDL
+        ]
     }
 
     private func display(_ mgdl: Double) -> Double {
@@ -92,7 +108,7 @@ struct AGPChartView: View {
             let inner = bandPath({ $0.p25 }, { $0.p75 })
 
             // Y gridlines.
-            for v in [54.0, 70, 180, 250, top] {
+            for v in glucoseBoundaries {
                 var grid = Path()
                 grid.move(to: CGPoint(x: plot.minX, y: y(v)))
                 grid.addLine(to: CGPoint(x: plot.maxX, y: y(v)))
@@ -125,7 +141,7 @@ struct AGPChartView: View {
             ctx.stroke(med, with: .color(medianColor), lineWidth: 2.5)
 
             // Y-axis labels.
-            for v in [54.0, 70, 180, 250, top] {
+            for v in glucoseBoundaries{
                 ctx.draw(Text(yLabel(v)).font(.caption2).foregroundColor(.secondary),
                          at: CGPoint(x: plot.minX - 4, y: y(v)), anchor: .trailing)
             }

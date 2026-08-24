@@ -24,21 +24,25 @@ extension GlucoseBand {
     var localizedTitle: String {
         switch self {
         case .veryLow:  return NSLocalizedString("Very Low", comment: "Time-in-range band label (<54 mg/dL)")
-        case .low:      return NSLocalizedString("Low", comment: "Time-in-range band label (54–69 mg/dL)")
-        case .target:   return NSLocalizedString("In Range", comment: "Time-in-range band label (70–180 mg/dL)")
-        case .high:     return NSLocalizedString("High", comment: "Time-in-range band label (181–250 mg/dL)")
-        case .veryHigh: return NSLocalizedString("Very High", comment: "Time-in-range band label (>250 mg/dL)")
+        case .low:      return NSLocalizedString("Low", comment: "Time-in-range band label (54–64 mg/dL)")
+        case .target:   return NSLocalizedString("In Range", comment: "Time-in-range band label (65–140 mg/dL)")
+        case .high:     return NSLocalizedString("High", comment: "Time-in-range band label (141–180 mg/dL)")
+        case .veryHigh: return NSLocalizedString("Very High", comment: "Time-in-range band label (>180 mg/dL)")
         }
     }
 
     /// mg/dL range description shown next to each band.
     var rangeDescription: String {
+        let low = Int(StatisticsRangeSettings.targetLow)
+        let high = Int(StatisticsRangeSettings.targetHigh)
+        let veryHigh = Int(StatisticsRangeSettings.veryHigh)
+        
         switch self {
         case .veryLow:  return "<54"
-        case .low:      return "54–69"
-        case .target:   return "70–180"
-        case .high:     return "181–250"
-        case .veryHigh: return ">250"
+        case .low:      return "54–\(low - 1)"
+        case .target:   return "\(low)–\(high)"
+        case .high:     return "\(high + 1)–\(veryHigh)"
+        case .veryHigh: return ">\(veryHigh)"
         }
     }
 
@@ -112,8 +116,17 @@ struct TimeInRangeBar: View {
 
             // Clinical helper / suggestion text, as on the standard report.
             VStack(alignment: .leading, spacing: 4) {
-                Text(String(format: NSLocalizedString("Above range (>180): %d%% · goal <25%%", comment: "TIR above-range summary"), aboveRange))
-                Text(String(format: NSLocalizedString("Below range (<70): %d%% · goal <4%%", comment: "TIR below-range summary"), belowRange))
+                Text(String(
+                    format: NSLocalizedString("Above range (>%d): %d%% · goal <25%%", comment: "TIR above-range summary"),
+                    Int(StatisticsRangeSettings.targetHigh),
+                    aboveRange
+                ))
+
+                Text(String(
+                    format: NSLocalizedString("Below range (<%d): %d%% · goal <4%%", comment: "TIR below-range summary"),
+                    Int(StatisticsRangeSettings.targetLow),
+                    belowRange
+                ))
                 Text(NSLocalizedString("Each 5% increase in range is clinically beneficial.", comment: "TIR suggestion"))
                 Text(NSLocalizedString("Each 1% time in range ≈ 15 minutes.", comment: "TIR helper"))
             }

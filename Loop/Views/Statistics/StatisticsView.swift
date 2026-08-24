@@ -17,11 +17,24 @@ import LoopUI
 struct StatisticsView: View {
     @StateObject private var viewModel: StatisticsViewModel
     @EnvironmentObject private var displayGlucosePreference: DisplayGlucosePreference
+    
+    // Statistics Range Settings
+    
+    @AppStorage(StatisticsRangeSettings.targetLowKey)
+    private var targetLow: Double = StatisticsRangeSettings.defaultTargetLow
+
+    @AppStorage(StatisticsRangeSettings.targetHighKey)
+    private var targetHigh: Double = StatisticsRangeSettings.defaultTargetHigh
+
+    @AppStorage(StatisticsRangeSettings.veryHighKey)
+    private var veryHigh: Double = StatisticsRangeSettings.defaultVeryHigh
+
+    @State private var editingRange: EditableStatisticsRange?
 
     init(glucoseStore: GlucoseStoreProtocol) {
         _viewModel = StateObject(wrappedValue: StatisticsViewModel(glucoseStore: glucoseStore))
     }
-
+    
     var body: some View {
         List {
             Section {
@@ -32,6 +45,35 @@ struct StatisticsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+            Section(header: Text("Statistics Ranges")) {
+                rangeRow(
+                    title: "Low",
+                    value: targetLow
+                ) {
+                    editingRange = .low
+                }
+
+                rangeRow(
+                    title: "High",
+                    value: targetHigh
+                ) {
+                    editingRange = .high
+                }
+
+                rangeRow(
+                    title: "Very High",
+                    value: veryHigh
+                ) {
+                    editingRange = .veryHigh
+                }
+
+                HStack {
+                    Text("Very Low")
+                    Spacer()
+                    Text("<54 mg/dL")
+                        .foregroundColor(.secondary)
+                }
             }
 
             if !viewModel.dataNotices.isEmpty {
@@ -65,8 +107,44 @@ struct StatisticsView: View {
         }
         .navigationTitle(Text(NSLocalizedString("Statistics", comment: "Statistics screen title")))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingRange) { range in
+            StatisticsRangeEditor(
+                range: range,
+                targetLow: $targetLow,
+                targetHigh: $targetHigh,
+                veryHigh: $veryHigh
+            ) {
+                Task {
+                    await viewModel.load()
+                }
+            }
+        }
         .task { await viewModel.load() }
     }
+    
+    private func rangeRow(
+           title: String,
+           value: Double,
+           action: @escaping () -> Void
+       ) -> some View {
+           Button(action: action) {
+               HStack {
+                   Text(title)
+                       .foregroundColor(.primary)
+
+                   Spacer()
+
+                   Text("\(Int(value.rounded())) mg/dL")
+                       .foregroundColor(.secondary)
+                       .monospacedDigit()
+
+                   Image(systemName: "chevron.right")
+                       .font(.caption.weight(.semibold))
+                       .foregroundColor(.secondary)
+               }
+           }
+       }
+
 
     // MARK: - Sections
 

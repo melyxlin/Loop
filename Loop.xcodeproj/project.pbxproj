@@ -231,6 +231,11 @@
 		4FC8C8011DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC8C8001DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift */; };
 		4FDDD23720DC51DF00D04B16 /* LoopDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FDDD23620DC51DF00D04B16 /* LoopDataManager.swift */; };
 		4FF4D0F81E1725B000846527 /* NibLoadable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434F54561D287FDB002A9274 /* NibLoadable.swift */; };
+		505CE3BF303CB78500E6F5CB /* TimeInRangeBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */; };
+		505CE3C0303CB78500E6F5CB /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BC303CB78500E6F5CB /* StatisticsView.swift */; };
+		505CE3C1303CB78500E6F5CB /* AGPChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BB303CB78500E6F5CB /* AGPChartView.swift */; };
+		505CE3C5303CB7CA00E6F5CB /* StatisticsRangeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */; };
+		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
 		7D23667D21250C7E0028B67D /* LocalizedString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D23667C21250C7E0028B67D /* LocalizedString.swift */; };
 		7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E69CFFB2A16A77E00203CBD /* ResetLoopManager.swift */; };
 		824A01CBE97A4F7A9D32F7D6 /* Loop/Resources/Sounds/clear_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 4A645E0E2DDA534A635C9201 /* Loop/Resources/Sounds/clear_chimes.caf */; };
@@ -1023,6 +1028,11 @@
 		4FC8C8001DEB93E400A1452E /* NSUserDefaults+StatusExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSUserDefaults+StatusExtension.swift"; sourceTree = "<group>"; };
 		4FDDD23620DC51DF00D04B16 /* LoopDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopDataManager.swift; sourceTree = "<group>"; };
 		4FF4D0FF1E18374700846527 /* WatchContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WatchContext.swift; sourceTree = "<group>"; };
+		505CE3BB303CB78500E6F5CB /* AGPChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPChartView.swift; sourceTree = "<group>"; };
+		505CE3BC303CB78500E6F5CB /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInRangeBar.swift; sourceTree = "<group>"; };
+		505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeEditor.swift; sourceTree = "<group>"; };
+		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
 		5181B60CBF3CB2DA537F0475 /* Loop/Resources/Sounds/simple.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/simple.caf; sourceTree = SOURCE_ROOT; };
 		62F7CB5D5DC337E705032AC7 /* Loop/Resources/Sounds/dings.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/dings.caf; sourceTree = SOURCE_ROOT; };
 		6D5FCC7207E50ACC682E9E6E /* Loop/Resources/Sounds/honk.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/honk.caf; sourceTree = SOURCE_ROOT; };
@@ -1696,6 +1706,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */,
 				DDC389F52A2B61750066E2E8 /* ApplicationFactorStrategy.swift */,
 				FEEDF0000000000000000000 /* GlucoseStatistics.swift */,
 				A9FB75F0252BE320004C7D3F /* BolusDosingDecision.swift */,
@@ -2044,6 +2055,7 @@
 				C151634D2FA2C9C800FEECE8 /* RequiredVersionUpdateView.swift */,
 				1DE09BA824A3E23F009EE9F9 /* SettingsView.swift */,
 				FEEDF0000000000000000004 /* Statistics/TimeInRangeBar.swift */,
+				505CE3BE303CB78500E6F5CB /* Statistics */,
 				FEEDF0000000000000000003 /* Statistics/AGPChartView.swift */,
 				FEEDF0000000000000000002 /* Statistics/StatisticsView.swift */,
 				E4854073AAE5C2CB97167F63 /* HealthAccessView.swift */,
@@ -2255,6 +2267,17 @@
 				E9B08015253BBD7300BAD8F8 /* UserDefaults+LoopIntents.swift */,
 			);
 			path = Extensions;
+			sourceTree = "<group>";
+		};
+		505CE3BE303CB78500E6F5CB /* Statistics */ = {
+			isa = PBXGroup;
+			children = (
+				505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */,
+				505CE3BB303CB78500E6F5CB /* AGPChartView.swift */,
+				505CE3BC303CB78500E6F5CB /* StatisticsView.swift */,
+				505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */,
+			);
+			path = Statistics;
 			sourceTree = "<group>";
 		};
 		7D23667B21250C5A0028B67D /* Common */ = {
@@ -3417,6 +3440,7 @@
 				43A51E1F1EB6D62A000736CC /* CarbAbsorptionViewController.swift in Sources */,
 				43776F901B8022E90074EA36 /* AppDelegate.swift in Sources */,
 				C9SCENED0000000000000001 /* SceneDelegate.swift in Sources */,
+				505CE3C5303CB7CA00E6F5CB /* StatisticsRangeEditor.swift in Sources */,
 				4372E48B213CB5F00068E043 /* Double.swift in Sources */,
 				84DF48C12F6A0AED00BEDB40 /* Double+Closest.swift in Sources */,
 				430B29932041F5B300BA9F93 /* UserDefaults+Loop.swift in Sources */,
@@ -3497,6 +3521,7 @@
 				43C0944A1CACCC73001F6403 /* NotificationManager.swift in Sources */,
 				149A28E42A8A63A700052EDF /* FavoriteFoodDetailView.swift in Sources */,
 				1DDE274024AEA4F200796622 /* NotificationsCriticalAlertPermissionsView.swift in Sources */,
+				5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */,
 				A9A056B524B94123007CF06D /* CriticalEventLogExportViewModel.swift in Sources */,
 				434FF1EE1CF27EEF000DB779 /* UITableViewCell.swift in Sources */,
 				84DF48C32F6A0AF600BEDB40 /* Image+Crop.swift in Sources */,
@@ -3567,6 +3592,9 @@
 				1D6B1B6726866D89009AC446 /* AlertPermissionsChecker.swift in Sources */,
 				C16F511B2B89363A00EFD7A1 /* SimpleInsulinDose.swift in Sources */,
 				4F08DE8F1E7BB871006741EA /* CollectionType+Loop.swift in Sources */,
+				505CE3BF303CB78500E6F5CB /* TimeInRangeBar.swift in Sources */,
+				505CE3C0303CB78500E6F5CB /* StatisticsView.swift in Sources */,
+				505CE3C1303CB78500E6F5CB /* AGPChartView.swift in Sources */,
 				A9F703772489D8AA00C98AD8 /* PersistentDeviceLog+SimulatedCoreData.swift in Sources */,
 				E9B080B1253BDA6300BAD8F8 /* UserDefaults+LoopIntents.swift in Sources */,
 				C1AF062329426300002C1B19 /* ManualGlucoseEntryRow.swift in Sources */,

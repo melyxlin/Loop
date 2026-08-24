@@ -23,11 +23,15 @@ enum GlucoseBand: Int, CaseIterable, Comparable {
 
     /// Classify a glucose value in mg/dL into its consensus band.
     static func classify(mgdl: Double) -> GlucoseBand {
+        let targetLow = StatisticsRangeSettings.targetLow
+        let targetHigh = StatisticsRangeSettings.targetHigh
+        let veryHigh = StatisticsRangeSettings.veryHigh
+        
         switch mgdl {
-        case ..<54:  return .veryLow
-        case ..<70:  return .low
-        case ..<181: return .target
-        case ..<251: return .high
+        case ..<StatisticsRangeSettings.veryLow:  return .veryLow
+        case ..<targetLow:  return .low
+        case ..<targetHigh: return .target
+        case ..<veryHigh: return .high
         default:     return .veryHigh
         }
     }
