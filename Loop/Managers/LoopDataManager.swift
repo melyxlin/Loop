@@ -261,6 +261,7 @@ final class LoopDataManager: ObservableObject {
             ) { (note) in
                 Task { @MainActor in
                     self.restartGlucoseValueStalenessTimer()
+                    self.temporaryPresetsManager.startScheduledPresetsIfNeeded()
                     await self.updateDisplayState()
                     self.notify(forChange: .glucose)
                 }
@@ -659,6 +660,7 @@ final class LoopDataManager: ObservableObject {
     }
 
     func loop() async {
+        temporaryPresetsManager.startScheduledPresetsIfNeeded()
         let loopBaseTime = now
 
         var dosingDecision = StoredDosingDecision(
@@ -1605,7 +1607,7 @@ extension LoopDataManager: ManualDoseViewModelDelegate {
     var settings: StoredSettings {
         settingsProvider.settings
     }
-    
+
     var scheduleOverride: TemporaryScheduleOverride? {
         temporaryPresetsManager.scheduleOverride
     }

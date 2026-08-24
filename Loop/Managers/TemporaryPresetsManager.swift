@@ -34,6 +34,8 @@ class TemporaryPresetsManager {
     @ObservationIgnored private var presetActivationObservers: [PresetActivationObserver] = []
 
     @ObservationIgnored private var overrideIntentObserver: NSKeyValueObservation? = nil
+    
+    @ObservationIgnored private var lastAutoStartedOccurrence: [String: Date] = [:]
 
     private var now: Date { TestingDate.currentTestingDate() }
 
@@ -398,6 +400,121 @@ class TemporaryPresetsManager {
         return lastUsed![id]
     }
     
+    // MARK: - Scheduled Preset Auto Start
+
+    /// Returns a scheduled occurrence if this preset was due recently.
+    ///
+    /// Loop may not execute at the exact scheduled second while the app is in the
+    /// background, so we allow a short grace period after the scheduled time.
+    private func autoStartOccurrence(
+        for preset: TemporaryPreset,
+        at date: Date
+    ) -> Date? {
+        guard preset.autoStartScheduledPreset,
+              preset.scheduleStartDate != nil
+        else {
+            return nil
+        }
+
+        // Allow Loop to catch a scheduled preset on a subsequent heartbeat.
+        let gracePeriod: TimeInterval = .minutes(10)
+        let lookbackDate = date.addingTimeInterval(-gracePeriod)
+
+        guard let occurrence = preset.nextScheduledStartAfter(lookbackDate) else {
+            return nil
+        }
+
+        // The occurrence is still in the future.
+        guard occurrence <= date else {
+            return nil
+        }
+
+        // Do not start a preset long after its intended scheduled time.
+        guard date.timeIntervalSince(occurrence) <= gracePeriod else {
+            return nil
+        }
+
+        return occurrence
+    }
+
+    /// Returns true if this exact scheduled occurrence has already been handled.
+    private func alreadyHandledAutoStart(
+        preset: TemporaryPreset,
+        occurrence: Date
+    ) -> Bool {
+        // If this same preset is already active, don't restart it.
+        if activeOverride?.presetId == preset.id {
+            return true
+        }
+
+        // Prevent repeated activation on subsequent Loop wakes.
+        if let previousOccurrence = lastAutoStartedOccurrence[preset.id],
+           abs(previousOccurrence.timeIntervalSince(occurrence)) < 1
+        {
+            return true
+        }
+
+        return false
+    }
+
+    /// Starts any scheduled preset whose automatic-start time has recently passed.
+    ///
+    /// This method needs to be called whenever Loop receives background execution
+    /// (for example, as part of the normal Loop wake/update path).
+    func startScheduledPresetsIfNeeded(at date: Date? = nil) {
+        let checkDate = date ?? now
+        let settings = settingsProvider.settings
+
+        for preset in settings.overridePresets {
+            guard let occurrence = autoStartOccurrence(
+                for: preset,
+                at: checkDate
+            ) else {
+                continue
+            }
+
+            guard !alreadyHandledAutoStart(
+                preset: preset,
+                occurrence: occurrence
+            ) else {
+                continue
+            }
+
+            guard let selectablePreset = selectablePresets.first(
+                where: { $0.id == preset.id }
+            ) else {
+                log.error(
+                    "Unable to find scheduled preset for automatic start: %{public}@",
+                    preset.id
+                )
+                continue
+            }
+
+            log.default(
+                "Automatically starting scheduled preset %{public}@",
+                preset.name
+            )
+
+            // Mark this occurrence first so another callback cannot immediately
+            // start the same preset again.
+            lastAutoStartedOccurrence[preset.id] = occurrence
+
+            // Use Loop's existing preset activation path.
+            startPreset(selectablePreset)
+
+            // Remove any reminder that may previously have been scheduled for
+            // this preset before Auto Start was enabled.
+            Task { @MainActor in
+                await alertIssuer?.retractAlert(
+                    identifier: Alert.Identifier(
+                        managerIdentifier: managerIdentifier,
+                        alertIdentifier: preset.id
+                    )
+                )
+            }
+        }
+    }
+    
     func unschedulePresetReminderIfNeeded(_ preset: SelectablePreset) async {
         guard preset.isScheduled else { return }
         await alertIssuer?.retractAlert(identifier: Alert.Identifier(managerIdentifier: managerIdentifier, alertIdentifier: preset.id))
@@ -409,18 +526,43 @@ class TemporaryPresetsManager {
 
         let now = now
 
-        let preset = settings.overridePresets.reduce(into: nil as TemporaryPreset?) { result, preset in
-            if let nextScheduledTime = preset.nextScheduledStartAfter(now) {
-                if result == nil || nextScheduledTime < (result!.nextScheduledStartAfter(now)!) {
-                    result = preset
+        // Auto-start presets should not also display the manual-start reminder.
+        // Retract any reminder that may have been scheduled before Auto Start
+        // was enabled.
+        for preset in settings.overridePresets where preset.autoStartScheduledPreset {
+            let identifier = Alert.Identifier(
+                managerIdentifier: managerIdentifier,
+                alertIdentifier: preset.id
+            )
+
+            await alertIssuer?.retractAlert(identifier: identifier)
+        }
+
+        // Only manually-started scheduled presets should receive the
+        // "Start Scheduled Preset?" notification.
+        let preset = settings.overridePresets
+            .filter { !$0.autoStartScheduledPreset }
+            .reduce(into: nil as TemporaryPreset?) { result, preset in
+
+                if let nextScheduledTime = preset.nextScheduledStartAfter(now) {
+                    if result == nil ||
+                        nextScheduledTime < (result!.nextScheduledStartAfter(now)!)
+                    {
+                        result = preset
+                    }
                 }
             }
-        }
 
         if let preset {
 
-            let nextScheduledPresetReminderIdentifier = Alert.Identifier(managerIdentifier: managerIdentifier, alertIdentifier: preset.id)
-            await alertIssuer?.retractAlert(identifier: nextScheduledPresetReminderIdentifier)
+            let nextScheduledPresetReminderIdentifier = Alert.Identifier(
+                managerIdentifier: managerIdentifier,
+                alertIdentifier: preset.id
+            )
+
+            await alertIssuer?.retractAlert(
+                identifier: nextScheduledPresetReminderIdentifier
+            )
 
             let nextScheduledTime = preset.nextScheduledStartAfter(now)!
 
@@ -428,45 +570,66 @@ class TemporaryPresetsManager {
             formatter.dateStyle = .none
             formatter.timeStyle = .short
 
-            let title = NSLocalizedString("Start Scheduled Preset?", comment: "Scheduled preset reminder title")
+            let title = NSLocalizedString(
+                "Start Scheduled Preset?",
+                comment: "Scheduled preset reminder title"
+            )
+
             let body = String(
-                format: NSLocalizedString("Would you like to start your %1$@ preset?\n\nThis will end any active preset.", comment: "Scheduled preset reminder alert body. (1: preset name)"),
+                format: NSLocalizedString(
+                    "Would you like to start your %1$@ preset?\n\nThis will end any active preset.",
+                    comment: "Scheduled preset reminder alert body. (1: preset name)"
+                ),
                 preset.name
             )
 
             let actions = [
                 Alert.UserAlertAction(
-                    label: NSLocalizedString("Don't Start", comment: "Label for do not start preset action on scheduled preset reminder alert"),
+                    label: NSLocalizedString(
+                        "Don't Start",
+                        comment: "Label for do not start preset action on scheduled preset reminder alert"
+                    ),
                     identifier: "acknowledge",
                     style: .default
                 ),
+
                 Alert.UserAlertAction(
-                    label: NSLocalizedString("Yes, Start Now", comment: "Label for do yes, start preset now action on scheduled preset reminder alert"),
+                    label: NSLocalizedString(
+                        "Yes, Start Now",
+                        comment: "Label for do yes, start preset now action on scheduled preset reminder alert"
+                    ),
                     identifier: "startPreset",
                     style: .cancel
                 )
             ]
 
-            let content = Alert.Content(title: title,
-                                        body: body,
-                                        actions: actions)
+            let content = Alert.Content(
+                title: title,
+                body: body,
+                actions: actions
+            )
 
-            let metadata: Alert.Metadata = [LoopNotificationUserInfoKey.presetId.rawValue: Alert.MetadataValue(preset.id)]
+            let metadata: Alert.Metadata = [
+                LoopNotificationUserInfoKey.presetId.rawValue:
+                    Alert.MetadataValue(preset.id)
+            ]
 
             let alert = Alert(
                 identifier: nextScheduledPresetReminderIdentifier,
                 foregroundContent: content,
                 backgroundContent: content,
-                trigger: .delayed(interval: nextScheduledTime.timeIntervalSince(now)),
+                trigger: .delayed(
+                    interval: nextScheduledTime.timeIntervalSince(now)
+                ),
                 interruptionLevel: .timeSensitive,
                 metadata: metadata,
-                categoryIdentifier: LoopNotificationCategory.presetReminder.rawValue
+                categoryIdentifier:
+                    LoopNotificationCategory.presetReminder.rawValue
             )
 
             await alertIssuer?.issueAlert(alert)
         }
     }
-
 }
 
 extension TemporaryPresetsManager {
