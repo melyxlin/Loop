@@ -307,6 +307,9 @@ final class StatusTableViewController: LoopChartsTableViewController {
             if oldValue != bolusState {
                 switch bolusState {
                 case .inProgress(let doseNew):
+                    if doseNew.automatic == true {
+                           startAutomaticBolusProgressTimer(for: doseNew)
+                       }
                     switch oldValue {
                     case .inProgress(let doseOld):
                         guard doseNew.syncIdentifier != doseOld.syncIdentifier,
@@ -322,7 +325,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                         bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(reportingOn: DispatchQueue.main)
                     }
                 default:
-                    break
+                    stopAutomaticBolusProgressTimer()
                 }
             }
         }
@@ -340,6 +343,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
     }
 
     private var bolusProgressReporter: DoseProgressReporter?
+    private var automaticBolusProgressTimer: Timer?
 
     private func updateBolusProgress() {
         if let cell = tableView.cellForRow(at: IndexPath(row: StatusRow.status.rawValue, section: Section.status.rawValue)) as? BolusProgressTableViewCell {
@@ -347,6 +351,85 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 cell.configuration = .bolusing(delivered: bolusProgressReporter?.progress.deliveredUnits, ofTotalVolume: total)
             }
         }
+    }
+    
+    
+    private func startAutomaticBolusProgressTimer(for dose: DoseEntry) {
+        stopAutomaticBolusProgressTimer()
+
+        guard dose.automatic == true,
+              let pumpManager = deviceManager.pumpManager
+        else {
+            return
+        }
+
+        let estimatedDuration = pumpManager.estimatedDuration(
+            toBolus: dose.programmedUnits
+        )
+
+        guard estimatedDuration > 0 else {
+            return
+        }
+
+        func updateProgress() {
+            guard case .inProgress(let currentDose) = self.bolusState,
+                  currentDose.automatic == true,
+                  currentDose.syncIdentifier == dose.syncIdentifier
+            else {
+                self.stopAutomaticBolusProgressTimer()
+                return
+            }
+
+            if dose.endDate <= Date() {
+                self.stopAutomaticBolusProgressTimer()
+
+                self.updateBannerAndHUDandStatusRows(
+                    statusRowMode: self.determineStatusRowMode(),
+                    newSize: nil,
+                    animated: true
+                )
+
+                return
+            }
+
+            let elapsed = Date().timeIntervalSince(dose.startDate)
+
+            let fraction = min(
+                max(elapsed / estimatedDuration, 0),
+                1
+            )
+
+            let estimatedDelivered = dose.programmedUnits * fraction
+
+            if let cell = self.tableView.cellForRow(
+                at: IndexPath(
+                    row: StatusRow.status.rawValue,
+                    section: Section.status.rawValue
+                )
+            ) as? BolusProgressTableViewCell {
+                cell.configuration = .bolusing(
+                    delivered: estimatedDelivered,
+                    ofTotalVolume: dose.programmedUnits
+                )
+            }
+        }
+
+        updateProgress()
+
+        automaticBolusProgressTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.25,
+            repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                updateProgress()
+            }
+        }
+    }
+
+    private func stopAutomaticBolusProgressTimer() {
+        automaticBolusProgressTimer?.invalidate()
+        automaticBolusProgressTimer = nil
     }
 
     private func updateHUDActive() {
@@ -759,12 +842,16 @@ final class StatusTableViewController: LoopChartsTableViewController {
             statusRowMode = .pumpSuspended(resuming: true)
         } else if case .inProgress(let dose) = bolusState {
             if dose.automatic == true {
-                statusRowMode = .bolusing(dose: dose)
-            } else if bolusProgressReporter?.progress.isComplete == false {
-                statusRowMode = .bolusing(dose: dose)
-            } else {
-                statusRowMode = .hidden
-            }
+                   if dose.endDate.timeIntervalSinceNow > 0 {
+                       statusRowMode = .bolusing(dose: dose)
+                   } else {
+                       statusRowMode = .hidden
+                   }
+               } else if bolusProgressReporter?.progress.isComplete == false {
+                   statusRowMode = .bolusing(dose: dose)
+               } else {
+                   statusRowMode = .hidden
+               }
         } else if !onboardingManager.isComplete,
                   deviceManager.pumpManager?.isOnboarded == true {
             statusRowMode = .onboardingSuspended
@@ -900,11 +987,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     // Only the Active Insulin (.iob) chart carries the "Last Bolus" footer. Clear it
                     // on every other chart row so a recycled cell can't drag a stale footer onto the
                     // Glucose/Carbs rows.
-                    if ChartRow(rawValue: indexPath.row)! == .iob {
-                        cell.setFooterView(content: iobFooterViewContent)
-                    } else {
-                        clearChartFooter(cell)
-                    }
+                    clearChartFooter(cell)
                 }
             }
         }
@@ -1033,13 +1116,24 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 cell.setSupplementalChartGenerator(generator: { [weak self] (frame) in
                     return self?.statusCharts.doseChart(withFrame: frame)?.view
                 })
-                
+
                 cell.setChartGenerator(generator: { [weak self] (frame) in
-                    return self?.statusCharts.iobChart(withFrame: frame, highlightLabelOffsetY: cell.supplementalChartContentView?.bounds.height ?? 0)?.view
+                    return self?.statusCharts.iobChart(
+                        withFrame: frame,
+                        highlightLabelOffsetY: cell.supplementalChartContentView?.bounds.height ?? 0
+                    )?.view
                 })
-                cell.setTitleLabelText(label: NSLocalizedString("Active Insulin", comment: "The title of the Insulin On-Board graph"))
+
+                cell.setTitleLabelText(
+                    label: NSLocalizedString(
+                        "Active Insulin",
+                        comment: "The title of the Insulin On-Board graph"
+                    )
+                )
+
                 cell.setTitleTextColor(color: ChartColorPalette.primary.insulinTint)
-                cell.setFooterView(content: iobFooterViewContent)
+
+                clearChartFooter(cell)
             case .cob:
                 cell.setChartGenerator(generator: { [weak self] (frame) in
                     return self?.statusCharts.cobChart(withFrame: frame)?.view
@@ -1138,48 +1232,48 @@ final class StatusTableViewController: LoopChartsTableViewController {
         }
     }
     
-    private var iobFooterText: Text? {
-        if let lastManualDose = loopManager.lastManualBolus,
-           let formattedBolusValue = insulinFormatter.string(from: LoopQuantity(unit: .internationalUnit, doubleValue: lastManualDose.amount)) {
-
-            let hoursDifference = Date().timeIntervalSince(lastManualDose.startDate) / 3600
-
-            // Build a single Text view
-            let footerText: Text
-            let lastBolusLabel = Text("Last Bolus: ")
-            let lastBolusValue = Text("\(formattedBolusValue) ").fontWeight(.semibold)
-            let icon = Text(Image(systemName: "hourglass.bottomhalf.filled")).foregroundStyle(.secondary)
-            let exactTime = Text("at \(lastManualDose.startDate.formatted(date: .omitted, time: .shortened))").foregroundStyle(.secondary)
-            let roundedTime = Text(" \(Int(hoursDifference.rounded())) hours ago").foregroundStyle(.secondary)
-
-            switch hoursDifference {
-            case ..<6:
-                footerText = lastBolusLabel + lastBolusValue + exactTime
-            case 6..<12:
-                footerText = lastBolusLabel + lastBolusValue.foregroundStyle(.secondary) + icon + roundedTime
-            default:
-                footerText = lastBolusLabel + icon + roundedTime
-            }
-
-            return footerText
-        } else {
-            return nil
-        }
-    }
-
-    @ViewBuilder
-    private func iobFooterViewContent() -> some View {
-        if let iobFooterText = iobFooterText {
-            iobFooterText
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 36)
-                .padding(.vertical)
-                .accessibilityIdentifier("text_ActiveInsulinFooter")
-        }
-    }
+//    private var iobFooterText: Text? {
+//        if let lastManualDose = loopManager.lastManualBolus,
+//           let formattedBolusValue = insulinFormatter.string(from: LoopQuantity(unit: .internationalUnit, doubleValue: lastManualDose.amount)) {
+//
+//            let hoursDifference = Date().timeIntervalSince(lastManualDose.startDate) / 3600
+//
+//            // Build a single Text view
+//            let footerText: Text
+//            let lastBolusLabel = Text("Last Bolus: ")
+//            let lastBolusValue = Text("\(formattedBolusValue) ").fontWeight(.semibold)
+//            let icon = Text(Image(systemName: "hourglass.bottomhalf.filled")).foregroundStyle(.secondary)
+//            let exactTime = Text("at \(lastManualDose.startDate.formatted(date: .omitted, time: .shortened))").foregroundStyle(.secondary)
+//            let roundedTime = Text(" \(Int(hoursDifference.rounded())) hours ago").foregroundStyle(.secondary)
+//
+//            switch hoursDifference {
+//            case ..<6:
+//                footerText = lastBolusLabel + lastBolusValue + exactTime
+//            case 6..<12:
+//                footerText = lastBolusLabel + lastBolusValue.foregroundStyle(.secondary) + icon + roundedTime
+//            default:
+//                footerText = lastBolusLabel + icon + roundedTime
+//            }
+//
+//            return footerText
+//        } else {
+//            return nil
+//        }
+//    }
+//
+//    @ViewBuilder
+//    private func iobFooterViewContent() -> some View {
+//        if let iobFooterText = iobFooterText {
+//            iobFooterText
+//                .frame(maxWidth: .infinity, alignment: .leading)
+//                .padding(.leading, 36)
+//                .padding(.vertical)
+//                .accessibilityIdentifier("text_ActiveInsulinFooter")
+//        }
+//    }
 
     /// Clears any footer from a (possibly recycled) chart cell. Uses the hide branch of
-    /// `setFooterView`, which keeps the hosting controller in place so the Active Insulin row
+    /// `setFooterView`, which keeps the hosting controller in place so the Active Insulin row#imageLiteral(resourceName: "simulator_screenshot_F15F1B67-2578-4018-950D-1E8FCD2E906F.png")
     /// can still re-populate its "Last Bolus" footer — while preventing that footer from
     /// leaking onto the Glucose/Carbs rows through cell reuse.
     private func clearChartFooter(_ cell: ChartTableViewCell) {
