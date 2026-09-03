@@ -55,12 +55,14 @@ struct SettingsView: View {
             
             case favoriteFoods
             case presets
+            case profiles
         }
     }
     
     @State private var actionSheet: Destination.ActionSheet?
     @State private var alert: Destination.Alert?
     @State private var sheet: Destination.Sheet?
+    @State private var showingPreferences = false
     
     var localizedAppNameAndVersion: String
 
@@ -91,6 +93,9 @@ struct SettingsView: View {
                     healthAccessSection
                     if FeatureFlags.allowExperimentalFeatures {
                         favoriteFoodsSection
+                    }
+                    if FeatureFlags.allowExperimentalFeatures {
+                        preferencesSection
                     }
                     if (viewModel.pumpManagerSettingsViewModel.isTestingDevice || viewModel.cgmManagerSettingsViewModel.isTestingDevice) && viewModel.showDeleteTestData {
                         deleteDataSection
@@ -148,6 +153,9 @@ struct SettingsView: View {
                         }
                     case .favoriteFoods:
                         FavoriteFoodsView(insightsDelegate: viewModel.favoriteFoodInsightsDelegate)
+                    case .profiles:
+                        ProfileView(viewModel: ProfileViewModel(therapySettings: self.viewModel.therapySettings(),
+                                                                delegate: self.viewModel.therapySettingsViewModelDelegate))
                     }
                 }
                 .environmentObject(displayGlucosePreference)
@@ -405,6 +413,11 @@ extension SettingsView {
                 .accessibilityIdentifier("button_TherapySettings")
             }
 
+            LargeButton(action: { sheet = .profiles },
+                        includeArrow: true,
+                        imageView: AnyView(Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 30, weight: .bold))),
+                        label: NSLocalizedString("Profiles", comment: "Title text for button to Profiles"),
+                        descriptiveText: NSLocalizedString("Switch between profiles for different scenarios", comment: "Descriptive text for Profiles"))
             ForEach(pluginMenuItems.filter {$0.section == .configuration}) { item in
                 item.view
             }
@@ -521,7 +534,22 @@ extension SettingsView {
                         descriptiveText: "Simplify Carb Entry")
         }
     }
-    
+
+    private var preferencesSection: some View {
+        Section {
+            LargeButton(action: { showingPreferences = true },
+                        includeArrow: true,
+                        imageView: Image(systemName: "gearshape.fill").font(.system(size: 30, weight: .bold)),
+                        label: NSLocalizedString("Preferences", comment: "Title text for button to Preferences"),
+                        descriptiveText: NSLocalizedString("Customize your Loop experience by adjusting additional settings", comment: "Descriptive text for Preferences"))
+        }
+        .sheet(isPresented: $showingPreferences) {
+            PreferencesView(viewModel: PreferencesViewModel(preferencesProvider: Preferences.shared))
+                .environmentObject(displayGlucosePreference)
+                .environment(\.dismissAction, { showingPreferences = false })
+        }
+    }
+
     private var cgmChoices: [PluginPopover.Action] {
         viewModel.cgmManagerSettingsViewModel.availableDevices
             .sorted(by: {$0.localizedTitle < $1.localizedTitle})

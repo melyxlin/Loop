@@ -112,7 +112,7 @@ struct TimeInRangeBar: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(height: 220)
+            .frame(height: 270)
 
             // Clinical helper / suggestion text, as on the standard report.
             VStack(alignment: .leading, spacing: 4) {

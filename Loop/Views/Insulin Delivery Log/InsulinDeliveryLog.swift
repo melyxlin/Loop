@@ -15,6 +15,7 @@ struct InsulinDeliveryLog: View {
 
     @State private var viewModel: InsulinDeliveryLogViewModel
     @State var showingFilterMenu = false
+    @State private var showingInsulinBreakdown = false
 
     let onTapGesture: (DoseEntry) -> Void
     let onEnterManualDose: (() -> Void)?
@@ -131,6 +132,107 @@ struct InsulinDeliveryLog: View {
         }
     }
     
+    private struct DailyInsulinBreakdownView: View {
+        let total: LoopQuantity
+        let breakdown: InsulinDeliveryLogViewModel.DailyInsulinBreakdown
+        let formatter: QuantityFormatter
+
+        private func format(_ quantity: LoopQuantity) -> String {
+            formatter.string(from: quantity) ?? "—"
+        }
+
+        private func percent(_ value: Double) -> String {
+            "\(Int((value * 100).rounded()))%"
+        }
+
+        var body: some View {
+            NavigationStack {
+                VStack(spacing: 24) {
+                    VStack(spacing: 4) {
+                        Text("Total Insulin")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        Text(format(total))
+                            .font(.system(size: 38, weight: .semibold))
+                    }
+
+                    Divider()
+
+                    VStack(spacing: 18) {
+                        breakdownRow(
+                            title: "Basal",
+                            amount: breakdown.basal,
+                            percentage: breakdown.basalPercentage
+                        )
+
+                        breakdownRow(
+                            title: "Bolus",
+                            amount: breakdown.bolus,
+                            percentage: breakdown.bolusPercentage
+                        )
+                    }
+
+                    Divider()
+
+                    VStack(spacing: 14) {
+                        detailRow(
+                            title: "Manual Bolus",
+                            amount: breakdown.manualBolus
+                        )
+
+                        detailRow(
+                            title: "Automated Bolus",
+                            amount: breakdown.automatedBolus
+                        )
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("Today's Insulin")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+
+        private func breakdownRow(
+            title: String,
+            amount: LoopQuantity,
+            percentage: Double
+        ) -> some View {
+            HStack {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(format(amount))
+                        .font(.title3.weight(.semibold))
+
+                    Text(percent(percentage))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        private func detailRow(
+            title: String,
+            amount: LoopQuantity
+        ) -> some View {
+            HStack {
+                Text(title)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text(format(amount))
+                    .fontWeight(.medium)
+            }
+        }
+    }
+    
     var body: some View {
         List {
             switch viewModel.state {
@@ -148,7 +250,21 @@ struct InsulinDeliveryLog: View {
                 }
                 
                 Section {
-                    totalInsulinDeliveredLabel(from: data.totalInsulinDelivered)
+                    Button {
+                        showingInsulinBreakdown = true
+                    } label: {
+                        totalInsulinDeliveredLabel(from: data.totalInsulinDelivered)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .sheet(isPresented: $showingInsulinBreakdown) {
+                    DailyInsulinBreakdownView(
+                        total: data.totalInsulinDelivered,
+                        breakdown: data.dailyInsulinBreakdown,
+                        formatter: viewModel.totalDeliveredFormatter
+                    )
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
                 }
             }
             

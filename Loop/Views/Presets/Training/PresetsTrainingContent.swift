@@ -1138,10 +1138,11 @@ extension ActivityPreset {
     @ViewBuilder
     static func bulletList(full: Bool) -> some View {
         BulletedListView {
-            ActivityPreset.ActivityType.jogging.bulletItem(full: full)
-            ActivityPreset.ActivityType.walking.bulletItem(full: full)
-            ActivityPreset.ActivityType.biking.bulletItem(full: full)
-            ActivityPreset.ActivityType.strengthTraining.bulletItem(full: full)
+//            ActivityPreset.ActivityType.jogging.bulletItem(full: full)
+//            ActivityPreset.ActivityType.walking.bulletItem(full: full)
+//            ActivityPreset.ActivityType.biking.bulletItem(full: full)
+//            ActivityPreset.ActivityType.strengthTraining.bulletItem(full: full)
+            ActivityPreset.ActivityType.low.bulletItem(full: full)
         }
     }
 }

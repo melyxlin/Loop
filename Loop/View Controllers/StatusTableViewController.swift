@@ -399,7 +399,14 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 1
             )
 
-            let estimatedDelivered = dose.programmedUnits * fraction
+            let rawEstimatedDelivered = dose.programmedUnits * fraction
+
+            let deliveryIncrement = 0.05
+
+            let estimatedDelivered = min(
+                floor((rawEstimatedDelivered + 0.000001) / deliveryIncrement) * deliveryIncrement,
+                dose.programmedUnits
+            )
 
             if let cell = self.tableView.cellForRow(
                 at: IndexPath(

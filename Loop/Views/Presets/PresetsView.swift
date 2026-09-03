@@ -106,6 +106,20 @@ struct PresetsView: View {
             }
         })
     }
+    
+    var scheduledPresets: [(preset: SelectablePreset, nextStart: Date)] {
+        temporaryPresetsManager.selectablePresets
+            .compactMap { preset in
+                guard preset.isScheduled,
+                      let nextStart = preset.nextScheduledStartAfter(Date())
+                else {
+                    return nil
+                }
+
+                return (preset: preset, nextStart: nextStart)
+            }
+            .sorted { $0.nextStart < $1.nextStart }
+    }
 
     var scheduledRange: ClosedRange<LoopQuantity>? {
         settingsManager.therapySettings.glucoseTargetRangeSchedule?.quantityRange(at: Date())
@@ -128,6 +142,40 @@ struct PresetsView: View {
                         )
                         .onTapGesture {
                             activeSheet = .presetDetent(activePreset)
+                        }
+                    }
+                    if !scheduledPresets.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Scheduled Presets")
+                                    .font(.headline.weight(.semibold))
+
+                                Spacer()
+
+                                Image(systemName: "alarm.fill")
+                                    .foregroundStyle(.green)
+                            }
+                            .padding(.horizontal, 10)
+
+                            LazyVStack(spacing: 10) {
+                                ForEach(scheduledPresets, id: \.preset.id) { item in
+                                    SwipeToUnscheduleRow(
+                                        onUnschedule: {
+                                            unschedulePreset(item.preset)
+                                        }
+                                    ) {
+                                        scheduledPresetRow(
+                                            preset: item.preset,
+                                            nextStart: item.nextStart
+                                        )
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            activeSheet = .presetDetent(item.preset)
+                                        }
+                                    }
+                                }
+                                
+                            }
                         }
                     }
                     
@@ -285,6 +333,178 @@ struct PresetsView: View {
         .alert(isPresented: $presentTrainingNeededAlert) {
             trainingNeededAlert
         }
+    }
+    
+    @ViewBuilder
+    private func scheduledPresetRow(
+        preset: SelectablePreset,
+        nextStart: Date
+    ) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(preset.name)
+                    .font(.headline)
+
+                Text(scheduleDescription(for: preset))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if preset.repeatOptions != .none {
+                    Text("Next: \(nextScheduledDateDescription(nextStart))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 5) {
+                Image(systemName: "alarm.fill")
+                    .foregroundStyle(.green)
+
+                Text(preset.duration.localizedTitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(UIColor.tertiarySystemBackground))
+        )
+    }
+    
+    private struct SwipeToUnscheduleRow<Content: View>: View {
+        let onUnschedule: () -> Void
+        @ViewBuilder let content: () -> Content
+
+        @State private var offset: CGFloat = 0
+
+        private let actionWidth: CGFloat = 110
+
+        var body: some View {
+            ZStack(alignment: .trailing) {
+                Button(role: .destructive) {
+                    withAnimation {
+                        offset = 0
+                    }
+
+                    onUnschedule()
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.minus")
+                        Text("Unschedule")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: actionWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Color.red)
+                }
+
+                content()
+                    .offset(x: offset)
+                    .gesture(
+                        DragGesture(minimumDistance: 15)
+                            .onChanged { value in
+                                let translation = value.translation.width
+
+                                if translation < 0 {
+                                    offset = max(
+                                        translation,
+                                        -actionWidth
+                                    )
+                                } else if offset < 0 {
+                                    offset = min(
+                                        0,
+                                        -actionWidth + translation
+                                    )
+                                }
+                            }
+                            .onEnded { value in
+                                withAnimation(.snappy) {
+                                    if value.translation.width < -40 {
+                                        offset = -actionWidth
+                                    } else {
+                                        offset = 0
+                                    }
+                                }
+                            }
+                    )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }  
+    
+    private func unschedulePreset(_ preset: SelectablePreset) {
+        var updatedPreset = preset
+
+        // Remove recurrence and scheduled start.
+        updatedPreset.repeatOptions = .none
+        updatedPreset.scheduleStartDate = nil
+
+        // Save the preset itself — we are NOT deleting it.
+        settingsManager.savePreset(updatedPreset)
+
+        Task {
+            // Remove any notification/reminder associated with
+            // the old scheduled version.
+            await temporaryPresetsManager
+                .unschedulePresetReminderIfNeeded(preset)
+
+            // Schedule the reminder for whichever scheduled
+            // preset is now next.
+            await temporaryPresetsManager
+                .scheduleNextPresetReminder()
+        }
+    }
+    
+    private func scheduleDescription(for preset: SelectablePreset) -> String {
+        guard let startDate = preset.scheduleStartDate else {
+            return "Scheduled"
+        }
+
+        if preset.repeatOptions == .none {
+            let formattedDate = startDate.formatted(
+                .dateTime
+                    .weekday(.wide)
+                    .month(.wide)
+                    .day()
+                    .hour()
+                    .minute()
+            )
+
+            return "Scheduled for \(formattedDate)"
+        }
+
+        let time = startDate.formatted(
+            date: .omitted,
+            time: .shortened
+        )
+
+        return "Repeats \(preset.repeatOptions) at \(time)"
+    }
+
+    
+    private func nextScheduledDateDescription(_ date: Date) -> String {
+        let calendar = Calendar.current
+
+        if calendar.isDateInToday(date) {
+            return "Today at \(date.formatted(date: .omitted, time: .shortened))"
+        }
+
+        if calendar.isDateInTomorrow(date) {
+            return "Tomorrow at \(date.formatted(date: .omitted, time: .shortened))"
+        }
+
+        return date.formatted(
+            .dateTime
+                .weekday(.abbreviated)
+                .month(.abbreviated)
+                .day()
+                .hour()
+                .minute()
+        )
     }
     
     private var trainingNeededAlert: SwiftUI.Alert {
