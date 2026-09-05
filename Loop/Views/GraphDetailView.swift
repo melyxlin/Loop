@@ -11,13 +11,13 @@
 import HealthKit
 import LoopKit
 import SwiftUI
-
+import LoopAlgorithm
 // MARK: - Data Model
 
 struct GraphDetailData {
     var date: Date
     var glucoseValue: Double?
-    var glucoseUnit: HKUnit = .milligramsPerDeciliter
+    var glucoseUnit: LoopUnit = .milligramsPerDeciliter
     var insulinOnBoard: Double?
     var carbsOnBoard: Double?
     var activePreset: String?

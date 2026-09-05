@@ -12,6 +12,7 @@ import Combine
 import Foundation
 import HealthKit
 import LoopKit
+import LoopAlgorithm
 
 // MARK: - GraphDetailViewModel
 
@@ -19,10 +20,17 @@ final class GraphDetailViewModel: ObservableObject {
     @Published var data: GraphDetailData
 
     private let deviceManager: DeviceDataManager
+    private let loopManager: LoopDataManager
     private var scrubThrottleTimer: Timer?
 
-    init(date: Date, glucoseUnit: HKUnit, deviceManager: DeviceDataManager) {
+    init(
+        date: Date,
+        glucoseUnit: LoopUnit,
+        deviceManager: DeviceDataManager,
+        loopManager: LoopDataManager
+    ) {
         self.deviceManager = deviceManager
+        self.loopManager = loopManager
         self.data = GraphDetailData(date: date, glucoseUnit: glucoseUnit)
         loadData()
     }
@@ -57,38 +65,66 @@ final class GraphDetailViewModel: ObservableObject {
     }
 
     private func loadGlucose() {
-        let window: TimeInterval = 5 * 60 // ±5 minutes
-        let start = data.date.addingTimeInterval(-window)
-        let end = data.date.addingTimeInterval(window)
+        let targetDate = data.date
+        let window: TimeInterval = 5 * 60
+        let start = targetDate.addingTimeInterval(-window)
+        let end = targetDate.addingTimeInterval(window)
 
-        deviceManager.glucoseStore.getGlucoseSamples(start: start, end: end) { [weak self] result in
-            guard let self = self, case .success(let samples) = result else { return }
-            // Find closest sample to the target date
-            let closest = samples.min(by: {
-                abs($0.startDate.timeIntervalSince(self.data.date)) < abs($1.startDate.timeIntervalSince(self.data.date))
-            })
-            if let sample = closest {
-                let value = sample.quantity.doubleValue(for: self.data.glucoseUnit)
-                DispatchQueue.main.async {
-                    self.data.glucoseValue = value
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let samples = try await deviceManager.glucoseStore.getGlucoseSamples(
+                    start: start,
+                    end: end
+                )
+
+                let closest = samples.min {
+                    abs($0.startDate.timeIntervalSince(targetDate)) <
+                    abs($1.startDate.timeIntervalSince(targetDate))
                 }
+
+                if let sample = closest {
+                    let value = sample.quantity.doubleValue(for: self.data.glucoseUnit)
+
+                    await MainActor.run {
+                        guard self.data.date == targetDate else { return }
+                        self.data.glucoseValue = value
+                    }
+                }
+            } catch {
+                // Leave glucose empty if the historical query fails.
             }
         }
     }
 
     private func loadIOB() {
-        let start = data.date.addingTimeInterval(-5 * 60)
-        let end = data.date.addingTimeInterval(5 * 60)
+        let targetDate = data.date
+        let start = targetDate.addingTimeInterval(-5 * 60)
+        let end = targetDate.addingTimeInterval(5 * 60)
 
-        deviceManager.doseStore.getInsulinOnBoardValues(start: start, end: end, basalDosingEnd: nil) { [weak self] result in
-            guard let self = self, case .success(let values) = result else { return }
-            let closest = values.min(by: {
-                abs($0.startDate.timeIntervalSince(self.data.date)) < abs($1.startDate.timeIntervalSince(self.data.date))
-            })
-            if let iob = closest {
-                DispatchQueue.main.async {
-                    self.data.insulinOnBoard = iob.value
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let historicalData = try await loopManager.getHistoricalChartsData(
+                    start: start,
+                    end: end
+                )
+
+                let closest = historicalData.iobValues.min {
+                    abs($0.startDate.timeIntervalSince(targetDate)) <
+                    abs($1.startDate.timeIntervalSince(targetDate))
                 }
+
+                if let closest {
+                    await MainActor.run {
+                        guard self.data.date == targetDate else { return }
+                        self.data.insulinOnBoard = closest.value
+                    }
+                }
+            } catch {
+                // Leave IOB empty when historical calculation is unavailable.
             }
         }
     }
@@ -96,70 +132,130 @@ final class GraphDetailViewModel: ObservableObject {
     private func loadCOB() {
         // COB requires counteraction effects from loop state, so we use a simpler approach
         // Query carb entries near this time to estimate
-        deviceManager.loopManager.getLoopState { [weak self] (_, state) in
-            guard let self = self else { return }
-            if let cobValue = state.carbsOnBoard {
-                // This is current COB — for historical, we approximate from the values array
-                DispatchQueue.main.async {
-                    // Only show if the date is recent (within last few minutes)
-                    if abs(self.data.date.timeIntervalSinceNow) < 10 * 60 {
-                        self.data.carbsOnBoard = cobValue.quantity.doubleValue(for: .gram())
+//        deviceManager.loopManager.getLoopState { [weak self] (_, state) in
+//            guard let self = self else { return }
+//            if let cobValue = state.carbsOnBoard {
+//                // This is current COB — for historical, we approximate from the values array
+//                DispatchQueue.main.async {
+//                    // Only show if the date is recent (within last few minutes)
+//                    if abs(self.data.date.timeIntervalSinceNow) < 10 * 60 {
+//                        self.data.carbsOnBoard = cobValue.quantity.doubleValue(for: .gram())
+//                    }
+//                }
+//            }
+//        }
+        // TODO: Port to next-dev historical carb absorption data.
+        let targetDate = data.date
+
+            // Include enough history to capture carbs that may still be absorbing
+            // at the selected chart timestamp.
+            let start = targetDate.addingTimeInterval(
+                -CarbMath.maximumAbsorptionTimeInterval
+            )
+            let end = targetDate
+
+            Task { [weak self] in
+                guard let self else { return }
+
+                do {
+                    let review = try await loopManager.fetchCarbAbsorptionReview(
+                        start: start,
+                        end: end
+                    )
+
+                    let cob = review.carbStatuses.dynamicCarbsOnBoard(
+                        at: targetDate,
+                        absorptionModel: CarbAbsorptionModel.piecewiseLinear.model
+                    )
+
+                    await MainActor.run {
+                        guard self.data.date == targetDate else { return }
+                        self.data.carbsOnBoard = cob
                     }
+                } catch {
+                    // Leave COB empty if historical absorption cannot be calculated.
                 }
             }
-        }
     }
 
     private func loadBolus() {
-        // Find boluses within ±15 minutes of the target time
+        let targetDate = data.date
         let window: TimeInterval = 15 * 60
-        let start = data.date.addingTimeInterval(-window)
-        let end = data.date.addingTimeInterval(window)
+        let start = targetDate.addingTimeInterval(-window)
+        let end = targetDate.addingTimeInterval(window)
 
-        deviceManager.doseStore.getNormalizedDoseEntries(start: start, end: end) { [weak self] result in
-            guard let self = self, case .success(let entries) = result else { return }
-            // Find the closest bolus
-            let boluses = entries.filter { $0.type == .bolus }
-            let closest = boluses.min(by: {
-                abs($0.startDate.timeIntervalSince(self.data.date)) < abs($1.startDate.timeIntervalSince(self.data.date))
-            })
-            if let bolus = closest, bolus.deliveredUnits ?? bolus.programmedUnits > 0 {
-                DispatchQueue.main.async {
-                    self.data.recentBolus = (
-                        units: bolus.deliveredUnits ?? bolus.programmedUnits,
-                        date: bolus.startDate
-                    )
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let entries = try await deviceManager.doseStore.getNormalizedDoseEntries(
+                    start: start,
+                    end: end
+                )
+
+                let boluses = entries.filter { $0.type == .bolus }
+
+                let closest = boluses.min {
+                    abs($0.startDate.timeIntervalSince(targetDate)) <
+                    abs($1.startDate.timeIntervalSince(targetDate))
                 }
+
+                if let bolus = closest {
+                    let units = bolus.deliveredUnits ?? bolus.programmedUnits
+
+                    guard units > 0 else { return }
+
+                    await MainActor.run {
+                        guard self.data.date == targetDate else { return }
+
+                        self.data.recentBolus = (
+                            units: units,
+                            date: bolus.startDate
+                        )
+                    }
+                }
+            } catch {
+                // Leave bolus empty if the historical query fails.
             }
         }
     }
-
     private func loadBasalRate() {
-        // Get the scheduled basal rate at this time
-        if let schedule = deviceManager.loopManager.settings.basalRateSchedule {
-            let rate = schedule.value(at: data.date)
-            DispatchQueue.main.async {
-                self.data.basalRate = rate
+        let targetDate = data.date
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let schedule = self.loopManager.settings.basalRateSchedule {
+                self.data.basalRate = schedule.value(at: targetDate)
             }
         }
     }
 
     private func loadOverride() {
-        // Check if an override was active at this time
-        if let override = deviceManager.loopManager.settings.scheduleOverride,
-           override.isActive(at: data.date) {
-            let name: String
-            switch override.context {
-            case .preset(let preset):
-                name = "\(preset.symbol) \(preset.name)"
-            case .legacyWorkout:
-                name = "🏃 Workout"
-            case .preMeal:
-                name = "🍽 Pre-Meal"
-            case .custom:
-                name = "⚙️ Custom Override"
-            }
-            DispatchQueue.main.async {
+        let targetDate = data.date
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let override = self.loopManager.scheduleOverride,
+               override.isActive(at: targetDate) {
+
+                let name: String
+
+                switch override.context {
+                case .preset(let preset):
+                    name = "\(preset.symbol) \(preset.name)"
+
+                case .activity(let activity):
+                    name = "\(activity.preset.symbol) \(activity.preset.name)"
+
+                case .preMeal:
+                    name = "🍽 Pre-Meal"
+
+                case .custom:
+                    name = "⚙️ Custom Override"
+                }
+
                 self.data.activePreset = name
             }
         }

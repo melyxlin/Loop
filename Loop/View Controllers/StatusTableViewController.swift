@@ -2438,8 +2438,13 @@ extension StatusTableViewController: ServicesViewModelDelegate {
         dismissGraphDetail(animated: false)
 
         let glucoseUnit = deviceManager.displayGlucosePreference.unit
-        let viewModel = GraphDetailViewModel(date: date, glucoseUnit: glucoseUnit, deviceManager: deviceManager)
-        graphDetailViewModel = viewModel
+
+        let viewModel = GraphDetailViewModel(
+            date: date,
+            glucoseUnit: glucoseUnit,
+            deviceManager: deviceManager,
+            loopManager: loopManager
+        )
 
         let wrappedView = AnyView(
             GraphDetailObservingView(viewModel: viewModel, onDismiss: { [weak self] in
