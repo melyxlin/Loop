@@ -444,11 +444,7 @@ extension FoodFinder_EntryPoint {
                     .foregroundColor(.primary)
             }
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 8)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-        .padding(.top, 8)
+        .padding(.vertical, 8)
     }
 }
 
@@ -460,8 +456,7 @@ extension FoodFinder_EntryPoint {
     private func nutritionCirclesSection(selectedFood: OpenFoodFactsProduct) -> some View {
         VStack(spacing: 8) {
             // Horizontal scrollable nutrition indicators
-            HStack(alignment: .center) {
-                Spacer()
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .center, spacing: 12) {
                     let aiResult = searchVM.lastAIAnalysisResult
 
@@ -575,9 +570,10 @@ extension FoodFinder_EntryPoint {
                         )
                     }
                 }
-                Spacer()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
             }
-            .frame(height: 90)
+            .frame(height: 106)
             .id("nutrition-circles-\(searchVM.numberOfServings)")
 
             // Confidence line (AI only)
@@ -602,10 +598,6 @@ extension FoodFinder_EntryPoint {
             }
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 8)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-        .padding(.top, 8)
     }
 }
 

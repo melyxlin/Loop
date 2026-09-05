@@ -22,6 +22,9 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
     @State private var showHowAbsorptionTimeWorks = false
     @State private var showAddFavoriteFood = false
     @State private var showFavoriteFoodInsights = false
+    // FoodFinder data for favorite food pre-population
+    @State private var foodFinderFoodName: String = ""
+    @State private var foodFinderImage: UIImage? = nil
     
     private let isNewEntry: Bool
 
@@ -134,6 +137,19 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
             )
             
             CarbQuantityRow(quantity: $viewModel.carbsQuantity, isFocused: amountConsumedFocused, title: NSLocalizedString("Amount Consumed", comment: "Label for carb quantity entry row on carb entry screen"), preferredCarbUnit: viewModel.preferredCarbUnit)
+            
+            // FoodFinder integration — inside the main card
+            if isNewEntry {
+                FoodFinder_EntryPoint(
+                    carbsQuantity: $viewModel.carbsQuantity,
+                    foodType: $viewModel.foodType,
+                    absorptionTime: $viewModel.absorptionTime,
+                    absorptionTimeWasEdited: viewModel.absorptionTimeWasEdited,
+                    defaultAbsorptionTimes: viewModel.defaultAbsorptionTimes,
+                    favoriteFoodName: $foodFinderFoodName,
+                    favoriteFoodImage: $foodFinderImage
+                )
+            }
 
             CardSectionDivider()
             
