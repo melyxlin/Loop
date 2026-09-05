@@ -272,6 +272,37 @@
 		509B037A304C82BD00715755 /* SiteAtlas_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0377304C82BD00715755 /* SiteAtlas_SettingsView.swift */; };
 		509B037B304C82BD00715755 /* SiteAtlas_BodyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0376304C82BD00715755 /* SiteAtlas_BodyMapView.swift */; };
 		509B037C304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */; };
+		509B0381304C93FC00715755 /* FoodFinder_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037D304C93FC00715755 /* FoodFinder_Models.swift */; };
+		509B0382304C93FC00715755 /* FoodFinder_ScanResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037E304C93FC00715755 /* FoodFinder_ScanResult.swift */; };
+		509B0383304C93FC00715755 /* FoodFinder_VoiceResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037F304C93FC00715755 /* FoodFinder_VoiceResult.swift */; };
+		509B0386304C940D00715755 /* FoodFinder_FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0384304C940D00715755 /* FoodFinder_FeatureFlags.swift */; };
+		509B0395304C941D00715755 /* FoodFinder_OpenFoodFactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0390304C941D00715755 /* FoodFinder_OpenFoodFactsService.swift */; };
+		509B0397304C941D00715755 /* FoodFinder_VoiceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0393304C941D00715755 /* FoodFinder_VoiceService.swift */; };
+		509B0398304C941D00715755 /* FoodFinder_ScannerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0391304C941D00715755 /* FoodFinder_ScannerService.swift */; };
+		509B0399304C941D00715755 /* FoodFinder_SearchRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0392304C941D00715755 /* FoodFinder_SearchRouter.swift */; };
+		509B039A304C941D00715755 /* FoodFinder_ImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B038F304C941D00715755 /* FoodFinder_ImageStore.swift */; };
+		509B039B304C941D00715755 /* FoodFinder_ImageDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B038E304C941D00715755 /* FoodFinder_ImageDownloader.swift */; };
+		509B039C304C941D00715755 /* FoodFinder_AISettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B038B304C941D00715755 /* FoodFinder_AISettingsManager.swift */; };
+		509B039D304C941D00715755 /* FoodFinder_AIServiceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0389304C941D00715755 /* FoodFinder_AIServiceAdapter.swift */; };
+		509B039E304C941D00715755 /* FoodFinder_AIProviderConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0388304C941D00715755 /* FoodFinder_AIProviderConfig.swift */; };
+		509B039F304C941D00715755 /* FoodFinder_AIServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B038A304C941D00715755 /* FoodFinder_AIServiceManager.swift */; };
+		509B03A0304C941D00715755 /* FoodFinder_EmojiProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B038D304C941D00715755 /* FoodFinder_EmojiProvider.swift */; };
+		509B03A1304C941D00715755 /* FoodFinder_AIAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0387304C941D00715755 /* FoodFinder_AIAnalysis.swift */; };
+		509B03A5304C942E00715755 /* FoodFinder_SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03A3304C942E00715755 /* FoodFinder_SearchViewModel.swift */; };
+		509B03A6304C942E00715755 /* FoodFinder_FavoritesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03A2304C942E00715755 /* FoodFinder_FavoritesViewModel.swift */; };
+		509B03B3304C944700715755 /* FoodFinder_FavoriteEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03AA304C944700715755 /* FoodFinder_FavoriteEditView.swift */; };
+		509B03B5304C944700715755 /* FoodFinder_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03B0304C944700715755 /* FoodFinder_SettingsView.swift */; };
+		509B03B6304C944700715755 /* FoodFinder_VoiceSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03B1304C944700715755 /* FoodFinder_VoiceSearchView.swift */; };
+		509B03B7304C944700715755 /* FoodFinder_EntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03A8304C944700715755 /* FoodFinder_EntryPoint.swift */; };
+		509B03B8304C944700715755 /* FoodFinder_FavoriteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03A9304C944700715755 /* FoodFinder_FavoriteDetailView.swift */; };
+		509B03B9304C944700715755 /* FoodFinder_FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03AB304C944700715755 /* FoodFinder_FavoritesView.swift */; };
+		509B03BA304C944700715755 /* FoodFinder_ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03AD304C944700715755 /* FoodFinder_ScannerView.swift */; };
+		509B03BB304C944700715755 /* FoodFinder_SearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03AF304C944700715755 /* FoodFinder_SearchResultsView.swift */; };
+		509B03BC304C944700715755 /* FoodFinder_SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03AE304C944700715755 /* FoodFinder_SearchBar.swift */; };
+		509B03BD304C944700715755 /* FoodFinder_AICameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03A7304C944700715755 /* FoodFinder_AICameraView.swift */; };
+		509B03C0304C966300715755 /* FoodFinder_SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */; };
+		509B03C1304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */; };
+		509B03C3304C967E00715755 /* FoodFinder_AnalysisRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */; };
 		7D23667D21250C7E0028B67D /* LocalizedString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D23667C21250C7E0028B67D /* LocalizedString.swift */; };
 		7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E69CFFB2A16A77E00203CBD /* ResetLoopManager.swift */; };
 		824A01CBE97A4F7A9D32F7D6 /* Loop/Resources/Sounds/clear_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 4A645E0E2DDA534A635C9201 /* Loop/Resources/Sounds/clear_chimes.caf */; };
@@ -1106,6 +1137,37 @@
 		509B0376304C82BD00715755 /* SiteAtlas_BodyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_BodyMapView.swift; sourceTree = "<group>"; };
 		509B0377304C82BD00715755 /* SiteAtlas_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_SettingsView.swift; sourceTree = "<group>"; };
 		509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_SiteSelectionSheet.swift; sourceTree = "<group>"; };
+		509B037D304C93FC00715755 /* FoodFinder_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_Models.swift; sourceTree = "<group>"; };
+		509B037E304C93FC00715755 /* FoodFinder_ScanResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ScanResult.swift; sourceTree = "<group>"; };
+		509B037F304C93FC00715755 /* FoodFinder_VoiceResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_VoiceResult.swift; sourceTree = "<group>"; };
+		509B0384304C940D00715755 /* FoodFinder_FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_FeatureFlags.swift; sourceTree = "<group>"; };
+		509B0387304C941D00715755 /* FoodFinder_AIAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AIAnalysis.swift; sourceTree = "<group>"; };
+		509B0388304C941D00715755 /* FoodFinder_AIProviderConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AIProviderConfig.swift; sourceTree = "<group>"; };
+		509B0389304C941D00715755 /* FoodFinder_AIServiceAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AIServiceAdapter.swift; sourceTree = "<group>"; };
+		509B038A304C941D00715755 /* FoodFinder_AIServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AIServiceManager.swift; sourceTree = "<group>"; };
+		509B038B304C941D00715755 /* FoodFinder_AISettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AISettingsManager.swift; sourceTree = "<group>"; };
+		509B038D304C941D00715755 /* FoodFinder_EmojiProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_EmojiProvider.swift; sourceTree = "<group>"; };
+		509B038E304C941D00715755 /* FoodFinder_ImageDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ImageDownloader.swift; sourceTree = "<group>"; };
+		509B038F304C941D00715755 /* FoodFinder_ImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ImageStore.swift; sourceTree = "<group>"; };
+		509B0390304C941D00715755 /* FoodFinder_OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_OpenFoodFactsService.swift; sourceTree = "<group>"; };
+		509B0391304C941D00715755 /* FoodFinder_ScannerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ScannerService.swift; sourceTree = "<group>"; };
+		509B0392304C941D00715755 /* FoodFinder_SearchRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SearchRouter.swift; sourceTree = "<group>"; };
+		509B0393304C941D00715755 /* FoodFinder_VoiceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_VoiceService.swift; sourceTree = "<group>"; };
+		509B03A2304C942E00715755 /* FoodFinder_FavoritesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_FavoritesViewModel.swift; sourceTree = "<group>"; };
+		509B03A3304C942E00715755 /* FoodFinder_SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SearchViewModel.swift; sourceTree = "<group>"; };
+		509B03A7304C944700715755 /* FoodFinder_AICameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AICameraView.swift; sourceTree = "<group>"; };
+		509B03A8304C944700715755 /* FoodFinder_EntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_EntryPoint.swift; sourceTree = "<group>"; };
+		509B03A9304C944700715755 /* FoodFinder_FavoriteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_FavoriteDetailView.swift; sourceTree = "<group>"; };
+		509B03AA304C944700715755 /* FoodFinder_FavoriteEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_FavoriteEditView.swift; sourceTree = "<group>"; };
+		509B03AB304C944700715755 /* FoodFinder_FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_FavoritesView.swift; sourceTree = "<group>"; };
+		509B03AD304C944700715755 /* FoodFinder_ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ScannerView.swift; sourceTree = "<group>"; };
+		509B03AE304C944700715755 /* FoodFinder_SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SearchBar.swift; sourceTree = "<group>"; };
+		509B03AF304C944700715755 /* FoodFinder_SearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SearchResultsView.swift; sourceTree = "<group>"; };
+		509B03B0304C944700715755 /* FoodFinder_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SettingsView.swift; sourceTree = "<group>"; };
+		509B03B1304C944700715755 /* FoodFinder_VoiceSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_VoiceSearchView.swift; sourceTree = "<group>"; };
+		509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisHistoryStore.swift; sourceTree = "<group>"; };
+		509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SecureStorage.swift; sourceTree = "<group>"; };
+		509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisRecord.swift; sourceTree = "<group>"; };
 		5181B60CBF3CB2DA537F0475 /* Loop/Resources/Sounds/simple.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/simple.caf; sourceTree = SOURCE_ROOT; };
 		62F7CB5D5DC337E705032AC7 /* Loop/Resources/Sounds/dings.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/dings.caf; sourceTree = SOURCE_ROOT; };
 		6D5FCC7207E50ACC682E9E6E /* Loop/Resources/Sounds/honk.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/honk.caf; sourceTree = SOURCE_ROOT; };
@@ -1780,6 +1842,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				509B0380304C93FC00715755 /* FoodFinder */,
 				509B036D304C828800715755 /* SiteAtlas */,
 				509B0332304C775B00715755 /* BolusPro */,
 				5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */,
@@ -2099,6 +2162,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				509B03B2304C944700715755 /* FoodFinder */,
 				509B0379304C82BD00715755 /* SiteAtlas */,
 				509B0366304C77F800715755 /* BolusPro */,
 				501897E7304BC7D9004897D2 /* GraphDetailView.swift */,
@@ -2408,6 +2472,7 @@
 		509B0349304C77D300715755 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				509B0385304C940D00715755 /* FoodFinder */,
 				509B0335304C77D300715755 /* BolusPro */,
 				509B0348304C77D300715755 /* Sounds */,
 			);
@@ -2425,6 +2490,7 @@
 		509B035F304C77E500715755 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				509B0394304C941D00715755 /* FoodFinder */,
 				509B0372304C82A300715755 /* SiteAtlas */,
 				509B035E304C77E500715755 /* BolusPro */,
 			);
@@ -2469,6 +2535,72 @@
 				509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */,
 			);
 			path = SiteAtlas;
+			sourceTree = "<group>";
+		};
+		509B0380304C93FC00715755 /* FoodFinder */ = {
+			isa = PBXGroup;
+			children = (
+				509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */,
+				509B037D304C93FC00715755 /* FoodFinder_Models.swift */,
+				509B037E304C93FC00715755 /* FoodFinder_ScanResult.swift */,
+				509B037F304C93FC00715755 /* FoodFinder_VoiceResult.swift */,
+			);
+			path = FoodFinder;
+			sourceTree = "<group>";
+		};
+		509B0385304C940D00715755 /* FoodFinder */ = {
+			isa = PBXGroup;
+			children = (
+				509B0384304C940D00715755 /* FoodFinder_FeatureFlags.swift */,
+			);
+			path = FoodFinder;
+			sourceTree = "<group>";
+		};
+		509B0394304C941D00715755 /* FoodFinder */ = {
+			isa = PBXGroup;
+			children = (
+				509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */,
+				509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */,
+				509B0387304C941D00715755 /* FoodFinder_AIAnalysis.swift */,
+				509B0388304C941D00715755 /* FoodFinder_AIProviderConfig.swift */,
+				509B0389304C941D00715755 /* FoodFinder_AIServiceAdapter.swift */,
+				509B038A304C941D00715755 /* FoodFinder_AIServiceManager.swift */,
+				509B038B304C941D00715755 /* FoodFinder_AISettingsManager.swift */,
+				509B038D304C941D00715755 /* FoodFinder_EmojiProvider.swift */,
+				509B038E304C941D00715755 /* FoodFinder_ImageDownloader.swift */,
+				509B038F304C941D00715755 /* FoodFinder_ImageStore.swift */,
+				509B0390304C941D00715755 /* FoodFinder_OpenFoodFactsService.swift */,
+				509B0391304C941D00715755 /* FoodFinder_ScannerService.swift */,
+				509B0392304C941D00715755 /* FoodFinder_SearchRouter.swift */,
+				509B0393304C941D00715755 /* FoodFinder_VoiceService.swift */,
+			);
+			path = FoodFinder;
+			sourceTree = "<group>";
+		};
+		509B03A4304C942E00715755 /* FoodFinder */ = {
+			isa = PBXGroup;
+			children = (
+				509B03A2304C942E00715755 /* FoodFinder_FavoritesViewModel.swift */,
+				509B03A3304C942E00715755 /* FoodFinder_SearchViewModel.swift */,
+			);
+			path = FoodFinder;
+			sourceTree = "<group>";
+		};
+		509B03B2304C944700715755 /* FoodFinder */ = {
+			isa = PBXGroup;
+			children = (
+				509B03A7304C944700715755 /* FoodFinder_AICameraView.swift */,
+				509B03A8304C944700715755 /* FoodFinder_EntryPoint.swift */,
+				509B03A9304C944700715755 /* FoodFinder_FavoriteDetailView.swift */,
+				509B03AA304C944700715755 /* FoodFinder_FavoriteEditView.swift */,
+				509B03AB304C944700715755 /* FoodFinder_FavoritesView.swift */,
+				509B03AD304C944700715755 /* FoodFinder_ScannerView.swift */,
+				509B03AE304C944700715755 /* FoodFinder_SearchBar.swift */,
+				509B03AF304C944700715755 /* FoodFinder_SearchResultsView.swift */,
+				509B03B0304C944700715755 /* FoodFinder_SettingsView.swift */,
+				509B03B1304C944700715755 /* FoodFinder_VoiceSearchView.swift */,
+			);
+			path = FoodFinder;
 			sourceTree = "<group>";
 		};
 		7D23667B21250C5A0028B67D /* Common */ = {
@@ -2711,6 +2843,7 @@
 		897A5A9724C22DCE00C4E71D /* View Models */ = {
 			isa = PBXGroup;
 			children = (
+				509B03A4304C942E00715755 /* FoodFinder */,
 				C10509762D8B590D00118A37 /* StatusTableViewModel.swift */,
 				897A5A9824C22DE800C4E71D /* BolusEntryViewModel.swift */,
 				149A28BA2A853E5100052EDF /* CarbEntryViewModel.swift */,
@@ -3688,6 +3821,9 @@
 				1DA649A9244126DA00F61E75 /* InAppModalAlertScheduler.swift in Sources */,
 				43B260491ED248FB008CAA77 /* CarbEntryTableViewCell.swift in Sources */,
 				142CB75B2A60BFC30075748A /* FavoriteFoodsView.swift in Sources */,
+				509B0381304C93FC00715755 /* FoodFinder_Models.swift in Sources */,
+				509B0382304C93FC00715755 /* FoodFinder_ScanResult.swift in Sources */,
+				509B0383304C93FC00715755 /* FoodFinder_VoiceResult.swift in Sources */,
 				A9D5C5B625DC6C6A00534873 /* LoopAppManager.swift in Sources */,
 				4302F4E11D4E9C8900F0FCAF /* TextFieldTableViewController.swift in Sources */,
 				C16F51192B891DB600EFD7A1 /* StoredDataAlgorithmInput.swift in Sources */,
@@ -3745,6 +3881,7 @@
 				A9A056B524B94123007CF06D /* CriticalEventLogExportViewModel.swift in Sources */,
 				434FF1EE1CF27EEF000DB779 /* UITableViewCell.swift in Sources */,
 				84DF48C32F6A0AF600BEDB40 /* Image+Crop.swift in Sources */,
+				509B0386304C940D00715755 /* FoodFinder_FeatureFlags.swift in Sources */,
 				439BED2A1E76093C00B0AED5 /* CGMManager.swift in Sources */,
 				C16B983E26B4893300256B05 /* DoseEnactor.swift in Sources */,
 				3ED319962EB65A5C00820BCF /* LiveActivityManagementViewModel.swift in Sources */,
@@ -3759,6 +3896,20 @@
 				B4F3D25124AF890C0095CE44 /* BluetoothStateManager.swift in Sources */,
 				1DDE273D24AEA4B000796622 /* SettingsViewModel.swift in Sources */,
 				120490CB2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift in Sources */,
+				509B0395304C941D00715755 /* FoodFinder_OpenFoodFactsService.swift in Sources */,
+				509B0397304C941D00715755 /* FoodFinder_VoiceService.swift in Sources */,
+				509B0398304C941D00715755 /* FoodFinder_ScannerService.swift in Sources */,
+				509B0399304C941D00715755 /* FoodFinder_SearchRouter.swift in Sources */,
+				509B039A304C941D00715755 /* FoodFinder_ImageStore.swift in Sources */,
+				509B039B304C941D00715755 /* FoodFinder_ImageDownloader.swift in Sources */,
+				509B039C304C941D00715755 /* FoodFinder_AISettingsManager.swift in Sources */,
+				509B039D304C941D00715755 /* FoodFinder_AIServiceAdapter.swift in Sources */,
+				509B039E304C941D00715755 /* FoodFinder_AIProviderConfig.swift in Sources */,
+				509B039F304C941D00715755 /* FoodFinder_AIServiceManager.swift in Sources */,
+				509B03C0304C966300715755 /* FoodFinder_SecureStorage.swift in Sources */,
+				509B03C1304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift in Sources */,
+				509B03A0304C941D00715755 /* FoodFinder_EmojiProvider.swift in Sources */,
+				509B03A1304C941D00715755 /* FoodFinder_AIAnalysis.swift in Sources */,
 				FEEDB0000000000000000001 /* StatisticsViewModel.swift in Sources */,
 				DD3DBD292A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift in Sources */,
 				842E40A72F22F7E2000CCCE0 /* TintedContent.swift in Sources */,
@@ -3795,6 +3946,16 @@
 				C13DA2B024F6C7690098BB29 /* UIViewController.swift in Sources */,
 				A9C62D892331703100535612 /* LoggingServicesManager.swift in Sources */,
 				89E267FF229267DF00A3F2AF /* Optional.swift in Sources */,
+				509B03B3304C944700715755 /* FoodFinder_FavoriteEditView.swift in Sources */,
+				509B03B5304C944700715755 /* FoodFinder_SettingsView.swift in Sources */,
+				509B03B6304C944700715755 /* FoodFinder_VoiceSearchView.swift in Sources */,
+				509B03B7304C944700715755 /* FoodFinder_EntryPoint.swift in Sources */,
+				509B03B8304C944700715755 /* FoodFinder_FavoriteDetailView.swift in Sources */,
+				509B03B9304C944700715755 /* FoodFinder_FavoritesView.swift in Sources */,
+				509B03BA304C944700715755 /* FoodFinder_ScannerView.swift in Sources */,
+				509B03BB304C944700715755 /* FoodFinder_SearchResultsView.swift in Sources */,
+				509B03BC304C944700715755 /* FoodFinder_SearchBar.swift in Sources */,
+				509B03BD304C944700715755 /* FoodFinder_AICameraView.swift in Sources */,
 				43785E982120E7060057DED1 /* Intents.intentdefinition in Sources */,
 				1D82E6A025377C6B009131FB /* TrustedTimeChecker.swift in Sources */,
 				A98556852493F901000FD662 /* AlertStore+SimulatedCoreData.swift in Sources */,
@@ -3871,6 +4032,7 @@
 				43DFB62320D4CAE7008A7BAE /* PumpManager.swift in Sources */,
 				A9FB75F1252BE320004C7D3F /* BolusDosingDecision.swift in Sources */,
 				892A5D59222F0A27008961AB /* Debug.swift in Sources */,
+				509B03C3304C967E00715755 /* FoodFinder_AnalysisRecord.swift in Sources */,
 				431A8C401EC6E8AB00823B9C /* CircleMaskView.swift in Sources */,
 				1D05219D2469F1F5000EBBDE /* AlertStore.swift in Sources */,
 				14C9706A2C5A833100E8A01B /* CarbEffectChartView.swift in Sources */,
@@ -3900,6 +4062,8 @@
 				438D42FB1D7D11A4003244B0 /* PredictionInputEffectTableViewCell.swift in Sources */,
 				C1C660D1252E4DD5009B5C32 /* LoopConstants.swift in Sources */,
 				432E73CB1D24B3D6009AD15D /* RemoteDataServicesManager.swift in Sources */,
+				509B03A5304C942E00715755 /* FoodFinder_SearchViewModel.swift in Sources */,
+				509B03A6304C942E00715755 /* FoodFinder_FavoritesViewModel.swift in Sources */,
 				7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */,
 				B40D07C7251A89D500C1C6D7 /* GlucoseDisplay.swift in Sources */,
 				43C2FAE11EB656A500364AFF /* GlucoseEffectVelocity.swift in Sources */,
