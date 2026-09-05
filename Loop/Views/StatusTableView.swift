@@ -98,6 +98,7 @@ struct StatusTableView: View {
     var wrappedView: some View { wrapped }
     
     @Bindable var viewModel: StatusTableViewModel
+    @ObservedObject private var siteAtlasCoordinator = SiteAtlas_Coordinator.shared
     
     init(viewModel: StatusTableViewModel) {
         self.viewModel = viewModel
@@ -137,6 +138,9 @@ struct StatusTableView: View {
                     // This is the active preset; edit disabled
                     PresetDetentView(preset: preset, roundBasalRate: viewModel.loopDataManager.deliveryDelegate?.roundBasalRate, didTapEdit: { })
                         .accessibilityIdentifier("bar_Presets")
+                }
+                .sheet(isPresented: $siteAtlasCoordinator.pendingSiteLog) {
+                    SiteAtlas_SiteSelectionSheet()
                 }
         } tabs: {
             ActionTab(

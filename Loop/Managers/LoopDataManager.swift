@@ -210,6 +210,7 @@ final class LoopDataManager: ObservableObject {
         self.publishedMostRecentGlucoseDataDate = glucoseStore.latestGlucose?.startDate
         self.dosingStrategySelectionEnabled = dosingStrategySelectionEnabled
         self.publishedMostRecentPumpDataDate = mostRecentPumpDataDate
+        _ = SiteAtlas_Coordinator.shared
         
         if #available(iOS 16.2, *) {
             self.liveActivityManager = LiveActivityManager(

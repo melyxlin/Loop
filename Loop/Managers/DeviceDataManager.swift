@@ -1084,8 +1084,9 @@ extension DeviceDataManager: PumpManagerDelegate {
     }
 
     nonisolated func pumpManagerPumpWasReplaced(_ pumpManager: PumpManager) {
+        NotificationCenter.default.post(name: .pumpSiteDeactivated, object: nil)
     }
-    
+
     nonisolated func pumpManagerWillDeactivate(_ pumpManager: PumpManager) {
         Task { @MainActor in
             log.default("Pump manager with identifier '%{public}@' will deactivate", pumpManager.pluginIdentifier)
