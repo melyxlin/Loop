@@ -239,6 +239,32 @@
 		505CE3C1303CB78500E6F5CB /* AGPChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BB303CB78500E6F5CB /* AGPChartView.swift */; };
 		505CE3C5303CB7CA00E6F5CB /* StatisticsRangeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
+		509B0333304C775B00715755 /* BolusPro_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0331304C775B00715755 /* BolusPro_Models.swift */; };
+		509B034A304C77D300715755 /* high_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033F304C77D300715755 /* high_chimes.caf */; };
+		509B034B304C77D300715755 /* bright_alarm.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0339304C77D300715755 /* bright_alarm.caf */; };
+		509B034C304C77D300715755 /* crying.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033D304C77D300715755 /* crying.caf */; };
+		509B034D304C77D300715755 /* synth.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0345304C77D300715755 /* synth.caf */; };
+		509B034E304C77D300715755 /* urgent_low.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0347304C77D300715755 /* urgent_low.caf */; };
+		509B034F304C77D300715755 /* critical.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033C304C77D300715755 /* critical.caf */; };
+		509B0350304C77D300715755 /* mood_synth.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0342304C77D300715755 /* mood_synth.caf */; };
+		509B0351304C77D300715755 /* simple.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0343304C77D300715755 /* simple.caf */; };
+		509B0352304C77D300715755 /* chime.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033A304C77D300715755 /* chime.caf */; };
+		509B0353304C77D300715755 /* dings.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033E304C77D300715755 /* dings.caf */; };
+		509B0354304C77D300715755 /* clear_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033B304C77D300715755 /* clear_chimes.caf */; };
+		509B0355304C77D300715755 /* alarm.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0336304C77D300715755 /* alarm.caf */; };
+		509B0356304C77D300715755 /* spring.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0344304C77D300715755 /* spring.caf */; };
+		509B0357304C77D300715755 /* honk.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0340304C77D300715755 /* honk.caf */; };
+		509B0358304C77D300715755 /* bloop.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0338304C77D300715755 /* bloop.caf */; };
+		509B0359304C77D300715755 /* bloom.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0337304C77D300715755 /* bloom.caf */; };
+		509B035A304C77D300715755 /* minimal.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0341304C77D300715755 /* minimal.caf */; };
+		509B035B304C77D300715755 /* trill.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B0346304C77D300715755 /* trill.caf */; };
+		509B035C304C77D300715755 /* BolusPro_FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0334304C77D300715755 /* BolusPro_FeatureFlags.swift */; };
+		509B0360304C77E500715755 /* BolusPro_FPUCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B035D304C77E500715755 /* BolusPro_FPUCalculator.swift */; };
+		509B0367304C77F800715755 /* BolusPro_InfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0362304C77F800715755 /* BolusPro_InfoSheet.swift */; };
+		509B0368304C77F800715755 /* BolusPro_ManualMacroFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0363304C77F800715755 /* BolusPro_ManualMacroFields.swift */; };
+		509B0369304C77F800715755 /* BolusPro_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0365304C77F800715755 /* BolusPro_SettingsView.swift */; };
+		509B036A304C77F800715755 /* BolusPro_OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0364304C77F800715755 /* BolusPro_OnboardingView.swift */; };
+		509B036B304C77F800715755 /* BolusPro_CarbEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0361304C77F800715755 /* BolusPro_CarbEntrySection.swift */; };
 		7D23667D21250C7E0028B67D /* LocalizedString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D23667C21250C7E0028B67D /* LocalizedString.swift */; };
 		7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E69CFFB2A16A77E00203CBD /* ResetLoopManager.swift */; };
 		824A01CBE97A4F7A9D32F7D6 /* Loop/Resources/Sounds/clear_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 4A645E0E2DDA534A635C9201 /* Loop/Resources/Sounds/clear_chimes.caf */; };
@@ -1040,6 +1066,32 @@
 		505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInRangeBar.swift; sourceTree = "<group>"; };
 		505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeEditor.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
+		509B0331304C775B00715755 /* BolusPro_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_Models.swift; sourceTree = "<group>"; };
+		509B0334304C77D300715755 /* BolusPro_FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_FeatureFlags.swift; sourceTree = "<group>"; };
+		509B0336304C77D300715755 /* alarm.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = alarm.caf; sourceTree = "<group>"; };
+		509B0337304C77D300715755 /* bloom.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = bloom.caf; sourceTree = "<group>"; };
+		509B0338304C77D300715755 /* bloop.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = bloop.caf; sourceTree = "<group>"; };
+		509B0339304C77D300715755 /* bright_alarm.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = bright_alarm.caf; sourceTree = "<group>"; };
+		509B033A304C77D300715755 /* chime.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = chime.caf; sourceTree = "<group>"; };
+		509B033B304C77D300715755 /* clear_chimes.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = clear_chimes.caf; sourceTree = "<group>"; };
+		509B033C304C77D300715755 /* critical.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = critical.caf; sourceTree = "<group>"; };
+		509B033D304C77D300715755 /* crying.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = crying.caf; sourceTree = "<group>"; };
+		509B033E304C77D300715755 /* dings.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dings.caf; sourceTree = "<group>"; };
+		509B033F304C77D300715755 /* high_chimes.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = high_chimes.caf; sourceTree = "<group>"; };
+		509B0340304C77D300715755 /* honk.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = honk.caf; sourceTree = "<group>"; };
+		509B0341304C77D300715755 /* minimal.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = minimal.caf; sourceTree = "<group>"; };
+		509B0342304C77D300715755 /* mood_synth.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = mood_synth.caf; sourceTree = "<group>"; };
+		509B0343304C77D300715755 /* simple.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = simple.caf; sourceTree = "<group>"; };
+		509B0344304C77D300715755 /* spring.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = spring.caf; sourceTree = "<group>"; };
+		509B0345304C77D300715755 /* synth.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = synth.caf; sourceTree = "<group>"; };
+		509B0346304C77D300715755 /* trill.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = trill.caf; sourceTree = "<group>"; };
+		509B0347304C77D300715755 /* urgent_low.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = urgent_low.caf; sourceTree = "<group>"; };
+		509B035D304C77E500715755 /* BolusPro_FPUCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_FPUCalculator.swift; sourceTree = "<group>"; };
+		509B0361304C77F800715755 /* BolusPro_CarbEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_CarbEntrySection.swift; sourceTree = "<group>"; };
+		509B0362304C77F800715755 /* BolusPro_InfoSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_InfoSheet.swift; sourceTree = "<group>"; };
+		509B0363304C77F800715755 /* BolusPro_ManualMacroFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_ManualMacroFields.swift; sourceTree = "<group>"; };
+		509B0364304C77F800715755 /* BolusPro_OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_OnboardingView.swift; sourceTree = "<group>"; };
+		509B0365304C77F800715755 /* BolusPro_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_SettingsView.swift; sourceTree = "<group>"; };
 		5181B60CBF3CB2DA537F0475 /* Loop/Resources/Sounds/simple.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/simple.caf; sourceTree = SOURCE_ROOT; };
 		62F7CB5D5DC337E705032AC7 /* Loop/Resources/Sounds/dings.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/dings.caf; sourceTree = SOURCE_ROOT; };
 		6D5FCC7207E50ACC682E9E6E /* Loop/Resources/Sounds/honk.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/honk.caf; sourceTree = SOURCE_ROOT; };
@@ -1714,6 +1766,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				509B0332304C775B00715755 /* BolusPro */,
 				5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */,
 				DDC389F52A2B61750066E2E8 /* ApplicationFactorStrategy.swift */,
 				FEEDF0000000000000000000 /* GlucoseStatistics.swift */,
@@ -1786,6 +1839,8 @@
 		43776F8E1B8022E90074EA36 /* Loop */ = {
 			isa = PBXGroup;
 			children = (
+				509B035F304C77E500715755 /* Services */,
+				509B0349304C77D300715755 /* Resources */,
 				C16DA84022E8E104008624C2 /* Plugins */,
 				B66D1F322E6A5D6600471149 /* Localizable.xcstrings */,
 				B66D1F382E6A5D6600471149 /* InfoPlist.xcstrings */,
@@ -2029,6 +2084,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				509B0366304C77F800715755 /* BolusPro */,
 				501897E7304BC7D9004897D2 /* GraphDetailView.swift */,
 				84213C732D932EF400642E78 /* Insulin Delivery Log */,
 				B4001CED28CBBC82002FB414 /* AlertManagementView.swift */,
@@ -2290,6 +2346,84 @@
 				505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */,
 			);
 			path = Statistics;
+			sourceTree = "<group>";
+		};
+		509B0332304C775B00715755 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				509B0331304C775B00715755 /* BolusPro_Models.swift */,
+			);
+			path = BolusPro;
+			sourceTree = "<group>";
+		};
+		509B0335304C77D300715755 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				509B0334304C77D300715755 /* BolusPro_FeatureFlags.swift */,
+			);
+			path = BolusPro;
+			sourceTree = "<group>";
+		};
+		509B0348304C77D300715755 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				509B0336304C77D300715755 /* alarm.caf */,
+				509B0337304C77D300715755 /* bloom.caf */,
+				509B0338304C77D300715755 /* bloop.caf */,
+				509B0339304C77D300715755 /* bright_alarm.caf */,
+				509B033A304C77D300715755 /* chime.caf */,
+				509B033B304C77D300715755 /* clear_chimes.caf */,
+				509B033C304C77D300715755 /* critical.caf */,
+				509B033D304C77D300715755 /* crying.caf */,
+				509B033E304C77D300715755 /* dings.caf */,
+				509B033F304C77D300715755 /* high_chimes.caf */,
+				509B0340304C77D300715755 /* honk.caf */,
+				509B0341304C77D300715755 /* minimal.caf */,
+				509B0342304C77D300715755 /* mood_synth.caf */,
+				509B0343304C77D300715755 /* simple.caf */,
+				509B0344304C77D300715755 /* spring.caf */,
+				509B0345304C77D300715755 /* synth.caf */,
+				509B0346304C77D300715755 /* trill.caf */,
+				509B0347304C77D300715755 /* urgent_low.caf */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
+		509B0349304C77D300715755 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				509B0335304C77D300715755 /* BolusPro */,
+				509B0348304C77D300715755 /* Sounds */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		509B035E304C77E500715755 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				509B035D304C77E500715755 /* BolusPro_FPUCalculator.swift */,
+			);
+			path = BolusPro;
+			sourceTree = "<group>";
+		};
+		509B035F304C77E500715755 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				509B035E304C77E500715755 /* BolusPro */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		509B0366304C77F800715755 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				509B0361304C77F800715755 /* BolusPro_CarbEntrySection.swift */,
+				509B0362304C77F800715755 /* BolusPro_InfoSheet.swift */,
+				509B0363304C77F800715755 /* BolusPro_ManualMacroFields.swift */,
+				509B0364304C77F800715755 /* BolusPro_OnboardingView.swift */,
+				509B0365304C77F800715755 /* BolusPro_SettingsView.swift */,
+			);
+			path = BolusPro;
 			sourceTree = "<group>";
 		};
 		7D23667B21250C5A0028B67D /* Common */ = {
@@ -3157,6 +3291,24 @@
 			buildActionMask = 2147483647;
 			files = (
 				B66D1F392E6A5D6600471149 /* InfoPlist.xcstrings in Resources */,
+				509B034A304C77D300715755 /* high_chimes.caf in Resources */,
+				509B034B304C77D300715755 /* bright_alarm.caf in Resources */,
+				509B034C304C77D300715755 /* crying.caf in Resources */,
+				509B034D304C77D300715755 /* synth.caf in Resources */,
+				509B034E304C77D300715755 /* urgent_low.caf in Resources */,
+				509B034F304C77D300715755 /* critical.caf in Resources */,
+				509B0350304C77D300715755 /* mood_synth.caf in Resources */,
+				509B0351304C77D300715755 /* simple.caf in Resources */,
+				509B0352304C77D300715755 /* chime.caf in Resources */,
+				509B0353304C77D300715755 /* dings.caf in Resources */,
+				509B0354304C77D300715755 /* clear_chimes.caf in Resources */,
+				509B0355304C77D300715755 /* alarm.caf in Resources */,
+				509B0356304C77D300715755 /* spring.caf in Resources */,
+				509B0357304C77D300715755 /* honk.caf in Resources */,
+				509B0358304C77D300715755 /* bloop.caf in Resources */,
+				509B0359304C77D300715755 /* bloom.caf in Resources */,
+				509B035A304C77D300715755 /* minimal.caf in Resources */,
+				509B035B304C77D300715755 /* trill.caf in Resources */,
 				C13255D6223E7BE2008AF50C /* BolusProgressTableViewCell.xib in Resources */,
 				C1EE9E812A38D0FB0064784A /* BuildDetails.plist in Resources */,
 				43FCBBC21E51710B00343C1B /* LaunchScreen.storyboard in Resources */,
@@ -3494,7 +3646,9 @@
 				C1742332259BEADC00399C9D /* ManualEntryDoseView.swift in Sources */,
 				43F64DD91D9C92C900D24DC6 /* TitleSubtitleTableViewCell.swift in Sources */,
 				84213C8D2D949E8100642E78 /* InsulinDeliveryLogEventRow.swift in Sources */,
+				509B035C304C77D300715755 /* BolusPro_FeatureFlags.swift in Sources */,
 				501897E6304BC7A8004897D2 /* GraphDetailViewModel.swift in Sources */,
+				509B0333304C775B00715755 /* BolusPro_Models.swift in Sources */,
 				43FCEEA9221A615B0013DD30 /* StatusChartsManager.swift in Sources */,
 				A9F703752489C9A000C98AD8 /* GlucoseStore+SimulatedCoreData.swift in Sources */,
 				E95D380524EADF78005E2F50 /* GlucoseStoreProtocol.swift in Sources */,
@@ -3564,6 +3718,7 @@
 				842E40AF2F22F7E2000CCCE0 /* PresetsTrainingCard.swift in Sources */,
 				842E40B12F22F7E2000CCCE0 /* CommonUseStep.swift in Sources */,
 				842E40B22F22F7E2000CCCE0 /* TherapySettingsExampleView.swift in Sources */,
+				509B0360304C77E500715755 /* BolusPro_FPUCalculator.swift in Sources */,
 				A9CBE458248AB564008E7BA2 /* DoseStore+SimulatedCoreData.swift in Sources */,
 				897A5A9924C22DE800C4E71D /* BolusEntryViewModel.swift in Sources */,
 				4374B5EF209D84BF00D17AA8 /* OSLog.swift in Sources */,
@@ -3684,6 +3839,11 @@
 				430D85891F44037000AF2D4F /* HUDViewTableViewCell.swift in Sources */,
 				43A51E211EB6DBDD000736CC /* LoopChartsTableViewController.swift in Sources */,
 				8968B1122408B3520074BB48 /* UIFont.swift in Sources */,
+				509B0367304C77F800715755 /* BolusPro_InfoSheet.swift in Sources */,
+				509B0368304C77F800715755 /* BolusPro_ManualMacroFields.swift in Sources */,
+				509B0369304C77F800715755 /* BolusPro_SettingsView.swift in Sources */,
+				509B036A304C77F800715755 /* BolusPro_OnboardingView.swift in Sources */,
+				509B036B304C77F800715755 /* BolusPro_CarbEntrySection.swift in Sources */,
 				1452F4A92A851C9400F8B9E4 /* FavoriteFoodAddEditViewModel.swift in Sources */,
 				438D42FB1D7D11A4003244B0 /* PredictionInputEffectTableViewCell.swift in Sources */,
 				C1C660D1252E4DD5009B5C32 /* LoopConstants.swift in Sources */,

@@ -51,6 +51,7 @@ final class CarbEntryViewModel: ObservableObject {
     
     @Published var alert: CarbEntryViewModel.Alert?
     @Published var warnings: Set<Warning> = []
+    @Published var bolusProState: BolusProEntryState = .off
 
     @Published var bolusViewModel: BolusEntryViewModel?
     
@@ -221,6 +222,16 @@ final class CarbEntryViewModel: ObservableObject {
             potentialCarbEntry: updatedCarbEntry,
             selectedCarbAbsorptionTimeEmoji: selectedDefaultAbsorptionTimeEmoji
         )
+        
+        if BolusPro_FeatureFlags.isEnabled,
+           let primary = updatedCarbEntry,
+           let secondary = BolusPro_FPUCalculator.makeSecondaryEntry(
+               primaryStartDate: primary.startDate,
+               state: bolusProState
+           )
+        {
+            viewModel.bolusProSecondaryEntry = secondary
+        }
         
         viewModel.analyticsServicesManager = analyticsServicesManager
         viewModel.deliveryDelegate = deliveryDelegate

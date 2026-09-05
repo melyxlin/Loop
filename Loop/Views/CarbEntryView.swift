@@ -146,7 +146,18 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
             CardSectionDivider()
             
             AbsorptionTimePickerRow(absorptionTime: $viewModel.absorptionTime, isFocused: absorptionTimeFocused, validDurationRange: viewModel.absorptionRimesRange, showHowAbsorptionTimeWorks: $showHowAbsorptionTimeWorks)
+            
                 .padding(.bottom, 2)
+            
+            if BolusPro_FeatureFlags.isEnabled {
+                CardSectionDivider()
+
+                BolusPro_CarbEntrySection(
+                    state: $viewModel.bolusProState,
+                    primaryCarbsGrams: viewModel.carbsQuantity,
+                    primaryAbsorptionTime: viewModel.absorptionTime
+                )
+            }
         }
         .padding(.vertical, 12)
         .padding(.horizontal)

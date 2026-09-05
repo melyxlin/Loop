@@ -89,6 +89,7 @@ struct SettingsView: View {
                         therapySection
                     }
                     presetsSection
+                    bolusProSection
                     deviceSettingsSection
                     healthAccessSection
                     if FeatureFlags.allowExperimentalFeatures {
@@ -437,6 +438,27 @@ extension SettingsView {
                 label: NSLocalizedString("Presets", comment: "Title text for button to Preset Settings"),
                 descriptiveText: NSLocalizedString("Temporary Settings Adjustments", comment: "Descriptive text for Preset Settings")
             ).accessibilityIdentifier("button_Presets")
+        }
+    }
+    
+    private var bolusProSection: some View {
+        Section {
+            NavigationLink(destination: BolusPro_SettingsView()) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "drop.halffull")
+                        .font(.system(size: 30)),
+                    label: NSLocalizedString(
+                        "BolusPro",
+                        comment: "Title text for button to BolusPro Settings"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "Protein & fat-aware bolusing for long absorption meals",
+                        comment: "Descriptive text for BolusPro Settings"
+                    )
+                )
+            }
         }
     }
 

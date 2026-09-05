@@ -109,6 +109,7 @@ final class BolusEntryViewModel: ObservableObject {
 
     let originalCarbEntry: StoredCarbEntry?
     let potentialCarbEntry: NewCarbEntry?
+    var bolusProSecondaryEntry: NewCarbEntry?
     let selectedCarbAbsorptionTimeEmoji: String?
 
     @Published var recommendedBolus: LoopQuantity?
@@ -386,9 +387,33 @@ final class BolusEntryViewModel: ObservableObject {
                     log.error("Failed to donate intent: %{public}@", String(describing: error))
                 }
             }
+//            if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
+//                self.dosingDecision.carbEntry = storedCarbEntry
+//                self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram), isFavoriteFood: storedCarbEntry.favoriteFoodID != nil)
+//            } else {
+//                self.presentAlert(.carbEntryPersistenceFailure)
+//                return false
+//            }
             if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
                 self.dosingDecision.carbEntry = storedCarbEntry
-                self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram), isFavoriteFood: storedCarbEntry.favoriteFoodID != nil)
+                self.analyticsServicesManager?.didAddCarbs(
+                    source: "Phone",
+                    amount: storedCarbEntry.quantity.doubleValue(for: .gram),
+                    isFavoriteFood: storedCarbEntry.favoriteFoodID != nil
+                )
+
+                // BolusPro — save the delayed fat/protein carb-equivalent entry.
+                if let secondary = bolusProSecondaryEntry {
+                    if let storedSecondary = await saveCarbEntry(secondary, replacingEntry: nil) {
+                        self.analyticsServicesManager?.didAddCarbs(
+                            source: "BolusPro",
+                            amount: storedSecondary.quantity.doubleValue(for: .gram),
+                            isFavoriteFood: false
+                        )
+                    } else {
+                        log.error("BolusPro secondary entry save failed — primary already saved.")
+                    }
+                }
             } else {
                 self.presentAlert(.carbEntryPersistenceFailure)
                 return false
