@@ -9,10 +9,8 @@ import Foundation
 import LoopKit
 
 struct BolusProStoredMeal: Codable, Equatable {
-    let primaryEntryUUID: UUID
-
-    var secondaryEntryUUID: UUID?
-
+    let primaryEntryIdentifier: String
+    var secondaryEntryIdentifier: String?
     var fatGrams: Double
     var proteinGrams: Double
 
@@ -33,18 +31,30 @@ struct BolusProStoredMeal: Codable, Equatable {
     }
 
     init(
-        primaryEntryUUID: UUID,
-        secondaryEntryUUID: UUID?,
+        primaryEntryIdentifier: String,
+        secondaryEntryIdentifier: String?,
         state: BolusProEntryState
     ) {
-        self.primaryEntryUUID = primaryEntryUUID
-        self.secondaryEntryUUID = secondaryEntryUUID
+        self.primaryEntryIdentifier = primaryEntryIdentifier
+        self.secondaryEntryIdentifier = secondaryEntryIdentifier
         self.fatGrams = state.macros.fatGrams
         self.proteinGrams = state.macros.proteinGrams
         self.enabled = state.enabled
         self.sliderCoverage = state.sliderCoverage
         self.autoDetected = state.autoDetected
     }
+}
+
+private func identifier(for entry: StoredCarbEntry) -> String? {
+    if let syncIdentifier = entry.syncIdentifier {
+        return "sync:\(syncIdentifier)"
+    }
+
+    if let uuid = entry.uuid {
+        return "uuid:\(uuid.uuidString)"
+    }
+
+    return nil
 }
 
 final class BolusProMealStore {
@@ -58,40 +68,40 @@ final class BolusProMealStore {
     }
 
     func meal(for primaryEntry: StoredCarbEntry) -> BolusProStoredMeal? {
-        guard let uuid = primaryEntry.uuid else {
+        guard let identifier = identifier(for: primaryEntry) else {
             return nil
         }
 
-        return meals[uuid.uuidString]
+        return meals[identifier]
     }
-
+    
     func save(
         state: BolusProEntryState,
         primaryEntry: StoredCarbEntry,
         secondaryEntry: StoredCarbEntry?
     ) {
-        guard let primaryUUID = primaryEntry.uuid else {
+        guard let primaryIdentifier = identifier(for: primaryEntry) else {
             return
         }
 
         let meal = BolusProStoredMeal(
-            primaryEntryUUID: primaryUUID,
-            secondaryEntryUUID: secondaryEntry?.uuid,
+            primaryEntryIdentifier: primaryIdentifier,
+            secondaryEntryIdentifier: secondaryEntry.flatMap { identifier(for: $0) },
             state: state
         )
 
         var updatedMeals = meals
-        updatedMeals[primaryUUID.uuidString] = meal
+        updatedMeals[primaryIdentifier] = meal
         meals = updatedMeals
     }
 
     func remove(for primaryEntry: StoredCarbEntry) {
-        guard let uuid = primaryEntry.uuid else {
+        guard let identifier = identifier(for: primaryEntry) else {
             return
         }
 
         var updatedMeals = meals
-        updatedMeals.removeValue(forKey: uuid.uuidString)
+        updatedMeals.removeValue(forKey: identifier)
         meals = updatedMeals
     }
 

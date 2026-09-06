@@ -1538,7 +1538,20 @@ extension LoopDataManager: SimpleBolusViewModelDelegate {
     
 }
 
-extension LoopDataManager: BolusEntryViewModelDelegate {    
+extension LoopDataManager: BolusEntryViewModelDelegate {
+    func getCarbEntry(
+        withSyncIdentifier syncIdentifier: String
+    ) async throws -> StoredCarbEntry? {
+        let entries = try await carbStore.getCarbEntries(
+            start: nil,
+            end: nil
+        )
+
+        return entries.first {
+            $0.syncIdentifier == syncIdentifier
+        }
+    }
+    
     func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws -> LoopKit.StoredGlucoseSample {
         let storedSamples = try await addGlucose([sample])
         return storedSamples.first!

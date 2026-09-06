@@ -32,6 +32,7 @@ protocol BolusEntryViewModelDelegate: AnyObject {
 
     func addCarbEntry(_ carbEntry: NewCarbEntry, replacing replacingEntry: StoredCarbEntry?) async throws -> StoredCarbEntry
     func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry?
+    func getCarbEntry(withSyncIdentifier syncIdentifier: String) async throws -> StoredCarbEntry?
     func deleteCarbEntry(_ entry: StoredCarbEntry) async throws -> Bool
     func saveGlucose(sample: NewGlucoseSample) async throws -> StoredGlucoseSample
     func storeManualBolusDosingDecision(_ bolusDosingDecision: BolusDosingDecision, withDate date: Date) async
@@ -302,8 +303,20 @@ final class BolusEntryViewModel: ObservableObject {
         return recommendedBolusAmount > 0
     }
 
-    func saveCarbEntry(_ entry: NewCarbEntry, replacingEntry: StoredCarbEntry?) async -> StoredCarbEntry? {
-        try? await delegate?.addCarbEntry(entry, replacing: replacingEntry)
+    func saveCarbEntry(
+        _ entry: NewCarbEntry,
+        replacingEntry: StoredCarbEntry?
+    ) async -> StoredCarbEntry? {
+        do {
+            let storedEntry = try await delegate?.addCarbEntry(
+                entry,
+                replacing: replacingEntry
+            )
+
+            return storedEntry
+        } catch {
+            return nil
+        }
     }
 
     // returns true if action succeeded
@@ -407,7 +420,7 @@ final class BolusEntryViewModel: ObservableObject {
 
                 // BolusPro — save or replace the delayed fat/protein carb-equivalent
                 // entry and persist its relationship to the primary meal.
-                if let state = bolusProState {
+                if let state = bolusProState 
                     var storedSecondaryEntry: StoredCarbEntry?
 
                     // If this is an edit, find the secondary entry that belongs
@@ -416,11 +429,27 @@ final class BolusEntryViewModel: ObservableObject {
 
                     if let originalCarbEntry,
                        let storedMeal = BolusProMealStore.shared.meal(for: originalCarbEntry),
-                       let secondaryUUID = storedMeal.secondaryEntryUUID
+                       let secondaryIdentifier = storedMeal.secondaryEntryIdentifier
                     {
-                        existingSecondaryEntry = try? await delegate.getCarbEntry(
-                            withUUID: secondaryUUID
-                        )
+                        if secondaryIdentifier.hasPrefix("sync:") {
+                            let syncIdentifier = String(
+                                secondaryIdentifier.dropFirst("sync:".count)
+                            )
+
+                            existingSecondaryEntry = try? await delegate.getCarbEntry(
+                                withSyncIdentifier: syncIdentifier
+                            )
+                        } else if secondaryIdentifier.hasPrefix("uuid:") {
+                            let uuidString = String(
+                                secondaryIdentifier.dropFirst("uuid:".count)
+                            )
+
+                            if let uuid = UUID(uuidString: uuidString) {
+                                existingSecondaryEntry = try? await delegate.getCarbEntry(
+                                    withUUID: uuid
+                                )
+                            }
+                        }
                     }
 
                     if let secondary = bolusProSecondaryEntry {
