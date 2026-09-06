@@ -103,17 +103,32 @@ struct ActivePresetBanner: View {
     }
     
     var body: some View {
-        HStack {
-            title
-                .font(.body.weight(.semibold))
-            
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                title
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                subtitle
+                    .font(.subheadline)
+                    .foregroundStyle(
+                        Color(UIColor.label.withAlphaComponent(0.75))
+                    )
+            }
+
             Spacer()
-            
-            subtitle
-                .font(.subheadline)
+
+            Image(systemName: "chevron.right")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
-        .padding()
-        .foregroundStyle(Color(UIColor.systemBackground))
-        .background(Color.presets)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.presets.opacity(0.10))
+        )
+        .padding(.horizontal, 8)
+        .padding(.bottom, 8)
     }
 }

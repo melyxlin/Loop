@@ -486,7 +486,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
     private var refreshContext = RefreshContext.all
 
     private var shouldShowPresets: Bool {
-        presetsRowMode.hasRow
+//        presetsRowMode.hasRow
+        false;
     }
     
     private var shouldShowHUD: Bool {
@@ -822,11 +823,13 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     private enum StatusRowMode {
         case hidden
+        case preset(TemporaryScheduleOverride)
         case enactingBolus
         case bolusing(dose: DoseEntry)
         case cancelingBolus
         case canceledBolus(dose: DoseEntry)
         case pumpSuspended(resuming: Bool)
+        case manualTempBasal(dose: DoseEntry)
         case onboardingSuspended
         case recommendManualGlucoseEntry
 
@@ -882,7 +885,20 @@ final class StatusTableViewController: LoopChartsTableViewController {
         } else if onboardingManager.isComplete,
                   deviceManager.isGlucoseValueStale {
             statusRowMode = .recommendManualGlucoseEntry
-        } else {
+        } else if case .tempBasal(let dose) = basalDeliveryState,
+                  dose.automatic == false,
+                  dose.endDate > Date()
+        {
+            statusRowMode = .manualTempBasal(dose: dose)
+
+        }
+        else if let preset = temporaryPresetsManager.scheduleOverride
+                    ?? temporaryPresetsManager.preMealOverride,
+                  !preset.hasFinished()
+        {
+            statusRowMode = .preset(preset)
+        }
+        else {
             statusRowMode = .hidden
         }
 
@@ -1196,6 +1212,30 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 case .hidden:
                     let cell = getTitleSubtitleCell()
                     return cell
+                case .preset(let override):
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        ActivePresetBanner(override: override)
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .default
+
+                    return cell
+                case .manualTempBasal(let dose):
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        ManualTempBasalBanner(dose: dose)
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .default
+
+                    return cell
                 case .enactingBolus:
                     let progressCell = tableView.dequeueReusableCell(withIdentifier: BolusProgressTableViewCell.className, for: indexPath) as! BolusProgressTableViewCell
                     progressCell.selectionStyle = .none
@@ -1219,17 +1259,16 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     progressCell.configuration = .canceled(delivered: dose.deliveredUnits ?? 0, ofTotalVolume: dose.programmedUnits)
                     return progressCell
                 case .pumpSuspended(let resuming):
-                    let cell = tableView.dequeueReusableCell(withIdentifier: InsulinSuspendedTableViewCell.className, for: indexPath) as! InsulinSuspendedTableViewCell
-                    cell.selectionStyle = .default
-                    if resuming {
-                        cell.activityIndicator.startAnimating()
-                        cell.activityIndicator.isHidden = false
-                    } else {
-                        cell.tapToResumeLabel.text = NSLocalizedString("Tap to Resume", comment: "The subtitle of the cell displaying an action to resume insulin delivery")
-                        cell.tapToResumeLabel.accessibilityIdentifier = "text_InsulinTapToResume"
-                        cell.activityIndicator.stopAnimating()
-                        cell.activityIndicator.isHidden = true
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        InsulinSuspendedBanner(resuming: resuming)
                     }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = resuming ? .none : .default
+
                     return cell
                 case .onboardingSuspended:
                     let cell = tableView.dequeueReusableCell(withIdentifier: IconTitleSubtitleTableViewCell.className, for: indexPath) as! IconTitleSubtitleTableViewCell
@@ -1388,6 +1427,38 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 tableView.deselectRow(at: indexPath, animated: true)
 
                 switch statusRowMode {
+                case .preset:
+                    statusTableViewModel.pendingPreset = temporaryPresetsManager.activePreset
+                case .manualTempBasal:
+                    deviceManager.pumpManager?.enactTempBasal(
+                        decisionId: nil,
+                        unitsPerHour: 0,
+                        for: 0
+                    ) { error in
+                        DispatchQueue.main.async {
+                            if let error = error {
+                                let alert = UIAlertController(
+                                    with: error,
+                                    title: NSLocalizedString(
+                                        "Failed to Cancel Temporary Basal",
+                                        comment: "Alert title when canceling a manual temporary basal fails"
+                                    )
+                                )
+
+                                self.present(alert, animated: true)
+                            } else {
+                                self.updateBannerAndHUDandStatusRows(
+                                    statusRowMode: self.determineStatusRowMode(),
+                                    newSize: nil,
+                                    animated: true
+                                )
+
+                                Task {
+                                    await self.reloadData()
+                                }
+                            }
+                        }
+                    }
                 case .pumpSuspended(let resuming) where !resuming:
                     updateBannerAndHUDandStatusRows(statusRowMode: .pumpSuspended(resuming: true) , newSize: nil, animated: true)
                     deviceManager.pumpManager?.resumeDelivery() { (error) in
