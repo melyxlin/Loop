@@ -823,6 +823,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     private enum StatusRowMode {
         case hidden
+        case noAdjustment
         case preset(TemporaryScheduleOverride)
         case enactingBolus
         case bolusing(dose: DoseEntry)
@@ -872,12 +873,12 @@ final class StatusTableViewController: LoopChartsTableViewController {
                    if dose.endDate.timeIntervalSinceNow > 0 {
                        statusRowMode = .bolusing(dose: dose)
                    } else {
-                       statusRowMode = .hidden
+                       statusRowMode = .noAdjustment
                    }
                } else if bolusProgressReporter?.progress.isComplete == false {
                    statusRowMode = .bolusing(dose: dose)
                } else {
-                   statusRowMode = .hidden
+                   statusRowMode = .noAdjustment
                }
         } else if !onboardingManager.isComplete,
                   deviceManager.pumpManager?.isOnboarded == true {
@@ -899,7 +900,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
             statusRowMode = .preset(preset)
         }
         else {
-            statusRowMode = .hidden
+            statusRowMode = .noAdjustment
         }
 
         return statusRowMode
@@ -1211,6 +1212,18 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 switch statusRowMode {
                 case .hidden:
                     let cell = getTitleSubtitleCell()
+                    return cell
+                case .noAdjustment:
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        NoActiveAdjustmentBanner(profileName: UserDefaults.standard.string(forKey: "currentProfileName"))
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .none
+
                     return cell
                 case .preset(let override):
                     let cell = UITableViewCell()
