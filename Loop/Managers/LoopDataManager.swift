@@ -1099,6 +1099,15 @@ extension LoopDataManager {
         self.temporaryPresetsManager.endPreMealOverride()
         return storedCarbEntry
     }
+    
+    func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry? {
+        let entries = try await carbStore.getCarbEntries(
+            start: nil,
+            end: nil
+        )
+
+        return entries.first { $0.uuid == uuid }
+    }
 
     @discardableResult
     func deleteCarbEntry(_ oldEntry: StoredCarbEntry) async throws -> Bool {

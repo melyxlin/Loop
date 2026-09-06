@@ -31,6 +31,8 @@ protocol BolusEntryViewModelDelegate: AnyObject {
     func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool) -> GlucoseRangeSchedule?
 
     func addCarbEntry(_ carbEntry: NewCarbEntry, replacing replacingEntry: StoredCarbEntry?) async throws -> StoredCarbEntry
+    func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry?
+    func deleteCarbEntry(_ entry: StoredCarbEntry) async throws -> Bool
     func saveGlucose(sample: NewGlucoseSample) async throws -> StoredGlucoseSample
     func storeManualBolusDosingDecision(_ bolusDosingDecision: BolusDosingDecision, withDate date: Date) async
     func enactBolus(units: Double, decisionId: UUID?, activationType: BolusActivationType) async throws
@@ -110,6 +112,7 @@ final class BolusEntryViewModel: ObservableObject {
     let originalCarbEntry: StoredCarbEntry?
     let potentialCarbEntry: NewCarbEntry?
     var bolusProSecondaryEntry: NewCarbEntry?
+    var bolusProState: BolusProEntryState?
     let selectedCarbAbsorptionTimeEmoji: String?
 
     @Published var recommendedBolus: LoopQuantity?
@@ -402,17 +405,55 @@ final class BolusEntryViewModel: ObservableObject {
                     isFavoriteFood: storedCarbEntry.favoriteFoodID != nil
                 )
 
-                // BolusPro — save the delayed fat/protein carb-equivalent entry.
-                if let secondary = bolusProSecondaryEntry {
-                    if let storedSecondary = await saveCarbEntry(secondary, replacingEntry: nil) {
-                        self.analyticsServicesManager?.didAddCarbs(
-                            source: "BolusPro",
-                            amount: storedSecondary.quantity.doubleValue(for: .gram),
-                            isFavoriteFood: false
+                // BolusPro — save or replace the delayed fat/protein carb-equivalent
+                // entry and persist its relationship to the primary meal.
+                if let state = bolusProState {
+                    var storedSecondaryEntry: StoredCarbEntry?
+
+                    // If this is an edit, find the secondary entry that belongs
+                    // to the original primary meal.
+                    var existingSecondaryEntry: StoredCarbEntry?
+
+                    if let originalCarbEntry,
+                       let storedMeal = BolusProMealStore.shared.meal(for: originalCarbEntry),
+                       let secondaryUUID = storedMeal.secondaryEntryUUID
+                    {
+                        existingSecondaryEntry = try? await delegate.getCarbEntry(
+                            withUUID: secondaryUUID
                         )
-                    } else {
-                        log.error("BolusPro secondary entry save failed — primary already saved.")
                     }
+
+                    if let secondary = bolusProSecondaryEntry {
+                        if let storedSecondary = await saveCarbEntry(
+                            secondary,
+                            replacingEntry: existingSecondaryEntry
+                        ) {
+                            storedSecondaryEntry = storedSecondary
+
+                            self.analyticsServicesManager?.didAddCarbs(
+                                source: "BolusPro",
+                                amount: storedSecondary.quantity.doubleValue(for: .gram),
+                                isFavoriteFood: false
+                            )
+                        } else {
+                            log.error("BolusPro secondary entry save failed — primary already saved.")
+                        }
+                    } else if let existingSecondaryEntry {
+                        do {
+                            _ = try await delegate.deleteCarbEntry(existingSecondaryEntry)
+                        } catch {
+                            log.error(
+                                "BolusPro secondary entry deletion failed: %{public}@",
+                                String(describing: error)
+                            )
+                        }
+                    }
+
+                    BolusProMealStore.shared.save(
+                        state: state,
+                        primaryEntry: storedCarbEntry,
+                        secondaryEntry: storedSecondaryEntry
+                    )
                 }
             } else {
                 self.presentAlert(.carbEntryPersistenceFailure)

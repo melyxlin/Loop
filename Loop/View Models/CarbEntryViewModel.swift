@@ -128,6 +128,9 @@ final class CarbEntryViewModel: ObservableObject {
     init(delegate: CarbEntryViewModelDelegate, originalCarbEntry: StoredCarbEntry) {
         self.delegate = delegate
         self.originalCarbEntry = originalCarbEntry
+        self.bolusProState = BolusProMealStore.shared.meal(
+            for: originalCarbEntry
+        )?.state ?? .off
         self.defaultAbsorptionTimes = delegate.defaultAbsorptionTimes
 
         self.carbsQuantity = originalCarbEntry.quantity.doubleValue(for: preferredCarbUnit)
@@ -148,12 +151,23 @@ final class CarbEntryViewModel: ObservableObject {
     }
     
     var originalCarbEntry: StoredCarbEntry? = nil
+    private var bolusProStateWasEdited: Bool {
+        guard let originalCarbEntry else {
+            return false
+        }
+
+        let originalState = BolusProMealStore.shared.meal(
+            for: originalCarbEntry
+        )?.state ?? .off
+
+        return bolusProState != originalState
+    }
     
     private var updatedCarbEntry: NewCarbEntry? {
         if let quantity = carbsQuantity, quantity != 0 {
             let favoriteFoodID = selectedFavoriteFoodIndex == -1 ? nil : favoriteFoods[selectedFavoriteFoodIndex].id
 
-            if let o = originalCarbEntry, o.quantity.doubleValue(for: preferredCarbUnit) == quantity && o.startDate == time && o.foodType == foodType && o.absorptionTime == absorptionTime, o.favoriteFoodID == favoriteFoodID {
+            if let o = originalCarbEntry, o.quantity.doubleValue(for: preferredCarbUnit) == quantity && o.startDate == time && o.foodType == foodType && o.absorptionTime == absorptionTime, o.favoriteFoodID == favoriteFoodID,    !bolusProStateWasEdited {
                 return nil  // No changes were made
             }
             
@@ -222,6 +236,8 @@ final class CarbEntryViewModel: ObservableObject {
             potentialCarbEntry: updatedCarbEntry,
             selectedCarbAbsorptionTimeEmoji: selectedDefaultAbsorptionTimeEmoji
         )
+        
+        viewModel.bolusProState = bolusProState
         
         if BolusPro_FeatureFlags.isEnabled,
            let primary = updatedCarbEntry,
