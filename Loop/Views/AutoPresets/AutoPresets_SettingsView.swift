@@ -16,6 +16,8 @@ import UIKit
 
 struct AutoPresets_SettingsView: View {
     @ObservedObject private var coordinator = AutoPresets_Coordinator.shared
+    @ObservedObject private var geofenceManager = AutoPresets_GeofenceManager.shared
+    @ObservedObject private var calendarManager = AutoPresets_CalendarManager.shared
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     @State private var showingDebugLogs = false
@@ -28,6 +30,7 @@ struct AutoPresets_SettingsView: View {
 
             if coordinator.isEnabled {
                 geofenceSection
+                calendarSection
                 activityTypeSections
                 detectionSettingsSection
                 activityLogSection
@@ -97,7 +100,7 @@ struct AutoPresets_SettingsView: View {
                     Image(systemName: "mappin.circle.fill")
                         .font(.title3)
                         .foregroundColor(
-                            AutoPresets_GeofenceManager.shared.isEnabled
+                            geofenceManager.isEnabled
                                 ? Color(red: 76/255, green: 175/255, blue: 80/255)
                                 : .secondary
                         )
@@ -118,19 +121,60 @@ struct AutoPresets_SettingsView: View {
     }
 
     private var geofenceSummary: String {
-        let manager = AutoPresets_GeofenceManager.shared
-
-        if !manager.isEnabled {
+        if !geofenceManager.isEnabled {
             return "Off"
         }
 
-        let count = manager.locations.filter(\.isEnabled).count
+        let count = geofenceManager.locations.filter(\.isEnabled).count
 
         if count == 0 {
             return "Enabled — no locations saved"
         }
 
         return "\(count) location\(count == 1 ? "" : "s") monitored"
+    }
+    
+    private var calendarSection: some View {
+        Section {
+            NavigationLink {
+                AutoPresets_CalendarSettingsView()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.title3)
+                        .foregroundColor(
+                            calendarManager.isEnabled
+                                ? Color(red: 76/255, green: 175/255, blue: 80/255)
+                                : .secondary
+                        )
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Calendar Triggers")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+
+                        Text(calendarSummary)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+    }
+    
+    private var calendarSummary: String {
+        if !calendarManager.isEnabled {
+            return "Off"
+        }
+
+        let count = calendarManager.triggers.filter(\.isEnabled).count
+
+        if count == 0 {
+            return "Enabled — no keywords saved"
+        }
+
+        return "\(count) keyword\(count == 1 ? "" : "s") configured"
     }
 
     // MARK: - Activity Type Sections
@@ -184,7 +228,7 @@ struct AutoPresets_SettingsView: View {
                     coordinator.setPreset(preset, for: activityType)
                 } label: {
                     HStack {
-                        Text("\(preset.symbol) \(preset.name)")
+                        Text("\(preset.symbol?.value ?? "") \(preset.name)")
                             .foregroundColor(.primary)
                         Spacer()
                         if coordinator.settings.presetId(for: activityType) == preset.id {

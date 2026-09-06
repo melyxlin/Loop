@@ -589,6 +589,30 @@
         }
       }
     },
+    "NSCalendarsFullAccessUsageDescription" : {
+      "comment" : "Privacy - Calendars Full Access Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "AutoPresets reads your calendar to automatically activate presets before scheduled activities like gym sessions or runs. Calendar data stays on your device."
+          }
+        }
+      }
+    },
+    "NSCalendarsUsageDescription" : {
+      "comment" : "Privacy - Calendars Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "AutoPresets reads your calendar to automatically activate presets before scheduled activities like gym sessions or runs. Calendar data stays on your device."
+          }
+        }
+      }
+    },
     "NSCameraUsageDescription" : {
       "comment" : "Privacy - Camera Usage Description",
       "extractionState" : "extracted_with_value",
@@ -1094,6 +1118,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "FoodFinder uses your location to tag meals with where you ate. AutoPresets uses location to activate presets when you arrive at or leave saved places like the gym."
+          }
+        }
+      }
+    },
+    "NSMotionUsageDescription" : {
+      "comment" : "Privacy - Motion Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "AutoPresets uses motion and fitness activity to detect activities like walking and automatically activate your selected presets."
           }
         }
       }

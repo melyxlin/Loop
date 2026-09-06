@@ -63,12 +63,18 @@
 	<string>The app needs to use Bluetooth to send and receive data from your diabetes devices.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>The app needs to use Bluetooth to send and receive data from your diabetes devices.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>AutoPresets reads your calendar to automatically activate presets before scheduled activities like gym sessions or runs. Calendar data stays on your device.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>AutoPresets reads your calendar to automatically activate presets before scheduled activities like gym sessions or runs. Calendar data stays on your device.</string>
     <key>NSCameraUsageDescription</key>
     <string>Camera is used to scan barcodes of devices.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>FoodFinder uses your location to tag meals with where you ate. AutoPresets uses location to activate presets when you arrive at or leave saved places like the gym.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>AutoPresets uses background location to monitor geofences and automatically activate presets when you arrive at or leave saved locations. This is battery-efficient and does not continuously track your position.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>AutoPresets uses motion and fitness activity to detect activities like walking and automatically activate your selected presets.</string>
     <key>NSFaceIDUsageDescription</key>
 	<string>Face ID is used to authenticate insulin bolus and to save changes to therapy settings.</string>
 	<key>NSHealthShareUsageDescription</key>

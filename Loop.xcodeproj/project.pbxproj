@@ -313,6 +313,8 @@
 		509B03C0304C966300715755 /* FoodFinder_SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */; };
 		509B03C1304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */; };
 		509B03C3304C967E00715755 /* FoodFinder_AnalysisRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */; };
+		50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */; };
+		50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */; };
 		7D23667D21250C7E0028B67D /* LocalizedString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D23667C21250C7E0028B67D /* LocalizedString.swift */; };
 		7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E69CFFB2A16A77E00203CBD /* ResetLoopManager.swift */; };
 		824A01CBE97A4F7A9D32F7D6 /* Loop/Resources/Sounds/clear_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 4A645E0E2DDA534A635C9201 /* Loop/Resources/Sounds/clear_chimes.caf */; };
@@ -1188,6 +1190,8 @@
 		509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisHistoryStore.swift; sourceTree = "<group>"; };
 		509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SecureStorage.swift; sourceTree = "<group>"; };
 		509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisRecord.swift; sourceTree = "<group>"; };
+		50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarManager.swift; sourceTree = "<group>"; };
+		50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarSettingsView.swift; sourceTree = "<group>"; };
 		5181B60CBF3CB2DA537F0475 /* Loop/Resources/Sounds/simple.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/simple.caf; sourceTree = SOURCE_ROOT; };
 		62F7CB5D5DC337E705032AC7 /* Loop/Resources/Sounds/dings.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/dings.caf; sourceTree = SOURCE_ROOT; };
 		6D5FCC7207E50ACC682E9E6E /* Loop/Resources/Sounds/honk.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Loop/Resources/Sounds/honk.caf; sourceTree = SOURCE_ROOT; };
@@ -2462,6 +2466,7 @@
 		505DB1DA304CCB2F00181691 /* AutoPresets */ = {
 			isa = PBXGroup;
 			children = (
+				50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */,
 				505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */,
 				505DB1D5304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift */,
 				505DB1D6304CCB2F00181691 /* AutoPresets_Coordinator.swift */,
@@ -2483,6 +2488,7 @@
 		505DB1E4304CCB5900181691 /* AutoPresets */ = {
 			isa = PBXGroup;
 			children = (
+				50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */,
 				505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */,
 				505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */,
 			);
@@ -3875,6 +3881,7 @@
 				B43B5C522EAFB1BE0096A6AE /* InsulinSuspendedTableViewCell.swift in Sources */,
 				1DA649A7244126CD00F61E75 /* UserNotificationAlertScheduler.swift in Sources */,
 				439A7942211F631C0041B75F /* RootNavigationController.swift in Sources */,
+				50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */,
 				149A28BD2A853E6C00052EDF /* CarbEntryView.swift in Sources */,
 				84F20DFD2D0B9C3A0089DF02 /* EditPresetDurationView.swift in Sources */,
 				89E267FC2292456700A3F2AF /* FeatureFlags.swift in Sources */,
@@ -3934,6 +3941,7 @@
 				84D1F1A92D09800700CB271F /* PresetDetentView.swift in Sources */,
 				1DB1065124467E18005542BD /* AlertManager.swift in Sources */,
 				C9A47B0180AAB1FC572D3EFE /* CriticalAlertAudioPlayer.swift in Sources */,
+				50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */,
 				C1A1A00001000000000000A1 /* CriticalAlertAlarmScheduler.swift in Sources */,
 				C9A47B0280AAB1FC572D3EFF /* GlucoseAlertManager.swift in Sources */,
 				43C0944A1CACCC73001F6403 /* NotificationManager.swift in Sources */,
