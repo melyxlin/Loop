@@ -63,6 +63,7 @@ struct SettingsView: View {
     @State private var alert: Destination.Alert?
     @State private var sheet: Destination.Sheet?
     @State private var showingPreferences = false
+    @State private var searchText = ""
     
     var localizedAppNameAndVersion: String
 
@@ -75,57 +76,67 @@ struct SettingsView: View {
     public var body: some View {
         NavigationView {
             List {
-                Group {
-                    loopSection
-                    if versionUpdateViewModel.softwareUpdateAvailable {
-                        softwareUpdateSection
+                if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Group {
+                        loopSection
+                        if versionUpdateViewModel.softwareUpdateAvailable {
+                            softwareUpdateSection
+                        }
+                        if FeatureFlags.dosingStrategySelectionEnabled {
+                            dosingStrategySection
+                        }
+                        alertManagementSection
+                        statisticsSection
+                        if viewModel.pumpManagerSettingsViewModel.isSetUp() {
+                            therapySection
+                        }
+                        presetsSection
+                        autoPresetsSection
+                        bolusProSection
+                        siteAtlasSection
+                        foodFinderSection
+                        deviceSettingsSection
+                        healthAccessSection
+                        if FeatureFlags.allowExperimentalFeatures {
+                            favoriteFoodsSection
+                        }
+                        if FeatureFlags.allowExperimentalFeatures {
+                            preferencesSection
+                        }
+                        if (viewModel.pumpManagerSettingsViewModel.isTestingDevice || viewModel.cgmManagerSettingsViewModel.isTestingDevice) && viewModel.showDeleteTestData {
+                            deleteDataSection
+                        }
                     }
-                    if FeatureFlags.dosingStrategySelectionEnabled {
-                        dosingStrategySection
+                    Group {
+                        if viewModel.servicesViewModel.showServices {
+                            servicesSection
+                        }
+                        
+                        // Catch-all for menu items without a dedicated section (e.g. .custom).
+                        // .configuration items render in the configuration section and
+                        // .support items in the Support section, so exclude both to avoid
+                        // showing them twice.
+                        ForEach(pluginMenuItems.filter({ $0.section != .support && $0.section != .configuration })) { item in
+                            item.view
+                        }
+                        
+                        supportSection
+                        
+                        if let profileExpiration = BuildDetails.default.profileExpiration, FeatureFlags.profileExpirationSettingsViewEnabled {
+                            appExpirationSection(profileExpiration: profileExpiration)
+                        }
                     }
-                    alertManagementSection
-                    statisticsSection
-                    if viewModel.pumpManagerSettingsViewModel.isSetUp() {
-                        therapySection
                     }
-                    presetsSection
-                    autoPresetsSection
-                    bolusProSection
-                    siteAtlasSection
-                    foodFinderSection
-                    deviceSettingsSection
-                    healthAccessSection
-                    if FeatureFlags.allowExperimentalFeatures {
-                        favoriteFoodsSection
-                    }
-                    if FeatureFlags.allowExperimentalFeatures {
-                        preferencesSection
-                    }
-                    if (viewModel.pumpManagerSettingsViewModel.isTestingDevice || viewModel.cgmManagerSettingsViewModel.isTestingDevice) && viewModel.showDeleteTestData {
-                        deleteDataSection
-                    }
-                }
-                Group {
-                    if viewModel.servicesViewModel.showServices {
-                        servicesSection
-                    }
-
-                    // Catch-all for menu items without a dedicated section (e.g. .custom).
-                    // .configuration items render in the configuration section and
-                    // .support items in the Support section, so exclude both to avoid
-                    // showing them twice.
-                    ForEach(pluginMenuItems.filter({ $0.section != .support && $0.section != .configuration })) { item in
-                        item.view
-                    }
-
-                    supportSection
-
-                    if let profileExpiration = BuildDetails.default.profileExpiration, FeatureFlags.profileExpirationSettingsViewEnabled {
-                        appExpirationSection(profileExpiration: profileExpiration)
-                    }
+                else {
+                    searchResults
                 }
             }
             .insetGroupedListStyle()
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text(NSLocalizedString("Search Settings", comment: "Settings search field prompt"))
+            )
             .navigationBarTitle(Text(NSLocalizedString("Settings", comment: "Settings screen title")))
             .navigationBarItems(trailing: dismissButton)
             .alert(item: $alert) { alert in
@@ -173,6 +184,123 @@ struct SettingsView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+    
+    @ViewBuilder
+    private var searchResults: some View {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if matchesSearch(query, terms: [
+            "alerts", "notifications", "mute", "sounds"
+        ]) {
+            alertManagementSection
+        }
+
+        if matchesSearch(query, terms: [
+            "live activity", "dynamic island", "lock screen", "carplay"
+        ]) {
+            liveActivitySearchSection
+        }
+
+        if matchesSearch(query, terms: [
+            "statistics", "stats", "agp", "tir",
+            "time in range", "glucose"
+        ]) {
+            statisticsSection
+        }
+
+        if viewModel.pumpManagerSettingsViewModel.isSetUp(),
+           matchesSearch(query, terms: [
+               "therapy", "basal", "basal rates",
+               "carb ratio", "carb ratios", "correction",
+               "correction range", "sensitivity", "isf",
+               "insulin model"
+           ])
+        {
+            therapySearchSection
+        }
+
+        if matchesSearch(query, terms: [
+            "presets", "override", "overrides",
+            "temporary settings"
+        ]) {
+            presetsSection
+        }
+
+        if matchesSearch(query, terms: [
+            "autopresets", "auto presets", "activity",
+            "walking", "exercise", "location", "geofence",
+            "calendar", "automatic preset"
+        ]) {
+            autoPresetsSection
+        }
+
+        if matchesSearch(query, terms: [
+            "boluspro", "bolus pro", "protein", "fat",
+            "fpu", "extended meal"
+        ]) {
+            bolusProSection
+        }
+
+        if matchesSearch(query, terms: [
+            "site atlas", "siteatlas", "site rotation",
+            "pump site", "sensor site"
+        ]) {
+            siteAtlasSection
+        }
+
+        if matchesSearch(query, terms: [
+            "foodfinder", "food finder", "food",
+            "barcode", "ai", "openfoodfacts"
+        ]) {
+            foodFinderSection
+        }
+
+        if matchesSearch(query, terms: [
+            "apple health", "healthkit", "health"
+        ]) {
+            healthAccessSection
+        }
+    }
+
+    private func matchesSearch(_ query: String, terms: [String]) -> Bool {
+        guard !query.isEmpty else {
+            return false
+        }
+
+        return terms.contains {
+            $0.localizedCaseInsensitiveContains(query)
+        }
+    }
+    
+    private var liveActivitySearchSection: some View {
+        Section {
+            NavigationLink(destination: LiveActivityManagementView()) {
+                HStack {
+                    Image(systemName: "waveform.path.ecg")
+                        .foregroundColor(.accentColor)
+                        .frame(width: 30)
+
+                    Text("Live Activity")
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+    }
+
+    private var therapySearchSection: some View {
+        Section {
+            NavigationLink(destination: therapySettingsView) {
+                HStack {
+                    Image(systemName: "slider.horizontal.3")
+                        .foregroundColor(.accentColor)
+                        .frame(width: 30)
+
+                    Text("Therapy Settings")
+                        .foregroundColor(.primary)
+                }
+            }
+        }
     }
 
     private func menuItemsForSection(name: String) -> some View {

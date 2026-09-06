@@ -35724,6 +35724,9 @@
     "Search for Food" : {
 
     },
+    "Search Settings" : {
+      "comment" : "Settings search field prompt"
+    },
     "Searching foods" : {
       "comment" : "Text shown while searching for foods"
     },
