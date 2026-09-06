@@ -17,7 +17,7 @@ class OpenFoodFactsService {
     
     private let session: URLSession
     // Use the primary .org domain for stable API responses
-    private let baseURL = "https://world.openfoodfacts.org"
+    private let baseURL = "https://world.openfoodfacts.net"
     private let userAgent = "Loop-iOS-Diabetes-App/1.0"
     private let log = OSLog(category: "OpenFoodFactsService")
     

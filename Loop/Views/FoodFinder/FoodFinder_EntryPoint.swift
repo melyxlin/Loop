@@ -46,6 +46,8 @@ struct FoodFinder_EntryPoint: View {
 
     /// Optional binding so the host can observe the currently selected product
     var selectedFoodProduct: Binding<OpenFoodFactsProduct?>?
+    
+    var onMacrosApplied: ((Double, Double) -> Void)?
 
     /// Binding for the food name to pre-populate favorite food form
     @Binding var favoriteFoodName: String
@@ -98,7 +100,8 @@ struct FoodFinder_EntryPoint: View {
         favoriteFoodName: Binding<String> = .constant(""),
         favoriteFoodImage: Binding<UIImage?> = .constant(nil),
         restoredAnalysisResult: Binding<AIFoodAnalysisResult?> = .constant(nil),
-        restoredThumbnailID: Binding<String?> = .constant(nil)
+        restoredThumbnailID: Binding<String?> = .constant(nil),
+        onMacrosApplied: ((Double, Double) -> Void)? = nil,
     ) {
         self._carbsQuantity = carbsQuantity
         self._foodType = foodType
@@ -120,6 +123,7 @@ struct FoodFinder_EntryPoint: View {
             defaultAbsorptionTimes: defaultAbsorptionTimes,
             initialAbsorptionTime: absorptionTime.wrappedValue
         ))
+        self.onMacrosApplied = onMacrosApplied
     }
 
     // MARK: - Body
@@ -142,10 +146,23 @@ struct FoodFinder_EntryPoint: View {
                 .id("servings-\(searchVM.selectedFoodServingSize ?? "none")")
                 .onChange(of: searchVM.numberOfServings) { newServings in
                     if let selectedFood = searchVM.selectedFoodProduct {
-                        let expectedCarbs = (selectedFood.carbsPerServing ?? selectedFood.nutriments.carbohydrates) * newServings
+                        let expectedCarbs =
+                            (selectedFood.carbsPerServing ?? selectedFood.nutriments.carbohydrates)
+                            * newServings
+
                         if abs((carbsQuantity ?? 0) - expectedCarbs) > 0.01 {
                             carbsQuantity = expectedCarbs
                         }
+
+                        let fat =
+                            (selectedFood.fatPerServing ?? selectedFood.nutriments.fat ?? 0)
+                            * newServings
+
+                        let protein =
+                            (selectedFood.proteinPerServing ?? selectedFood.nutriments.proteins ?? 0)
+                            * newServings
+
+                        onMacrosApplied?(fat, protein)
                     }
                 }
 
@@ -271,7 +288,16 @@ struct FoodFinder_EntryPoint: View {
             carbsQuantity = result.carbs
             foodType = result.foodType
             absorptionTime = result.absorptionTime
-            // Mirror selected product to host if binding provided
+
+            if let product = searchVM.selectedFoodProduct {
+                let servings = searchVM.numberOfServings
+
+                let fat = (product.fatPerServing ?? product.nutriments.fat ?? 0) * servings
+                let protein = (product.proteinPerServing ?? product.nutriments.proteins ?? 0) * servings
+
+                onMacrosApplied?(fat, protein)
+            }
+
             selectedFoodProduct?.wrappedValue = searchVM.selectedFoodProduct
         }
         searchVM.onFoodCleared = {

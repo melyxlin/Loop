@@ -147,7 +147,11 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
                     absorptionTimeWasEdited: viewModel.absorptionTimeWasEdited,
                     defaultAbsorptionTimes: viewModel.defaultAbsorptionTimes,
                     favoriteFoodName: $foodFinderFoodName,
-                    favoriteFoodImage: $foodFinderImage
+                    favoriteFoodImage: $foodFinderImage,
+                    onMacrosApplied: { fat, protein in
+                        viewModel.bolusProState.macros.fatGrams = fat
+                        viewModel.bolusProState.macros.proteinGrams = protein
+                    }
                 )
             }
 
