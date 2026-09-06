@@ -22,41 +22,63 @@ final class GraphDetailViewModel: ObservableObject {
     private let deviceManager: DeviceDataManager
     private let loopManager: LoopDataManager
     private var scrubThrottleTimer: Timer?
+    
+    private let historicalStartDate: Date
+    private let historicalEndDate: Date
+
+    private var historicalIOBValues: [InsulinValue] = []
+    private var historicalCarbAbsorptionReview: CarbAbsorptionReview?
 
     init(
         date: Date,
         glucoseUnit: LoopUnit,
         deviceManager: DeviceDataManager,
-        loopManager: LoopDataManager
+        loopManager: LoopDataManager,
+        historicalStartDate: Date,
+        historicalEndDate: Date
     ) {
         self.deviceManager = deviceManager
         self.loopManager = loopManager
         self.data = GraphDetailData(date: date, glucoseUnit: glucoseUnit)
+        self.historicalStartDate = historicalStartDate
+        self.historicalEndDate = historicalEndDate
         loadData()
     }
 
     /// Update to a new date and reload all data (throttled during scrub/drag)
     func update(for date: Date) {
-        // Update the date immediately — keep existing data values visible until new ones arrive
+        // Update displayed timestamp immediately
         data.date = date
+        
+        updateCachedHistoricalValues(for: date)
 
-        // Throttle the expensive data queries to avoid flooding HealthKit/DoseStore
-        scrubThrottleTimer?.invalidate()
-        scrubThrottleTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
-            guard let self = self else { return }
-            // Clear stale values and reload for the current date
+        // If a refresh is already scheduled, let it fire.
+        // It will use the latest scrub date.
+        guard scrubThrottleTimer == nil else { return }
+
+        let timer = Timer(timeInterval: 0.15, repeats: false) { [weak self] _ in
+            guard let self else { return }
+
+            self.scrubThrottleTimer = nil
+
             let currentDate = self.data.date
-            self.data = GraphDetailData(date: currentDate, glucoseUnit: self.data.glucoseUnit)
+            self.data = GraphDetailData(
+                date: currentDate,
+                glucoseUnit: self.data.glucoseUnit
+            )
+            
+            loadHistoricalData()
             self.loadData()
         }
+
+        scrubThrottleTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     // MARK: - Data Loading
 
     private func loadData() {
         loadGlucose()
-        loadIOB()
-        loadCOB()
         loadBolus()
         loadBasalRate()
         loadOverride()
@@ -95,6 +117,49 @@ final class GraphDetailViewModel: ObservableObject {
             } catch {
                 // Leave glucose empty if the historical query fails.
             }
+        }
+    }
+    
+    private func loadHistoricalData() {
+        let start = historicalStartDate
+        let end = historicalEndDate
+
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let historicalData = try await loopManager.getHistoricalChartsData(
+                    start: start,
+                    end: end
+                )
+
+                await MainActor.run {
+                    self.historicalIOBValues = historicalData.iobValues
+                    self.historicalCarbAbsorptionReview = historicalData.carbAbsorptionReview
+
+                    // Immediately refresh for whatever date the user
+                    // is currently pointing at.
+                    self.updateCachedHistoricalValues(for: self.data.date)
+                }
+            } catch {
+                // Existing per-date loaders can remain as fallback.
+            }
+        }
+    }
+    
+    private func updateCachedHistoricalValues(for date: Date) {
+        if let closest = historicalIOBValues.min(by: {
+            abs($0.startDate.timeIntervalSince(date)) <
+            abs($1.startDate.timeIntervalSince(date))
+        }) {
+            data.insulinOnBoard = closest.value
+        }
+
+        if let review = historicalCarbAbsorptionReview {
+            data.carbsOnBoard = review.carbStatuses.dynamicCarbsOnBoard(
+                at: date,
+                absorptionModel: CarbAbsorptionModel.piecewiseLinear.model
+            )
         }
     }
 

@@ -2527,8 +2527,12 @@ extension StatusTableViewController: ServicesViewModelDelegate {
             date: date,
             glucoseUnit: glucoseUnit,
             deviceManager: deviceManager,
-            loopManager: loopManager
+            loopManager: loopManager,
+            historicalStartDate: charts.startDate,
+            historicalEndDate: charts.maxEndDate
         )
+        
+        graphDetailViewModel = viewModel
 
         let wrappedView = AnyView(
             GraphDetailObservingView(viewModel: viewModel, onDismiss: { [weak self] in
