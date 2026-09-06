@@ -21,6 +21,11 @@ public struct FavoriteFoodDetailView: View {
             Group {
                 List {
                     informationSection(for: food)
+
+                    if (food.protein ?? 0) > 0 || (food.fat ?? 0) > 0 {
+                        bolusProSection(for: food)
+                    }
+
                     actionsSection(for: food)
                     FavoriteFoodInsightsCardView(
                         showFavoriteFoodInsights: $showFavoriteFoodInsights,
@@ -57,7 +62,9 @@ public struct FavoriteFoodDetailView: View {
             VStack(spacing: 16) {
                 let rows: [(field: String, value: String)] = [
                     ("Name", food.name),
-                    ("Carb Quantity", food.carbsString(formatter: viewModel.carbFormatter)),
+                    ("Carb", food.carbsString(formatter: viewModel.carbFormatter)),
+                    ("Protein", String(format: "%.0f g", food.protein ?? 0)),
+                    ("Fat", String(format: "%.0f g", food.fat ?? 0)),
                     ("Food Type", food.foodType),
                     ("Absorption Time", food.absorptionTimeString(formatter: viewModel.absorptionTimeFormatter))
                 ]
@@ -73,6 +80,49 @@ public struct FavoriteFoodDetailView: View {
             }
         }
         .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+    }
+    
+    private func bolusProSection(for food: StoredFavoriteFood) -> some View {
+        let fat = food.fat ?? 0
+        let protein = food.protein ?? 0
+
+        let fpuScore = BolusPro_FPUCalculator.fpuScore(
+            fatGrams: fat,
+            proteinGrams: protein
+        )
+
+        let bonusGrams = BolusPro_FPUCalculator.bonusGrams(
+            fatGrams: fat,
+            proteinGrams: protein,
+            coverageFactor: Double(BolusPro_FeatureFlags.coverageFactorPercent) / 100.0,
+            sliderPosition: 1.0
+        )
+
+        let rows: [(field: String, value: String)] = [
+            ("FPU", String(format: "%.1f", fpuScore)),
+            ("Equivalent Carbs", String(format: "%.1f g", bonusGrams)),
+            ("FPU Delay", "\(BolusPro_FeatureFlags.fpuDelayMinutes) min"),
+            ("FPU Absorption", "\(BolusPro_FeatureFlags.fpuAbsorptionHours) hr")
+        ]
+
+        return Section("BolusPro") {
+            VStack(spacing: 16) {
+                ForEach(rows, id: \.field) { row in
+                    HStack {
+                        Text(row.field)
+                            .font(.subheadline)
+
+                        Spacer()
+
+                        Text(row.value)
+                            .font(.subheadline)
+                    }
+                }
+            }
+        }
+        .listRowInsets(
+            EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+        )
     }
     
     private func actionsSection(for food: StoredFavoriteFood) -> some View {

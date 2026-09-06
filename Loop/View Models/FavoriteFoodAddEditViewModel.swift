@@ -58,17 +58,19 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
         }
     }
     
-    init(carbsQuantity: Double?, foodType: String, absorptionTime: TimeInterval, onSave: @escaping (NewFavoriteFood) -> ()) {
+    init(
+        carbsQuantity: Double?,
+        foodType: String,
+        absorptionTime: TimeInterval,
+        protein: Double?,
+        fat: Double?,
+        onSave: @escaping (NewFavoriteFood) -> ()
+    ) {
         self.onSave = onSave
         self.carbsQuantity = carbsQuantity
         self.absorptionTime = absorptionTime
-        
-        // foodType of Apple 🍎 --> name: Apple, foodType: 🍎
-        var name = foodType
-        name.removeAll(where: \.isEmoji)
-        name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.foodType = foodType.filter(\.isEmoji)
-        self.name = name
+        self.protein = protein
+        self.fat = fat
     }
     
     var originalFavoriteFood: StoredFavoriteFood?

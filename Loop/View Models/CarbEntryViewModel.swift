@@ -312,15 +312,31 @@ final class CarbEntryViewModel: ObservableObject {
                 self.usesCustomFoodType = false
             }
             self.foodType = ""
+            bolusProState = .off
         }
         else {
             let food = favoriteFoods[index]
-            self.carbsQuantity = food.carbsQuantity.doubleValue(for: preferredCarbUnit)
-            self.foodType = food.foodType
-            self.absorptionTime = food.absorptionTime
-            self.absorptionTimeWasEdited = true
-            self.usesCustomFoodType = true
-            updateFavoriteFoodLastEatenDate(for: food)
+
+                self.carbsQuantity = food.carbsQuantity.doubleValue(
+                    for: preferredCarbUnit
+                )
+                self.foodType = food.foodType
+                self.absorptionTime = food.absorptionTime
+                self.absorptionTimeWasEdited = true
+                self.usesCustomFoodType = true
+
+                let fat = food.fat ?? 0
+                let protein = food.protein ?? 0
+
+                bolusProState.macros = BolusProMacroInputs(
+                    fatGrams: fat,
+                    proteinGrams: protein
+                )
+                bolusProState.enabled = fat > 0 || protein > 0
+                bolusProState.sliderCoverage = 1.0
+                bolusProState.autoDetected = false
+
+                updateFavoriteFoodLastEatenDate(for: food)
         }
     }
     

@@ -73,6 +73,8 @@ struct FoodFinder_EntryPoint: View {
     @State private var showAbsorptionReasoning = false
     @State private var isAdvancedAnalysisExpanded = false
     @State private var expandedRow: Row?
+    @State private var appliedFatGrams: Double = 0
+    @State private var appliedProteinGrams: Double = 0
 
     /// Favorite foods loaded from UserDefaults for quick-favorite toggling.
     /// Kept lightweight — only names are needed for the heart-button check.
@@ -162,7 +164,7 @@ struct FoodFinder_EntryPoint: View {
                             (selectedFood.proteinPerServing ?? selectedFood.nutriments.proteins ?? 0)
                             * newServings
 
-                        onMacrosApplied?(fat, protein)
+                        applyMacros(fat: fat, protein: protein)
                     }
                 }
 
@@ -263,6 +265,8 @@ struct FoodFinder_EntryPoint: View {
                 carbsQuantity: carbsQuantity,
                 foodType: foodType,
                 absorptionTime: absorptionTime,
+                protein: appliedProteinGrams,
+                fat: appliedFatGrams,
                 onSave: { food in
                     showingFavoriteSheet = false
                     onFavoriteFoodSave?(food)
@@ -280,6 +284,12 @@ struct FoodFinder_EntryPoint: View {
             )
         }
     }
+    
+    private func applyMacros(fat: Double, protein: Double) {
+        appliedFatGrams = fat
+        appliedProteinGrams = protein
+        onMacrosApplied?(fat, protein)
+    }
 
     // MARK: - Wire ViewModel Callbacks
 
@@ -295,7 +305,7 @@ struct FoodFinder_EntryPoint: View {
                 let fat = (product.fatPerServing ?? product.nutriments.fat ?? 0) * servings
                 let protein = (product.proteinPerServing ?? product.nutriments.proteins ?? 0) * servings
 
-                onMacrosApplied?(fat, protein)
+                applyMacros(fat: fat, protein: protein)
             }
 
             selectedFoodProduct?.wrappedValue = searchVM.selectedFoodProduct
