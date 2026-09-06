@@ -7,16 +7,16 @@
 //
 
 import Combine
-import LocalAuthentication
 import Intents
-import os.log
+import LocalAuthentication
+import LoopAlgorithm
 import LoopCore
 import LoopKit
 import LoopKitUI
 import LoopUI
-import SwiftUI
 import SwiftCharts
-import LoopAlgorithm
+import SwiftUI
+import os.log
 
 @MainActor
 protocol BolusEntryViewModelDelegate: AnyObject {
@@ -27,16 +27,34 @@ protocol BolusEntryViewModelDelegate: AnyObject {
     var mostRecentGlucoseDataDate: Date? { get }
     var mostRecentPumpDataDate: Date? { get }
 
-    func fetchData(for baseTime: Date?, presumePresetEndingNow: Bool, ensureDosingCoverageStart: Date?, projectOngoingDoses: Bool) async throws -> StoredDataAlgorithmInput
-    func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool) -> GlucoseRangeSchedule?
+    func fetchData(
+        for baseTime: Date?,
+        presumePresetEndingNow: Bool,
+        ensureDosingCoverageStart: Date?,
+        projectOngoingDoses: Bool
+    ) async throws -> StoredDataAlgorithmInput
+    func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool)
+        -> GlucoseRangeSchedule?
 
-    func addCarbEntry(_ carbEntry: NewCarbEntry, replacing replacingEntry: StoredCarbEntry?) async throws -> StoredCarbEntry
+    func addCarbEntry(
+        _ carbEntry: NewCarbEntry,
+        replacing replacingEntry: StoredCarbEntry?
+    ) async throws -> StoredCarbEntry
     func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry?
-    func getCarbEntry(withSyncIdentifier syncIdentifier: String) async throws -> StoredCarbEntry?
+    func getCarbEntry(withSyncIdentifier syncIdentifier: String) async throws
+        -> StoredCarbEntry?
     func deleteCarbEntry(_ entry: StoredCarbEntry) async throws -> Bool
-    func saveGlucose(sample: NewGlucoseSample) async throws -> StoredGlucoseSample
-    func storeManualBolusDosingDecision(_ bolusDosingDecision: BolusDosingDecision, withDate date: Date) async
-    func enactBolus(units: Double, decisionId: UUID?, activationType: BolusActivationType) async throws
+    func saveGlucose(sample: NewGlucoseSample) async throws
+        -> StoredGlucoseSample
+    func storeManualBolusDosingDecision(
+        _ bolusDosingDecision: BolusDosingDecision,
+        withDate date: Date
+    ) async
+    func enactBolus(
+        units: Double,
+        decisionId: UUID?,
+        activationType: BolusActivationType
+    ) async throws
 
     func insulinModel(for type: InsulinType?) -> InsulinModel
 
@@ -52,7 +70,10 @@ protocol BolusEntryViewModelDelegate: AnyObject {
         potentialCarbEntry: NewCarbEntry?,
         potentialDose: SimpleInsulinDose?,
         manualGlucose: NewGlucoseSample?
-    ) async throws -> (historicGlucose: [StoredGlucoseSample], predictedGlucose: [PredictedGlucoseValue])
+    ) async throws -> (
+        historicGlucose: [StoredGlucoseSample],
+        predictedGlucose: [PredictedGlucoseValue]
+    )
 
     var activeInsulin: InsulinValue? { get }
     var activeCarbs: CarbValue? { get }
@@ -74,7 +95,9 @@ final class BolusEntryViewModel: ObservableObject {
 
     enum Notice: Equatable {
         case predictedGlucoseInRange
-        case predictedGlucoseBelowSuspendThreshold(suspendThreshold: LoopQuantity)
+        case predictedGlucoseBelowSuspendThreshold(
+            suspendThreshold: LoopQuantity
+        )
         case glucoseBelowTarget
         case staleGlucoseData
         case futureGlucoseData
@@ -96,7 +119,7 @@ final class BolusEntryViewModel: ObservableObject {
 
     // MARK: - State
 
-    @Published var glucoseValues: [GlucoseValue] = [] // stored glucose values + manual glucose entry
+    @Published var glucoseValues: [GlucoseValue] = []  // stored glucose values + manual glucose entry
     private var storedGlucoseValues: [GlucoseValue] = []
     @Published var predictedGlucoseValues: [GlucoseValue] = []
     @Published var chartDateInterval: DateInterval
@@ -120,7 +143,10 @@ final class BolusEntryViewModel: ObservableObject {
     var recommendedBolusAmount: Double? {
         recommendedBolus?.doubleValue(for: .internationalUnit)
     }
-    @Published var enteredBolus = LoopQuantity(unit: .internationalUnit, doubleValue: 0)
+    @Published var enteredBolus = LoopQuantity(
+        unit: .internationalUnit,
+        doubleValue: 0
+    )
     var enteredBolusAmount: Double {
         enteredBolus.doubleValue(for: .internationalUnit)
     }
@@ -137,14 +163,20 @@ final class BolusEntryViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
 
     let chartManager: ChartsManager = {
-        let predictedGlucoseChart = PredictedGlucoseChart(predictedGlucoseBounds: FeatureFlags.predictedGlucoseChartClampEnabled ? .default : nil,
-                                                          yAxisStepSizeMGDLOverride: FeatureFlags.predictedGlucoseChartClampEnabled ? 40 : nil)
-        predictedGlucoseChart.glucoseDisplayRange = LoopConstants.glucoseChartDefaultDisplayRangeWide
+        let predictedGlucoseChart = PredictedGlucoseChart(
+            predictedGlucoseBounds: FeatureFlags
+                .predictedGlucoseChartClampEnabled ? .default : nil,
+            yAxisStepSizeMGDLOverride: FeatureFlags
+                .predictedGlucoseChartClampEnabled ? 40 : nil
+        )
+        predictedGlucoseChart.glucoseDisplayRange =
+            LoopConstants.glucoseChartDefaultDisplayRangeWide
         return ChartsManager(
             colors: ChartColorPalette.primary,
             settings: ChartSettings.default,
             charts: [predictedGlucoseChart],
-            traitCollection: UITraitCollection.current)
+            traitCollection: UITraitCollection.current
+        )
     }()
 
     @Published var isManualGlucoseEntryEnabled = false
@@ -162,7 +194,7 @@ final class BolusEntryViewModel: ObservableObject {
     private let carbEntryDateFormatter: DateFormatter
 
     var analyticsServicesManager: AnalyticsServicesManager?
-    
+
     // MARK: - Initialization
 
     init(
@@ -188,15 +220,18 @@ final class BolusEntryViewModel: ObservableObject {
         if let timeZone = timeZone {
             self.carbEntryDateFormatter.timeZone = timeZone
         }
-        
+
         self.originalCarbEntry = originalCarbEntry
         self.potentialCarbEntry = potentialCarbEntry
         self.selectedCarbAbsorptionTimeEmoji = selectedCarbAbsorptionTimeEmoji
-        
+
         self.isManualGlucoseEntryEnabled = isManualGlucoseEntryEnabled
-        
-        self.chartDateInterval = DateInterval(start: Date(timeInterval: .hours(-1), since: now()), duration: .hours(7))
-        
+
+        self.chartDateInterval = DateInterval(
+            start: Date(timeInterval: .hours(-1), since: now()),
+            duration: .hours(7)
+        )
+
         self.dosingDecision.originalCarbEntry = originalCarbEntry
 
         self.updateSettings()
@@ -219,9 +254,11 @@ final class BolusEntryViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] note in
                 Task {
-                    if let rawContext = note.userInfo?[LoopDataManager.LoopUpdateContextKey] as? LoopUpdateContext.RawValue,
-                       let context = LoopUpdateContext(rawValue: rawContext),
-                       context == .preferences
+                    if let rawContext = note.userInfo?[
+                        LoopDataManager.LoopUpdateContextKey
+                    ] as? LoopUpdateContext.RawValue,
+                        let context = LoopUpdateContext(rawValue: rawContext),
+                        context == .preferences
                     {
                         self?.updateSettings()
                     }
@@ -235,7 +272,10 @@ final class BolusEntryViewModel: ObservableObject {
         $enteredBolus
             .dropFirst()
             .removeDuplicates()
-            .debounce(for: .milliseconds(debounceIntervalMilliseconds), scheduler: RunLoop.main)
+            .debounce(
+                for: .milliseconds(debounceIntervalMilliseconds),
+                scheduler: RunLoop.main
+            )
             .sink { [weak self] _ in
                 Task {
                     await self?.updatePredictedGlucoseValues()
@@ -251,22 +291,27 @@ final class BolusEntryViewModel: ObservableObject {
                 guard let self = self else { return }
 
                 // Clear out any entered bolus whenever the glucose entry changes
-                self.enteredBolus = LoopQuantity(unit: .internationalUnit, doubleValue: 0)
+                self.enteredBolus = LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: 0
+                )
 
                 Task {
                     await self.updatePredictedGlucoseValues()
                     // Ensure the manual glucose entry appears on the chart at the same time as the updated prediction
                     self.updateGlucoseChartValues()
-                    await self.updateRecommendedBolusAndNotice(isUpdatingFromUserInput: true)
+                    await self.updateRecommendedBolusAndNotice(
+                        isUpdatingFromUserInput: true
+                    )
                 }
 
                 if let manualGlucoseQuantity = manualGlucoseQuantity {
                     self.manualGlucoseSample = NewGlucoseSample(
                         date: self.now(),
                         quantity: manualGlucoseQuantity,
-                        condition: nil,     // All manual glucose entries are assumed to have no condition.
-                        trend: nil,         // All manual glucose entries are assumed to have no trend.
-                        trendRate: nil,     // All manual glucose entries are assumed to have no trend rate.
+                        condition: nil,  // All manual glucose entries are assumed to have no condition.
+                        trend: nil,  // All manual glucose entries are assumed to have no trend.
+                        trendRate: nil,  // All manual glucose entries are assumed to have no trend rate.
                         isDisplayOnly: false,
                         wasUserEntered: true,
                         syncIdentifier: self.uuidProvider()
@@ -275,22 +320,26 @@ final class BolusEntryViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
 
     private func observeElapsedTime() {
         // If glucose data is stale, loop status updates cannot be expected to keep presented data fresh.
         // Periodically update the UI to ensure recommendations do not go stale.
-        Timer.publish(every: .minutes(5), tolerance: .seconds(15), on: .main, in: .default)
-            .autoconnect()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                self.log.default("5 minutes elapsed on bolus screen; refreshing UI")
-                Task {
-                    await self.update()
-                }
+        Timer.publish(
+            every: .minutes(5),
+            tolerance: .seconds(15),
+            on: .main,
+            in: .default
+        )
+        .autoconnect()
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+            guard let self = self else { return }
+            self.log.default("5 minutes elapsed on bolus screen; refreshing UI")
+            Task {
+                await self.update()
             }
-            .store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
     // MARK: - View API
@@ -347,12 +396,17 @@ final class BolusEntryViewModel: ObservableObject {
             return false
         }
 
-        guard enteredBolusAmount <= maximumBolus.doubleValue(for: .internationalUnit) else {
+        guard
+            enteredBolusAmount
+                <= maximumBolus.doubleValue(for: .internationalUnit)
+        else {
             presentAlert(.maxBolusExceeded)
             return false
         }
 
-        let amountToDeliver = deliveryDelegate.roundBolusVolume(units: enteredBolusAmount)
+        let amountToDeliver = deliveryDelegate.roundBolusVolume(
+            units: enteredBolusAmount
+        )
 
         guard enteredBolusAmount == 0 || amountToDeliver > 0 else {
             presentAlert(.bolusTooSmall)
@@ -365,7 +419,11 @@ final class BolusEntryViewModel: ObservableObject {
         let potentialCarbEntry = potentialCarbEntry
 
         if let manualGlucoseSample = manualGlucoseSample {
-            guard LoopConstants.validManualGlucoseEntryRange.contains(manualGlucoseSample.quantity) else {
+            guard
+                LoopConstants.validManualGlucoseEntryRange.contains(
+                    manualGlucoseSample.quantity
+                )
+            else {
                 presentAlert(.manualGlucoseEntryOutOfAcceptableRange)
                 return false
             }
@@ -373,7 +431,14 @@ final class BolusEntryViewModel: ObservableObject {
 
         // Authenticate the bolus before saving anything
         if amountToDeliver > 0 {
-            let message = String(format: NSLocalizedString("Authenticate to Bolus %@ Units", comment: "The message displayed during a device authentication prompt for bolus specification"), amountToDeliverString)
+            let message = String(
+                format: NSLocalizedString(
+                    "Authenticate to Bolus %@ Units",
+                    comment:
+                        "The message displayed during a device authentication prompt for bolus specification"
+                ),
+                amountToDeliverString
+            )
 
             if !(await authenticationHandler(message)) {
                 return false
@@ -382,7 +447,8 @@ final class BolusEntryViewModel: ObservableObject {
 
         if let manualGlucoseSample {
             do {
-                dosingDecision.manualGlucoseSample = try await delegate.saveGlucose(sample: manualGlucoseSample)
+                dosingDecision.manualGlucoseSample =
+                    try await delegate.saveGlucose(sample: manualGlucoseSample)
             } catch {
                 presentAlert(.manualGlucoseEntryPersistenceFailure)
                 return false
@@ -391,26 +457,40 @@ final class BolusEntryViewModel: ObservableObject {
             self.dosingDecision.manualGlucoseSample = nil
         }
 
-        let activationType = BolusActivationType.activationTypeFor(recommendedAmount: recommendedBolus?.doubleValue(for: .internationalUnit), bolusAmount: amountToDeliver)
+        let activationType = BolusActivationType.activationTypeFor(
+            recommendedAmount: recommendedBolus?.doubleValue(
+                for: .internationalUnit
+            ),
+            bolusAmount: amountToDeliver
+        )
 
         if let carbEntry = potentialCarbEntry {
             if originalCarbEntry == nil {
-                let interaction = INInteraction(intent: NewCarbEntryIntent(), response: nil)
+                let interaction = INInteraction(
+                    intent: NewCarbEntryIntent(),
+                    response: nil
+                )
 
                 do {
                     try await interaction.donate()
                 } catch {
-                    log.error("Failed to donate intent: %{public}@", String(describing: error))
+                    log.error(
+                        "Failed to donate intent: %{public}@",
+                        String(describing: error)
+                    )
                 }
             }
-//            if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
-//                self.dosingDecision.carbEntry = storedCarbEntry
-//                self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram), isFavoriteFood: storedCarbEntry.favoriteFoodID != nil)
-//            } else {
-//                self.presentAlert(.carbEntryPersistenceFailure)
-//                return false
-//            }
-            if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
+            //            if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
+            //                self.dosingDecision.carbEntry = storedCarbEntry
+            //                self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram), isFavoriteFood: storedCarbEntry.favoriteFoodID != nil)
+            //            } else {
+            //                self.presentAlert(.carbEntryPersistenceFailure)
+            //                return false
+            //            }
+            if let storedCarbEntry = await saveCarbEntry(
+                carbEntry,
+                replacingEntry: originalCarbEntry
+            ) {
                 self.dosingDecision.carbEntry = storedCarbEntry
                 self.analyticsServicesManager?.didAddCarbs(
                     source: "Phone",
@@ -420,7 +500,7 @@ final class BolusEntryViewModel: ObservableObject {
 
                 // BolusPro — save or replace the delayed fat/protein carb-equivalent
                 // entry and persist its relationship to the primary meal.
-                if let state = bolusProState 
+                if let state = bolusProState {
                     var storedSecondaryEntry: StoredCarbEntry?
 
                     // If this is an edit, find the secondary entry that belongs
@@ -428,26 +508,31 @@ final class BolusEntryViewModel: ObservableObject {
                     var existingSecondaryEntry: StoredCarbEntry?
 
                     if let originalCarbEntry,
-                       let storedMeal = BolusProMealStore.shared.meal(for: originalCarbEntry),
-                       let secondaryIdentifier = storedMeal.secondaryEntryIdentifier
+                        let storedMeal = BolusProMealStore.shared.meal(
+                            for: originalCarbEntry
+                        ),
+                        let secondaryIdentifier = storedMeal
+                            .secondaryEntryIdentifier
                     {
                         if secondaryIdentifier.hasPrefix("sync:") {
                             let syncIdentifier = String(
                                 secondaryIdentifier.dropFirst("sync:".count)
                             )
 
-                            existingSecondaryEntry = try? await delegate.getCarbEntry(
-                                withSyncIdentifier: syncIdentifier
-                            )
+                            existingSecondaryEntry =
+                                try? await delegate.getCarbEntry(
+                                    withSyncIdentifier: syncIdentifier
+                                )
                         } else if secondaryIdentifier.hasPrefix("uuid:") {
                             let uuidString = String(
                                 secondaryIdentifier.dropFirst("uuid:".count)
                             )
 
                             if let uuid = UUID(uuidString: uuidString) {
-                                existingSecondaryEntry = try? await delegate.getCarbEntry(
-                                    withUUID: uuid
-                                )
+                                existingSecondaryEntry =
+                                    try? await delegate.getCarbEntry(
+                                        withUUID: uuid
+                                    )
                             }
                         }
                     }
@@ -461,15 +546,21 @@ final class BolusEntryViewModel: ObservableObject {
 
                             self.analyticsServicesManager?.didAddCarbs(
                                 source: "BolusPro",
-                                amount: storedSecondary.quantity.doubleValue(for: .gram),
+                                amount: storedSecondary.quantity.doubleValue(
+                                    for: .gram
+                                ),
                                 isFavoriteFood: false
                             )
                         } else {
-                            log.error("BolusPro secondary entry save failed — primary already saved.")
+                            log.error(
+                                "BolusPro secondary entry save failed — primary already saved."
+                            )
                         }
                     } else if let existingSecondaryEntry {
                         do {
-                            _ = try await delegate.deleteCarbEntry(existingSecondaryEntry)
+                            _ = try await delegate.deleteCarbEntry(
+                                existingSecondaryEntry
+                            )
                         } catch {
                             log.error(
                                 "BolusPro secondary entry deletion failed: %{public}@",
@@ -493,16 +584,29 @@ final class BolusEntryViewModel: ObservableObject {
         dosingDecision.manualBolusRequested = amountToDeliver
 
         let now = self.now()
-        await delegate.storeManualBolusDosingDecision(dosingDecision, withDate: now)
+        await delegate.storeManualBolusDosingDecision(
+            dosingDecision,
+            withDate: now
+        )
 
         if amountToDeliver > 0 {
             savedPreMealOverride = nil
             do {
-                try await delegate.enactBolus(units: amountToDeliver, decisionId: dosingDecision.id, activationType: activationType)
+                try await delegate.enactBolus(
+                    units: amountToDeliver,
+                    decisionId: dosingDecision.id,
+                    activationType: activationType
+                )
             } catch {
-                log.error("Failed to enact bolus: %{public}@", String(describing: error))
+                log.error(
+                    "Failed to enact bolus: %{public}@",
+                    String(describing: error)
+                )
             }
-            self.analyticsServicesManager?.didBolus(source: "Phone", units: amountToDeliver)
+            self.analyticsServicesManager?.didBolus(
+                source: "Phone",
+                units: amountToDeliver
+            )
         }
         return true
     }
@@ -537,7 +641,11 @@ final class BolusEntryViewModel: ObservableObject {
     }
 
     var maximumBolusAmountString: String? {
-        guard let maxBolusAmount = maximumBolus?.doubleValue(for: .internationalUnit) else {
+        guard
+            let maxBolusAmount = maximumBolus?.doubleValue(
+                for: .internationalUnit
+            )
+        else {
             return nil
         }
         return formatBolusAmount(maxBolusAmount)
@@ -546,13 +654,25 @@ final class BolusEntryViewModel: ObservableObject {
     var carbEntryAmountAndEmojiString: String? {
         guard
             let potentialCarbEntry = potentialCarbEntry,
-            let carbAmountString = QuantityFormatter(for: .gram).string(from: potentialCarbEntry.quantity)
+            let carbAmountString = QuantityFormatter(for: .gram).string(
+                from: potentialCarbEntry.quantity
+            )
         else {
             return nil
         }
 
-        if let emoji = potentialCarbEntry.foodType ?? selectedCarbAbsorptionTimeEmoji {
-            return String(format: NSLocalizedString("%1$@ %2$@", comment: "Format string combining carb entry quantity and absorption time emoji"), carbAmountString, emoji)
+        if let emoji = potentialCarbEntry.foodType
+            ?? selectedCarbAbsorptionTimeEmoji
+        {
+            return String(
+                format: NSLocalizedString(
+                    "%1$@ %2$@",
+                    comment:
+                        "Format string combining carb entry quantity and absorption time emoji"
+                ),
+                carbAmountString,
+                emoji
+            )
         } else {
             return carbAmountString
         }
@@ -563,10 +683,24 @@ final class BolusEntryViewModel: ObservableObject {
             return nil
         }
 
-        let entryTimeString = carbEntryDateFormatter.string(from: potentialCarbEntry.startDate)
+        let entryTimeString = carbEntryDateFormatter.string(
+            from: potentialCarbEntry.startDate
+        )
 
-        if let absorptionTime = potentialCarbEntry.absorptionTime, let absorptionTimeString = absorptionTimeFormatter.string(from: absorptionTime) {
-            return String(format: NSLocalizedString("%1$@ + %2$@", comment: "Format string combining carb entry time and absorption time"), entryTimeString, absorptionTimeString)
+        if let absorptionTime = potentialCarbEntry.absorptionTime,
+            let absorptionTimeString = absorptionTimeFormatter.string(
+                from: absorptionTime
+            )
+        {
+            return String(
+                format: NSLocalizedString(
+                    "%1$@ + %2$@",
+                    comment:
+                        "Format string combining carb entry time and absorption time"
+                ),
+                entryTimeString,
+                absorptionTimeString
+            )
         } else {
             return entryTimeString
         }
@@ -602,7 +736,9 @@ final class BolusEntryViewModel: ObservableObject {
 
         var chartGlucoseValues = storedGlucoseValues
         if let manualGlucoseSample = manualGlucoseSample {
-            chartGlucoseValues.append(LoopQuantitySample(with: manualGlucoseSample.quantitySample))
+            chartGlucoseValues.append(
+                LoopQuantitySample(with: manualGlucoseSample.quantitySample)
+            )
         }
 
         self.glucoseValues = chartGlucoseValues
@@ -617,7 +753,9 @@ final class BolusEntryViewModel: ObservableObject {
         do {
             let startDate = now()
 
-            let insulinModel = delegate.insulinModel(for: deliveryDelegate?.pumpInsulinType)
+            let insulinModel = delegate.insulinModel(
+                for: deliveryDelegate?.pumpInsulinType
+            )
 
             let enteredBolusDose = SimpleInsulinDose(
                 deliveryType: .bolus,
@@ -628,12 +766,13 @@ final class BolusEntryViewModel: ObservableObject {
                 insulinModel: insulinModel
             )
 
-            let (glucoseHistory, prediction) = try await delegate.generatePrediction(
-                originalCarbEntry: originalCarbEntry,
-                potentialCarbEntry: potentialCarbEntry,
-                potentialDose: enteredBolusDose,
-                manualGlucose: manualGlucoseSample
-            )
+            let (glucoseHistory, prediction) =
+                try await delegate.generatePrediction(
+                    originalCarbEntry: originalCarbEntry,
+                    potentialCarbEntry: potentialCarbEntry,
+                    potentialDose: enteredBolusDose,
+                    manualGlucose: manualGlucoseSample
+                )
 
             storedGlucoseValues = glucoseHistory
             predictedGlucoseValues = prediction
@@ -644,37 +783,56 @@ final class BolusEntryViewModel: ObservableObject {
         }
 
     }
-    
+
     struct PresetEffectedRecommendation {
         let originalAmount: Double
         let recommendedAmount: Double
-        
+
         let formatter = QuantityFormatter(for: .internationalUnit)
-        
+
         var originalAmountString: String? {
-            formatter.string(from: LoopQuantity(unit: .internationalUnit, doubleValue: originalAmount))
+            formatter.string(
+                from: LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: originalAmount
+                )
+            )
         }
-        
+
         var recommendedAmountString: String? {
-            formatter.string(from: LoopQuantity(unit: .internationalUnit, doubleValue: recommendedAmount))
+            formatter.string(
+                from: LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: recommendedAmount
+                )
+            )
         }
-        
+
         var differenceString: String? {
-            formatter.string(from: LoopQuantity(unit: .internationalUnit, doubleValue: abs(recommendedAmount - originalAmount)))
+            formatter.string(
+                from: LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: abs(recommendedAmount - originalAmount)
+                )
+            )
         }
-        
+
         var showPredictionDifference: Bool {
             originalAmount != recommendedAmount
         }
-        
+
         var direction: String {
-            recommendedAmount > originalAmount ? NSLocalizedString("increase", comment: "") : NSLocalizedString("decrease", comment: "")
+            recommendedAmount > originalAmount
+                ? NSLocalizedString("increase", comment: "")
+                : NSLocalizedString("decrease", comment: "")
         }
     }
 
     @Published var presetEffectedRecommendation: PresetEffectedRecommendation?
-    
-    private func updateRecommendedBolusAndNotice(isUpdatingFromUserInput: Bool) async {
+
+    private func updateRecommendedBolusAndNotice(isUpdatingFromUserInput: Bool)
+        async
+    {
 
         guard let delegate else {
             assertionFailure("Missing BolusEntryViewModelDelegate")
@@ -688,14 +846,25 @@ final class BolusEntryViewModel: ObservableObject {
             recommendation = try await computeBolusRecommendation()
 
             if let recommendation, deliveryDelegate != nil {
-                if let originalAmount = try await computeBolusRecommendation(truncatingActiveOverride: true)?.amount {
-                    presetEffectedRecommendation = PresetEffectedRecommendation(originalAmount: originalAmount, recommendedAmount: recommendation.amount)
+                if let originalAmount = try await computeBolusRecommendation(
+                    truncatingActiveOverride: true
+                )?.amount {
+                    presetEffectedRecommendation = PresetEffectedRecommendation(
+                        originalAmount: originalAmount,
+                        recommendedAmount: recommendation.amount
+                    )
                 }
-                recommendedBolus = LoopQuantity(unit: .internationalUnit, doubleValue: recommendation.amount)
+                recommendedBolus = LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: recommendation.amount
+                )
                 switch recommendation.notice {
                 case .glucoseBelowSuspendThreshold:
-                    if let suspendThreshold = delegate.settings.suspendThreshold {
-                        notice = .predictedGlucoseBelowSuspendThreshold(suspendThreshold: suspendThreshold.quantity)
+                    if let suspendThreshold = delegate.settings.suspendThreshold
+                    {
+                        notice = .predictedGlucoseBelowSuspendThreshold(
+                            suspendThreshold: suspendThreshold.quantity
+                        )
                     } else {
                         notice = nil
                     }
@@ -707,14 +876,18 @@ final class BolusEntryViewModel: ObservableObject {
                     notice = nil
                 }
             } else {
-                recommendedBolus = LoopQuantity(unit: .internationalUnit, doubleValue: 0)
+                recommendedBolus = LoopQuantity(
+                    unit: .internationalUnit,
+                    doubleValue: 0
+                )
                 notice = nil
             }
         } catch {
             recommendedBolus = nil
 
             switch error {
-            case LoopError.missingDataError(.glucose), LoopError.glucoseTooOld, AlgorithmError.missingGlucose, AlgorithmError.glucoseTooOld:
+            case LoopError.missingDataError(.glucose), LoopError.glucoseTooOld,
+                AlgorithmError.missingGlucose, AlgorithmError.glucoseTooOld:
                 notice = .staleGlucoseData
             case LoopError.invalidFutureGlucose:
                 notice = .futureGlucoseData
@@ -727,19 +900,23 @@ final class BolusEntryViewModel: ObservableObject {
 
         let priorRecommendedBolus = self.recommendedBolus
         self.recommendedBolus = recommendedBolus
-        self.dosingDecision.manualBolusRecommendation = recommendation.map { ManualBolusRecommendationWithDate(recommendation: $0, date: now()) }
+        self.dosingDecision.manualBolusRecommendation = recommendation.map {
+            ManualBolusRecommendationWithDate(recommendation: $0, date: now())
+        }
         self.activeNotice = notice
 
         if priorRecommendedBolus != nil,
-           priorRecommendedBolus != recommendedBolus,
-           !self.enacting,
-           !isUpdatingFromUserInput
+            priorRecommendedBolus != recommendedBolus,
+            !self.enacting,
+            !isUpdatingFromUserInput
         {
             self.presentAlert(.recommendationChanged)
         }
     }
 
-    private func computeBolusRecommendation(truncatingActiveOverride: Bool = false) async throws -> ManualBolusRecommendation? {
+    private func computeBolusRecommendation(
+        truncatingActiveOverride: Bool = false
+    ) async throws -> ManualBolusRecommendation? {
         guard let delegate else {
             return nil
         }
@@ -759,7 +936,8 @@ final class BolusEntryViewModel: ObservableObject {
 
         targetGlucoseSchedule = delegate.settings.glucoseTargetRangeSchedule
         // Pre-meal override should be ignored if we have carbs (LOOP-1964)
-        preMealOverride = potentialCarbEntry == nil ? delegate.preMealOverride : nil
+        preMealOverride =
+            potentialCarbEntry == nil ? delegate.preMealOverride : nil
         scheduleOverride = delegate.scheduleOverride
 
         if preMealOverride?.hasFinished() == true {
@@ -777,7 +955,10 @@ final class BolusEntryViewModel: ObservableObject {
         dosingDecision.scheduleOverride = scheduleOverride
 
         if scheduleOverride != nil || preMealOverride != nil {
-            dosingDecision.glucoseTargetRangeSchedule = delegate.effectiveGlucoseTargetRangeSchedule(presumingMealEntry: potentialCarbEntry != nil)
+            dosingDecision.glucoseTargetRangeSchedule =
+                delegate.effectiveGlucoseTargetRangeSchedule(
+                    presumingMealEntry: potentialCarbEntry != nil
+                )
         } else {
             dosingDecision.glucoseTargetRangeSchedule = targetGlucoseSchedule
         }
@@ -786,23 +967,39 @@ final class BolusEntryViewModel: ObservableObject {
     private func updateChartDateInterval() {
         // How far back should we show data? Use the screen size as a guide.
         let viewMarginInset: CGFloat = 14
-        let availableWidth = screenWidth - chartManager.fixedHorizontalMargin - 2 * viewMarginInset
+        let availableWidth =
+            screenWidth - chartManager.fixedHorizontalMargin - 2
+            * viewMarginInset
 
-        let totalHours = floor(Double(availableWidth / LoopConstants.minimumChartWidthPerHour))
+        let totalHours = floor(
+            Double(availableWidth / LoopConstants.minimumChartWidthPerHour)
+        )
         let insulinType = deliveryDelegate?.pumpInsulinType
         let insulinModel = delegate?.insulinModel(for: insulinType)
-        let futureHours = ceil((insulinModel?.effectDuration ?? .hours(4)).hours)
-        let historyHours = max(LoopConstants.statusChartMinimumHistoryDisplay.hours, totalHours - futureHours)
+        let futureHours = ceil(
+            (insulinModel?.effectDuration ?? .hours(4)).hours
+        )
+        let historyHours = max(
+            LoopConstants.statusChartMinimumHistoryDisplay.hours,
+            totalHours - futureHours
+        )
 
-        let date = Date(timeInterval: -TimeInterval(hours: historyHours), since: now())
-        let chartStartDate = Calendar.current.nextDate(
-            after: date,
-            matching: DateComponents(minute: 0),
-            matchingPolicy: .strict,
-            direction: .backward
-        ) ?? date
+        let date = Date(
+            timeInterval: -TimeInterval(hours: historyHours),
+            since: now()
+        )
+        let chartStartDate =
+            Calendar.current.nextDate(
+                after: date,
+                matching: DateComponents(minute: 0),
+                matchingPolicy: .strict,
+                direction: .backward
+            ) ?? date
 
-        chartDateInterval = DateInterval(start: chartStartDate, duration: .hours(totalHours))
+        chartDateInterval = DateInterval(
+            start: chartStartDate,
+            duration: .hours(totalHours)
+        )
     }
 
     func formatBolusAmount(_ bolusAmount: Double) -> String {
@@ -817,11 +1014,16 @@ final class BolusEntryViewModel: ObservableObject {
     }
 
     func updateEnteredBolus(_ enteredBolusString: String) {
-        updateEnteredBolus(bolusAmountFormatter.number(from: enteredBolusString)?.doubleValue)
+        updateEnteredBolus(
+            bolusAmountFormatter.number(from: enteredBolusString)?.doubleValue
+        )
     }
 
     func updateEnteredBolus(_ enteredBolusAmount: Double?) {
-        enteredBolus = LoopQuantity(unit: .internationalUnit, doubleValue: enteredBolusAmount ?? 0)
+        enteredBolus = LoopQuantity(
+            unit: .internationalUnit,
+            doubleValue: enteredBolusAmount ?? 0
+        )
     }
 }
 
@@ -831,21 +1033,26 @@ extension BolusEntryViewModel.Alert: Identifiable {
 
 // MARK: Helpers
 extension BolusEntryViewModel {
-    
+
     var isGlucoseDataStale: Bool {
-        guard let latestGlucoseDataDate = delegate?.mostRecentGlucoseDataDate else { return true }
-        return now().timeIntervalSince(latestGlucoseDataDate) > LoopAlgorithm.inputDataRecencyInterval
+        guard let latestGlucoseDataDate = delegate?.mostRecentGlucoseDataDate
+        else { return true }
+        return now().timeIntervalSince(latestGlucoseDataDate)
+            > LoopAlgorithm.inputDataRecencyInterval
     }
-    
+
     var isPumpDataStale: Bool {
-        guard let latestPumpDataDate = delegate?.mostRecentPumpDataDate else { return true }
-        return now().timeIntervalSince(latestPumpDataDate) > LoopAlgorithm.inputDataRecencyInterval
+        guard let latestPumpDataDate = delegate?.mostRecentPumpDataDate else {
+            return true
+        }
+        return now().timeIntervalSince(latestPumpDataDate)
+            > LoopAlgorithm.inputDataRecencyInterval
     }
 
     var isManualGlucosePromptVisible: Bool {
         activeNotice == .staleGlucoseData && !isManualGlucoseEntryEnabled
     }
-    
+
     var isNoticeVisible: Bool {
         if activeNotice == nil {
             return false
@@ -855,7 +1062,7 @@ extension BolusEntryViewModel {
             return !isManualGlucoseEntryEnabled
         }
     }
-    
+
     private var hasBolusEntryReadyToDeliver: Bool {
         enteredBolus.doubleValue(for: .internationalUnit) != 0
     }
@@ -870,14 +1077,14 @@ extension BolusEntryViewModel {
         if hasBolusEntryReadyToDeliver { return .actionButton }
         return .manualGlucoseEntry
     }
-    
+
     enum ActionButtonAction {
         case saveWithoutBolusing
         case saveAndDeliver
         case enterBolus
         case deliver
     }
-    
+
     var actionButtonAction: ActionButtonAction {
         switch (hasDataToSave, hasBolusEntryReadyToDeliver) {
         case (true, true): return .saveAndDeliver
@@ -887,4 +1094,3 @@ extension BolusEntryViewModel {
         }
     }
 }
-

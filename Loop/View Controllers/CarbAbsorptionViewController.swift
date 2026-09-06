@@ -404,12 +404,20 @@ final class CarbAbsorptionViewController: LoopChartsTableViewController, Identif
         }
     }
 
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+    override func tableView(
+        _ tableView: UITableView,
+        canEditRowAt indexPath: IndexPath
+    ) -> Bool {
         switch Section(rawValue: indexPath.section)! {
         case .charts, .totals:
             return false
+
         case .entries:
-            return allowEditing && carbStatuses[indexPath.row].entry.createdByCurrentApp
+            let entry = carbStatuses[indexPath.row].entry
+
+            return allowEditing
+                && entry.createdByCurrentApp
+                && !BolusProMealStore.shared.isSecondaryEntry(entry)
         }
     }
 
@@ -448,7 +456,13 @@ final class CarbAbsorptionViewController: LoopChartsTableViewController, Identif
         case .totals:
             return nil
         case .entries:
-            return (allowEditing && carbStatuses[indexPath.row].entry.createdByCurrentApp) ? indexPath : nil
+            let entry = carbStatuses[indexPath.row].entry
+
+            guard !BolusProMealStore.shared.isSecondaryEntry(entry) else {
+                return nil
+            }
+
+            return (allowEditing && entry.createdByCurrentApp) ? indexPath : nil
         }
     }
     

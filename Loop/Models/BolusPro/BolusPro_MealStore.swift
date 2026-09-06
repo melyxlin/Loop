@@ -75,6 +75,21 @@ final class BolusProMealStore {
         return meals[identifier]
     }
     
+    func isSecondaryEntry(_ entry: StoredCarbEntry) -> Bool {
+        guard let entryIdentifier = identifier(for: entry) else {
+            return false
+        }
+
+        return meals.values.contains {
+            $0.secondaryEntryIdentifier == entryIdentifier
+        }
+    }
+    
+    func secondaryIdentifier(for primaryEntry: StoredCarbEntry) -> String? {
+        meal(for: primaryEntry)?.secondaryEntryIdentifier
+    }
+    
+    
     func save(
         state: BolusProEntryState,
         primaryEntry: StoredCarbEntry,

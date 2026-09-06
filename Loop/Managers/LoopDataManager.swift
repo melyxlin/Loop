@@ -1111,7 +1111,53 @@ extension LoopDataManager {
 
     @discardableResult
     func deleteCarbEntry(_ oldEntry: StoredCarbEntry) async throws -> Bool {
-        try await carbStore.deleteCarbEntry(oldEntry)
+        let secondaryIdentifier =
+            BolusProMealStore.shared.secondaryIdentifier(for: oldEntry)
+
+        if let secondaryIdentifier {
+            let entries = try await carbStore.getCarbEntries(
+                start: nil,
+                end: nil
+            )
+
+            let secondaryEntry: StoredCarbEntry?
+
+            if secondaryIdentifier.hasPrefix("sync:") {
+                let syncIdentifier = String(
+                    secondaryIdentifier.dropFirst("sync:".count)
+                )
+
+                secondaryEntry = entries.first {
+                    $0.syncIdentifier == syncIdentifier
+                }
+            } else if secondaryIdentifier.hasPrefix("uuid:") {
+                let uuidString = String(
+                    secondaryIdentifier.dropFirst("uuid:".count)
+                )
+
+                if let uuid = UUID(uuidString: uuidString) {
+                    secondaryEntry = entries.first {
+                        $0.uuid == uuid
+                    }
+                } else {
+                    secondaryEntry = nil
+                }
+            } else {
+                secondaryEntry = nil
+            }
+
+            if let secondaryEntry {
+                _ = try await carbStore.deleteCarbEntry(secondaryEntry)
+            }
+        }
+
+        let deleted = try await carbStore.deleteCarbEntry(oldEntry)
+
+        if deleted {
+            BolusProMealStore.shared.remove(for: oldEntry)
+        }
+
+        return deleted
     }
 
     /// Logs a new external bolus insulin dose in the DoseStore and HealthKit
