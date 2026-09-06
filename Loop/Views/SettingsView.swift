@@ -190,76 +190,210 @@ struct SettingsView: View {
     private var searchResults: some View {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
+        // Closed Loop
         if matchesSearch(query, terms: [
-            "alerts", "notifications", "mute", "sounds"
+            "closed loop", "loop", "automation", "insulin automation"
         ]) {
-            alertManagementSection
+            loopSection
         }
 
+        // Dosing Strategy
+        if FeatureFlags.dosingStrategySelectionEnabled,
+           matchesSearch(query, terms: [
+               "dosing strategy", "automatic bolus", "temp basal",
+               "automatic dosing"
+           ])
+        {
+            dosingStrategySection
+        }
+
+        // Alert Management
         if matchesSearch(query, terms: [
-            "live activity", "dynamic island", "lock screen", "carplay"
+            "alert management", "alerts", "notifications",
+            "mute", "sounds", "permissions"
+        ]) {
+            alertManagementSearchSection
+        }
+
+        // Live Activity
+        if matchesSearch(query, terms: [
+            "live activity", "dynamic island",
+            "lock screen", "carplay"
         ]) {
             liveActivitySearchSection
         }
 
+        // Statistics
         if matchesSearch(query, terms: [
             "statistics", "stats", "agp", "tir",
-            "time in range", "glucose"
+            "time in range", "glucose", "gmi",
+            "average", "variability", "cgm active"
         ]) {
             statisticsSection
         }
 
+        // Therapy Settings
         if viewModel.pumpManagerSettingsViewModel.isSetUp(),
            matchesSearch(query, terms: [
-               "therapy", "basal", "basal rates",
-               "carb ratio", "carb ratios", "correction",
-               "correction range", "sensitivity", "isf",
+               "therapy", "therapy settings",
+               "basal", "basal rates",
+               "carb ratio", "carb ratios",
+               "correction", "correction range",
+               "sensitivity", "isf",
                "insulin model"
            ])
         {
             therapySearchSection
         }
 
+        // Profiles
+        if viewModel.pumpManagerSettingsViewModel.isSetUp(),
+           matchesSearch(query, terms: [
+               "profile", "profiles"
+           ])
+        {
+            profilesSearchSection
+        }
+
+        // Plugin configuration items
+        if viewModel.pumpManagerSettingsViewModel.isSetUp(),
+           matchesSearch(query, terms: [
+               "usage data", "usage data sharing",
+               "data sharing", "configuration"
+           ])
+        {
+            configurationSearchSection
+        }
+
+        // Algorithm Experiments
+        if viewModel.pumpManagerSettingsViewModel.isSetUp(),
+           FeatureFlags.allowAlgorithmExperiments,
+           matchesSearch(query, terms: [
+               "algorithm", "algorithm experiments",
+               "experiments", "experimental"
+           ])
+        {
+            algorithmExperimentsSection
+        }
+
+        // Presets
         if matchesSearch(query, terms: [
-            "presets", "override", "overrides",
-            "temporary settings"
+            "preset", "presets", "override", "overrides",
+            "temporary settings", "temporary adjustment"
         ]) {
             presetsSection
         }
 
+        // AutoPresets
         if matchesSearch(query, terms: [
-            "autopresets", "auto presets", "activity",
-            "walking", "exercise", "location", "geofence",
-            "calendar", "automatic preset"
+            "autopresets", "auto presets", "automatic preset",
+            "activity", "walking", "exercise",
+            "location", "geofence", "calendar"
         ]) {
             autoPresetsSection
         }
 
+        // BolusPro
         if matchesSearch(query, terms: [
-            "boluspro", "bolus pro", "protein", "fat",
-            "fpu", "extended meal"
+            "boluspro", "bolus pro",
+            "protein", "fat", "fpu",
+            "extended meal", "long absorption"
         ]) {
             bolusProSection
         }
 
+        // Site Atlas
         if matchesSearch(query, terms: [
-            "site atlas", "siteatlas", "site rotation",
-            "pump site", "sensor site"
+            "site atlas", "siteatlas",
+            "site rotation", "pump site",
+            "sensor site"
         ]) {
             siteAtlasSection
         }
 
+        // FoodFinder
         if matchesSearch(query, terms: [
-            "foodfinder", "food finder", "food",
-            "barcode", "ai", "openfoodfacts"
+            "foodfinder", "food finder",
+            "food", "barcode", "ai",
+            "openfoodfacts"
         ]) {
             foodFinderSection
         }
 
+        // Pump
         if matchesSearch(query, terms: [
-            "apple health", "healthkit", "health"
+            "pump", "insulin pump", "pod", "omnipod"
+        ]) {
+            pumpSearchSection
+        }
+
+        // CGM
+        if matchesSearch(query, terms: [
+            "cgm", "continuous glucose monitor",
+            "glucose monitor", "dexcom", "sensor"
+        ]) {
+            cgmSearchSection
+        }
+
+        // Apple Health
+        if matchesSearch(query, terms: [
+            "apple health", "healthkit", "health",
+            "health data"
         ]) {
             healthAccessSection
+        }
+
+        // Favorite Foods
+        if FeatureFlags.allowExperimentalFeatures,
+           matchesSearch(query, terms: [
+               "favorite food", "favorite foods",
+               "favorites", "carb entry"
+           ])
+        {
+            favoriteFoodsSection
+        }
+
+        // Preferences
+        if FeatureFlags.allowExperimentalFeatures,
+           matchesSearch(query, terms: [
+               "preferences", "preference",
+               "customize", "customization"
+           ])
+        {
+            preferencesSection
+        }
+
+        // Testing data
+        if (viewModel.pumpManagerSettingsViewModel.isTestingDevice ||
+            viewModel.cgmManagerSettingsViewModel.isTestingDevice),
+           viewModel.showDeleteTestData,
+           matchesSearch(query, terms: [
+               "delete", "delete testing data",
+               "testing data", "delete pump",
+               "delete cgm"
+           ])
+        {
+            deleteDataSection
+        }
+
+        // Services
+        if viewModel.servicesViewModel.showServices,
+           matchesSearch(query, terms: [
+               "service", "services", "add service"
+           ])
+        {
+            servicesSection
+        }
+
+        // Support
+        if matchesSearch(query, terms: [
+            "support", "issue", "issue report",
+            "bug", "bug report",
+            "critical event", "critical event logs",
+            "export logs", "logs",
+            "version"
+        ]) {
+            supportSection
         }
     }
 
@@ -276,12 +410,93 @@ struct SettingsView: View {
     private var liveActivitySearchSection: some View {
         Section {
             NavigationLink(destination: LiveActivityManagementView()) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "rectangle.on.rectangle")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30),
+                    label: NSLocalizedString(
+                        "Live Activity",
+                        comment: "Live Activity settings button text"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "Lock Screen, Dynamic Island, and CarPlay display",
+                        comment: "Live Activity settings descriptive text"
+                    )
+                )
+            }
+        }
+    }
+    
+    private var alertManagementSearchSection: some View {
+        Section {
+            NavigationLink(
+                destination: AlertManagementView(
+                    checker: viewModel.alertPermissionsChecker,
+                    alertMuter: viewModel.alertMuter,
+                    glucoseAlertManager: viewModel.deviceManager?.glucoseAlertManager
+                )
+            ) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "bell.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30),
+                    secondaryImageView: alertWarning,
+                    label: NSLocalizedString(
+                        "Alert Management",
+                        comment: "Alert Permissions button text"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "iOS Permissions and Mute All App Sounds",
+                        comment: "Alert Permissions descriptive text"
+                    )
+                )
+            }
+        }
+    }
+
+    private var configurationSearchSection: some View {
+        Section {
+            ForEach(pluginMenuItems.filter { $0.section == .configuration }) { item in
+                item.view
+            }
+        }
+    }
+
+    private var pumpSearchSection: some View {
+        Section(header: SectionHeader(
+            label: NSLocalizedString("Devices", comment: "")
+        )) {
+            pumpSection
+                .accessibilityIdentifier("settingsViewInsulinPump")
+        }
+    }
+
+    private var cgmSearchSection: some View {
+        Section(header: SectionHeader(
+            label: NSLocalizedString("Devices", comment: "")
+        )) {
+            cgmSection
+                .accessibilityIdentifier("settingsViewCGM")
+        }
+    }
+    
+    private var profilesSearchSection: some View {
+        Section {
+            Button {
+                sheet = .profiles
+            } label: {
                 HStack {
-                    Image(systemName: "waveform.path.ecg")
+                    Image(systemName: "person.crop.circle")
                         .foregroundColor(.accentColor)
                         .frame(width: 30)
 
-                    Text("Live Activity")
+                    Text("Profiles")
                         .foregroundColor(.primary)
                 }
             }
