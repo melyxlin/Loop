@@ -89,8 +89,10 @@ struct SettingsView: View {
                         therapySection
                     }
                     presetsSection
+                    autoPresetsSection
                     bolusProSection
                     siteAtlasSection
+                    foodFinderSection
                     deviceSettingsSection
                     healthAccessSection
                     if FeatureFlags.allowExperimentalFeatures {
@@ -442,6 +444,27 @@ extension SettingsView {
         }
     }
     
+    private var autoPresetsSection: some View {
+        Section {
+            NavigationLink(destination: AutoPresets_SettingsView()) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "figure.walk.motion")
+                        .font(.system(size: 30)),
+                    label: NSLocalizedString(
+                        "AutoPresets",
+                        comment: "Title text for button to AutoPresets Settings"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "Automatically activate presets based on activity",
+                        comment: "Descriptive text for AutoPresets Settings"
+                    )
+                )
+            }
+        }
+    }
+    
     private var bolusProSection: some View {
         Section {
             NavigationLink(destination: BolusPro_SettingsView()) {
@@ -478,6 +501,27 @@ extension SettingsView {
                     descriptiveText: NSLocalizedString(
                         "Track pump & sensor site rotation",
                         comment: "Descriptive text for Site Atlas Settings"
+                    )
+                )
+            }
+        }
+    }
+    
+    private var foodFinderSection: some View {
+        Section {
+            NavigationLink(destination: AISettingsView()) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "fork.knife")
+                        .font(.system(size: 30)),
+                    label: NSLocalizedString(
+                        "FoodFinder",
+                        comment: "Title text for button to FoodFinder Settings"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "Food search, barcode & AI settings",
+                        comment: "Descriptive text for FoodFinder Settings"
                     )
                 )
             }

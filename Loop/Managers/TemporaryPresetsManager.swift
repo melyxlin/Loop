@@ -658,6 +658,41 @@ extension TemporaryPresetsManager : AlertResponder {
     }
 }
 
+// MARK: - AutoPresets
+
+extension TemporaryPresetsManager: AutoPresets_Delegate {
+
+    func autoPresets(
+        _ coordinator: AutoPresets_Coordinator,
+        shouldActivatePreset preset: TemporaryPreset
+    ) {
+        startPreset(withIdentifier: preset.id)
+    }
+
+    func autoPresets(
+        _ coordinator: AutoPresets_Coordinator,
+        shouldDeactivatePreset preset: TemporaryPreset
+    ) {
+        guard activeOverride?.presetId == preset.id else {
+            return
+        }
+
+        clearOverride()
+    }
+
+    func autoPresetsAvailablePresets(
+        _ coordinator: AutoPresets_Coordinator
+    ) -> [TemporaryPreset] {
+        settingsProvider.settings.overridePresets
+    }
+
+    func autoPresetsCurrentOverride(
+        _ coordinator: AutoPresets_Coordinator
+    ) -> TemporaryScheduleOverride? {
+        activeOverride
+    }
+}
+
 @MainActor
 public protocol SettingsWithOverridesProvider {
     var insulinSensitivityScheduleApplyingOverrideHistory: InsulinSensitivitySchedule? { get }

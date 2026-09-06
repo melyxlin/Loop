@@ -238,6 +238,16 @@
 		505CE3C0303CB78500E6F5CB /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BC303CB78500E6F5CB /* StatisticsView.swift */; };
 		505CE3C1303CB78500E6F5CB /* AGPChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3BB303CB78500E6F5CB /* AGPChartView.swift */; };
 		505CE3C5303CB7CA00E6F5CB /* StatisticsRangeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */; };
+		505DB1D4304CCB2000181691 /* AutoPresets_FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D2304CCB2000181691 /* AutoPresets_FeatureFlags.swift */; };
+		505DB1DB304CCB2F00181691 /* AutoPresets_Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D8304CCB2F00181691 /* AutoPresets_Logger.swift */; };
+		505DB1DC304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D5304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift */; };
+		505DB1DD304CCB2F00181691 /* AutoPresets_Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D6304CCB2F00181691 /* AutoPresets_Coordinator.swift */; };
+		505DB1DE304CCB2F00181691 /* AutoPresets_Delegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D7304CCB2F00181691 /* AutoPresets_Delegate.swift */; };
+		505DB1DF304CCB2F00181691 /* AutoPresets_Storage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1D9304CCB2F00181691 /* AutoPresets_Storage.swift */; };
+		505DB1E2304CCB4100181691 /* AutoPresets_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E0304CCB4100181691 /* AutoPresets_Models.swift */; };
+		505DB1E5304CCB5900181691 /* AutoPresets_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */; };
+		505DB1E7304CE45900181691 /* AutoPresets_GeofenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */; };
+		505DB1E9304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
 		509B0333304C775B00715755 /* BolusPro_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0331304C775B00715755 /* BolusPro_Models.swift */; };
 		509B034A304C77D300715755 /* high_chimes.caf in Resources */ = {isa = PBXBuildFile; fileRef = 509B033F304C77D300715755 /* high_chimes.caf */; };
@@ -1103,6 +1113,16 @@
 		505CE3BC303CB78500E6F5CB /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		505CE3BD303CB78500E6F5CB /* TimeInRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInRangeBar.swift; sourceTree = "<group>"; };
 		505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeEditor.swift; sourceTree = "<group>"; };
+		505DB1D2304CCB2000181691 /* AutoPresets_FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_FeatureFlags.swift; sourceTree = "<group>"; };
+		505DB1D5304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_ActivityDetectionManager.swift; sourceTree = "<group>"; };
+		505DB1D6304CCB2F00181691 /* AutoPresets_Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_Coordinator.swift; sourceTree = "<group>"; };
+		505DB1D7304CCB2F00181691 /* AutoPresets_Delegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_Delegate.swift; sourceTree = "<group>"; };
+		505DB1D8304CCB2F00181691 /* AutoPresets_Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_Logger.swift; sourceTree = "<group>"; };
+		505DB1D9304CCB2F00181691 /* AutoPresets_Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_Storage.swift; sourceTree = "<group>"; };
+		505DB1E0304CCB4100181691 /* AutoPresets_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_Models.swift; sourceTree = "<group>"; };
+		505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_SettingsView.swift; sourceTree = "<group>"; };
+		505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceManager.swift; sourceTree = "<group>"; };
+		505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceSettingsView.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
 		509B0331304C775B00715755 /* BolusPro_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_Models.swift; sourceTree = "<group>"; };
 		509B0334304C77D300715755 /* BolusPro_FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_FeatureFlags.swift; sourceTree = "<group>"; };
@@ -1842,6 +1862,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				505DB1E1304CCB4100181691 /* AutoPresets */,
 				509B0380304C93FC00715755 /* FoodFinder */,
 				509B036D304C828800715755 /* SiteAtlas */,
 				509B0332304C775B00715755 /* BolusPro */,
@@ -2162,6 +2183,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				505DB1E4304CCB5900181691 /* AutoPresets */,
 				509B03B2304C944700715755 /* FoodFinder */,
 				509B0379304C82BD00715755 /* SiteAtlas */,
 				509B0366304C77F800715755 /* BolusPro */,
@@ -2223,6 +2245,7 @@
 		43F5C2E41B93C5D4003EB13D /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				505DB1DA304CCB2F00181691 /* AutoPresets */,
 				501897E5304BC7A8004897D2 /* GraphDetailViewModel.swift */,
 				B42D124228D371C400E43D22 /* AlertMuter.swift */,
 				1D6B1B6626866D89009AC446 /* AlertPermissionsChecker.swift */,
@@ -2428,6 +2451,44 @@
 			path = Statistics;
 			sourceTree = "<group>";
 		};
+		505DB1D3304CCB2000181691 /* AutoPresets */ = {
+			isa = PBXGroup;
+			children = (
+				505DB1D2304CCB2000181691 /* AutoPresets_FeatureFlags.swift */,
+			);
+			path = AutoPresets;
+			sourceTree = "<group>";
+		};
+		505DB1DA304CCB2F00181691 /* AutoPresets */ = {
+			isa = PBXGroup;
+			children = (
+				505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */,
+				505DB1D5304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift */,
+				505DB1D6304CCB2F00181691 /* AutoPresets_Coordinator.swift */,
+				505DB1D7304CCB2F00181691 /* AutoPresets_Delegate.swift */,
+				505DB1D8304CCB2F00181691 /* AutoPresets_Logger.swift */,
+				505DB1D9304CCB2F00181691 /* AutoPresets_Storage.swift */,
+			);
+			path = AutoPresets;
+			sourceTree = "<group>";
+		};
+		505DB1E1304CCB4100181691 /* AutoPresets */ = {
+			isa = PBXGroup;
+			children = (
+				505DB1E0304CCB4100181691 /* AutoPresets_Models.swift */,
+			);
+			path = AutoPresets;
+			sourceTree = "<group>";
+		};
+		505DB1E4304CCB5900181691 /* AutoPresets */ = {
+			isa = PBXGroup;
+			children = (
+				505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */,
+				505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */,
+			);
+			path = AutoPresets;
+			sourceTree = "<group>";
+		};
 		509B0332304C775B00715755 /* BolusPro */ = {
 			isa = PBXGroup;
 			children = (
@@ -2472,6 +2533,7 @@
 		509B0349304C77D300715755 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				505DB1D3304CCB2000181691 /* AutoPresets */,
 				509B0385304C940D00715755 /* FoodFinder */,
 				509B0335304C77D300715755 /* BolusPro */,
 				509B0348304C77D300715755 /* Sounds */,
@@ -3759,6 +3821,7 @@
 				C17824A51E1AD4D100D9D25C /* ManualBolusRecommendation.swift in Sources */,
 				897A5A9624C2175B00C4E71D /* BolusEntryView.swift in Sources */,
 				4F70C2131DE90339006380B7 /* StatusExtensionContext.swift in Sources */,
+				505DB1E5304CCB5900181691 /* AutoPresets_SettingsView.swift in Sources */,
 				A9A056B324B93C62007CF06D /* CriticalEventLogExportView.swift in Sources */,
 				43C05CC521EC29E3006FB252 /* TextFieldTableViewCell.swift in Sources */,
 				C1D289B522F90A52003FFBD9 /* BasalDeliveryState.swift in Sources */,
@@ -3781,6 +3844,7 @@
 				B4D904412AA8989100CBD826 /* StatefulPluginManager.swift in Sources */,
 				E9B355292935919E0076AB04 /* MissedMealSettings.swift in Sources */,
 				43A51E1F1EB6D62A000736CC /* CarbAbsorptionViewController.swift in Sources */,
+				505DB1E2304CCB4100181691 /* AutoPresets_Models.swift in Sources */,
 				43776F901B8022E90074EA36 /* AppDelegate.swift in Sources */,
 				C9SCENED0000000000000001 /* SceneDelegate.swift in Sources */,
 				505CE3C5303CB7CA00E6F5CB /* StatisticsRangeEditor.swift in Sources */,
@@ -3805,6 +3869,7 @@
 				C1F8B243223E73FD00DD66CF /* BolusProgressTableViewCell.swift in Sources */,
 				84DF48B92F6A0ADB00BEDB40 /* MediaPlayerView.swift in Sources */,
 				89D6953E23B6DF8A002B3066 /* PotentialCarbEntryTableViewCell.swift in Sources */,
+				505DB1D4304CCB2000181691 /* AutoPresets_FeatureFlags.swift in Sources */,
 				89CA2B30226C0161004D9350 /* DirectoryObserver.swift in Sources */,
 				C18859AC2AF29BE50010F21F /* TemporaryPresetsManager.swift in Sources */,
 				B43B5C522EAFB1BE0096A6AE /* InsulinSuspendedTableViewCell.swift in Sources */,
@@ -3883,6 +3948,11 @@
 				84DF48C32F6A0AF600BEDB40 /* Image+Crop.swift in Sources */,
 				509B0386304C940D00715755 /* FoodFinder_FeatureFlags.swift in Sources */,
 				439BED2A1E76093C00B0AED5 /* CGMManager.swift in Sources */,
+				505DB1DB304CCB2F00181691 /* AutoPresets_Logger.swift in Sources */,
+				505DB1DC304CCB2F00181691 /* AutoPresets_ActivityDetectionManager.swift in Sources */,
+				505DB1DD304CCB2F00181691 /* AutoPresets_Coordinator.swift in Sources */,
+				505DB1DE304CCB2F00181691 /* AutoPresets_Delegate.swift in Sources */,
+				505DB1DF304CCB2F00181691 /* AutoPresets_Storage.swift in Sources */,
 				C16B983E26B4893300256B05 /* DoseEnactor.swift in Sources */,
 				3ED319962EB65A5C00820BCF /* LiveActivityManagementViewModel.swift in Sources */,
 				E98A55EF24EDD6E60008715D /* DosingDecisionStoreProtocol.swift in Sources */,
@@ -3988,6 +4058,7 @@
 				84DEB10D2C18FABA00170734 /* IOSFocusModesView.swift in Sources */,
 				84DF48BF2F6A0AE500BEDB40 /* VideoView.swift in Sources */,
 				84213C752D932F0F00642E78 /* InsulinDeliveryLog.swift in Sources */,
+				505DB1E7304CE45900181691 /* AutoPresets_GeofenceManager.swift in Sources */,
 				DDC389FC2A2BC6670066E2E8 /* SettingsView+algorithmExperimentsSection.swift in Sources */,
 				1D12D3B92548EFDD00B53E8B /* main.swift in Sources */,
 				A9DCF32A25B0FABF00C89088 /* LoopUIColorPalette+Default.swift in Sources */,
@@ -4060,6 +4131,7 @@
 				509B036B304C77F800715755 /* BolusPro_CarbEntrySection.swift in Sources */,
 				1452F4A92A851C9400F8B9E4 /* FavoriteFoodAddEditViewModel.swift in Sources */,
 				438D42FB1D7D11A4003244B0 /* PredictionInputEffectTableViewCell.swift in Sources */,
+				505DB1E9304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift in Sources */,
 				C1C660D1252E4DD5009B5C32 /* LoopConstants.swift in Sources */,
 				432E73CB1D24B3D6009AD15D /* RemoteDataServicesManager.swift in Sources */,
 				509B03A5304C942E00715755 /* FoodFinder_SearchViewModel.swift in Sources */,

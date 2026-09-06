@@ -248,6 +248,7 @@ class LoopAppManager: NSObject {
         )
 
         temporaryPresetsManager = TemporaryPresetsManager(settingsProvider: settingsManager, alertIssuer: alertManager)
+        AutoPresets_Coordinator.shared.delegate = temporaryPresetsManager
         temporaryPresetsManager.presetHistory.delegate = self
 
         temporaryPresetsManager.addTemporaryPresetObserver(analyticsServicesManager)
