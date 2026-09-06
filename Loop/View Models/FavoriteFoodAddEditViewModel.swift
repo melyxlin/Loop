@@ -23,6 +23,8 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
     @Published var name = ""
     
     @Published var carbsQuantity: Double? = nil
+    @Published var protein: Double? = nil
+    @Published var fat: Double? = nil
     var preferredCarbUnit = LoopUnit.gram
     var maxCarbEntryQuantity = LoopConstants.maxCarbEntryQuantity
     var warningCarbEntryQuantity = LoopConstants.warningCarbEntryQuantity
@@ -48,6 +50,8 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
             self.carbsQuantity = food.carbsQuantity.doubleValue(for: preferredCarbUnit)
             self.foodType = food.foodType
             self.absorptionTime = food.absorptionTime
+            self.protein = food.protein
+            self.fat = food.fat
         }
         else {
             self.absorptionTime = .hours(3)
@@ -69,16 +73,30 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
     
     var originalFavoriteFood: StoredFavoriteFood?
     var updatedFavoriteFood: NewFavoriteFood? {
-        if let quantity = carbsQuantity, quantity != 0, name != "", foodType != "" {
-            if let o = originalFavoriteFood, o.name == name, o.carbsQuantity.doubleValue(for: preferredCarbUnit) == carbsQuantity && o.foodType == foodType && o.absorptionTime == absorptionTime {
-                return nil  // No changes were made
+        if let quantity = carbsQuantity,
+           name != "",
+           foodType != "",
+           quantity > 0 || (protein ?? 0) > 0 || (fat ?? 0) > 0 {
+            if let o = originalFavoriteFood,
+               o.name == name,
+               o.carbsQuantity.doubleValue(for: preferredCarbUnit) == carbsQuantity &&
+               o.foodType == foodType &&
+               o.absorptionTime == absorptionTime &&
+               o.protein == protein &&
+               o.fat == fat {
+                return nil
             }
             
             return NewFavoriteFood(
                 name: name,
-                carbsQuantity: LoopQuantity(unit: preferredCarbUnit, doubleValue: quantity),
+                carbsQuantity: LoopQuantity(
+                    unit: preferredCarbUnit,
+                    doubleValue: quantity
+                ),
                 foodType: foodType,
-                absorptionTime: absorptionTime
+                absorptionTime: absorptionTime,
+                protein: protein,
+                fat: fat
             )
         }
         else {
@@ -89,7 +107,11 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
     func save() {
         guard let updatedFavoriteFood, absorptionTime <= maxAbsorptionTime else { return }
 
-        guard let carbsQuantity, carbsQuantity > 0 else { return }
+        guard let carbsQuantity,
+              carbsQuantity > 0 || (protein ?? 0) > 0 || (fat ?? 0) > 0
+        else {
+            return
+        }
         let quantity = LoopQuantity(unit: preferredCarbUnit, doubleValue: carbsQuantity)
         if quantity.compare(maxCarbEntryQuantity) == .orderedDescending {
             self.alert = .maxQuantityExceded

@@ -31,6 +31,20 @@ struct FavoriteFoodAddEditView: View {
         self._viewModel = StateObject(wrappedValue: FavoriteFoodAddEditViewModel(carbsQuantity: carbsQuantity, foodType: foodType, absorptionTime: absorptionTime, onSave: onSave))
     }
     
+    private var fatBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.fat ?? 0 },
+            set: { viewModel.fat = $0 == 0 ? nil : $0 }
+        )
+    }
+
+    private var proteinBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.protein ?? 0 },
+            set: { viewModel.protein = $0 == 0 ? nil : $0 }
+        )
+    }
+    
     var body: some View {
         if isNewEntry {
             NavigationView {
@@ -107,6 +121,20 @@ struct FavoriteFoodAddEditView: View {
 
             AbsorptionTimePickerRow(absorptionTime: $viewModel.absorptionTime, isFocused: absorptionTimeFocused, validDurationRange: viewModel.absorptionRimesRange, showHowAbsorptionTimeWorks: $showHowAbsorptionTimeWorks)
                 .padding(.bottom, 2)
+            
+            CardSectionDivider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BolusPro")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                BolusPro_ManualMacroFields(
+                    fatGrams: fatBinding,
+                    proteinGrams: proteinBinding
+                )
+            }
+            .padding(.top, 2)
         }
         .padding(.vertical, 12)
         .padding(.horizontal)

@@ -269,7 +269,14 @@ final class CarbEntryViewModel: ObservableObject {
     
     // MARK: - Favorite Foods
     func onFavoriteFoodSave(_ food: NewFavoriteFood) {
-        let newStoredFood = StoredFavoriteFood(name: food.name, carbsQuantity: food.carbsQuantity, foodType: food.foodType, absorptionTime: food.absorptionTime)
+        let newStoredFood = StoredFavoriteFood(
+            name: food.name,
+            carbsQuantity: food.carbsQuantity,
+            foodType: food.foodType,
+            absorptionTime: food.absorptionTime,
+            protein: food.protein,
+            fat: food.fat
+        )
         favoriteFoods.append(newStoredFood)
         selectedFavoriteFoodIndex = favoriteFoods.count - 1
     }
