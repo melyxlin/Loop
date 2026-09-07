@@ -1661,7 +1661,11 @@ extension LoopDataManager: BolusEntryViewModelDelegate {
     
     func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws -> LoopKit.StoredGlucoseSample {
         let storedSamples = try await addGlucose([sample])
-        return storedSamples.first!
+        let storedSample = storedSamples.first!
+
+        await loop()
+
+        return storedSample
     }
 
     var preMealOverride: TemporaryScheduleOverride? {

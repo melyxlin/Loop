@@ -724,20 +724,10 @@ final class BolusEntryViewModel: ObservableObject {
         self.activeCarbs = delegate?.activeCarbs?.quantity
         self.activeInsulin = delegate?.activeInsulin?.quantity
         dosingDecision.insulinOnBoard = delegate?.activeInsulin
-
-        disableManualGlucoseEntryIfNecessary()
         updateChartDateInterval()
         await updateRecommendedBolusAndNotice(isUpdatingFromUserInput: false)
         await updatePredictedGlucoseValues()
         updateGlucoseChartValues()
-    }
-
-    private func disableManualGlucoseEntryIfNecessary() {
-        if isManualGlucoseEntryEnabled, !isGlucoseDataStale {
-            isManualGlucoseEntryEnabled = false
-            manualGlucoseQuantity = nil
-            manualGlucoseSample = nil
-        }
     }
 
     private func updateGlucoseChartValues() {
@@ -1283,7 +1273,7 @@ extension BolusEntryViewModel {
     }
 
     var isManualGlucosePromptVisible: Bool {
-        activeNotice == .staleGlucoseData && !isManualGlucoseEntryEnabled
+        !isManualGlucoseEntryEnabled
     }
 
     var isNoticeVisible: Bool {
@@ -1306,9 +1296,16 @@ extension BolusEntryViewModel {
 
     enum ButtonChoice { case manualGlucoseEntry, actionButton }
     var primaryButton: ButtonChoice {
-        if !isManualGlucosePromptVisible { return .actionButton }
-        if hasBolusEntryReadyToDeliver { return .actionButton }
-        return .manualGlucoseEntry
+        // Keep manual glucose entry as the primary action only when
+        // Loop actually needs a glucose value because CGM data is stale.
+        if activeNotice == .staleGlucoseData &&
+            isManualGlucosePromptVisible &&
+            !hasBolusEntryReadyToDeliver
+        {
+            return .manualGlucoseEntry
+        }
+
+        return .actionButton
     }
 
     enum ActionButtonAction {
