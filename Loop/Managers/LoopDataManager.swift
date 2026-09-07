@@ -1763,6 +1763,7 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
             glucoseValues: glucose,
             carbEntries: carbEntries,
             doses: trimmedDoses,
+            rawDoses: doses,
             iobValues: trimmedIOBValues,
             carbAbsorptionReview: carbAbsorptionReview
         )

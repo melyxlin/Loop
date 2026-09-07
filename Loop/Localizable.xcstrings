@@ -6187,6 +6187,9 @@
         }
       }
     },
+    "Additional Food" : {
+
+    },
     "Adjust Preset Duration" : {
 
     },
@@ -35125,6 +35128,12 @@
 
     },
     "Reset to defaults" : {
+
+    },
+    "Response" : {
+
+    },
+    "Response limited to %@ after meal" : {
 
     },
     "Restores all glucose alert thresholds, schedules, and sounds to their defaults, and removes any extra profiles." : {

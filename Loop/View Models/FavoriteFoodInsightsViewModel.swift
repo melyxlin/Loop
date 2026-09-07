@@ -22,6 +22,7 @@ struct HistoricalChartsData {
     let glucoseValues: [GlucoseValue]
     let carbEntries: [StoredCarbEntry]
     let doses: [BasalRelativeDose]
+    let rawDoses: [DoseEntry]
     let iobValues: [InsulinValue]
     let carbAbsorptionReview: CarbAbsorptionReview?
 }
@@ -43,6 +44,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
     @Published var historicalGlucoseValues: [GlucoseValue] = []
     @Published var historicalCarbEntries: [StoredCarbEntry] = []
     @Published var historicalDoses: [BasalRelativeDose] = []
+    @Published var historicalRawDoses: [DoseEntry] = []
     @Published var historicalIOBValues: [InsulinValue] = []
     @Published var historicalCarbAbsorptionReview: CarbAbsorptionReview? = nil
     
@@ -54,6 +56,205 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
         DateInterval(start: startDate, end: endDate)
     }
     var now = Date()
+    
+    private var postMealGlucoseValues: [GlucoseValue] {
+        guard let mealDate = carbEntry?.startDate,
+              let responseEndDate
+        else {
+            return []
+        }
+
+        return historicalGlucoseValues
+            .filter {
+                $0.startDate >= mealDate &&
+                $0.startDate < responseEndDate
+            }
+            .sorted {
+                $0.startDate < $1.startDate
+            }
+    }
+    var startingGlucose: LoopQuantity? {
+        guard let mealDate = carbEntry?.startDate else {
+            return nil
+        }
+
+        return historicalGlucoseValues
+            .filter { $0.startDate < mealDate }
+            .max { $0.startDate < $1.startDate }?
+            .quantity
+    }
+
+    var peakGlucose: LoopQuantity? {
+        postMealGlucoseValues.max {
+            $0.quantity.doubleValue(for: .milligramsPerDeciliter)
+                < $1.quantity.doubleValue(for: .milligramsPerDeciliter)
+        }?.quantity
+    }
+
+    var lowestGlucose: LoopQuantity? {
+        postMealGlucoseValues.min {
+            $0.quantity.doubleValue(for: .milligramsPerDeciliter)
+                < $1.quantity.doubleValue(for: .milligramsPerDeciliter)
+        }?.quantity
+    }
+
+    var glucoseRise: Double? {
+        guard let startingGlucose,
+              let peakGlucose
+        else {
+            return nil
+        }
+
+        return peakGlucose.doubleValue(for: .milligramsPerDeciliter)
+            - startingGlucose.doubleValue(for: .milligramsPerDeciliter)
+    }
+
+    var timeToPeak: TimeInterval? {
+        guard let mealDate = carbEntry?.startDate,
+              let peak = postMealGlucoseValues.max(by: {
+                  $0.quantity.doubleValue(for: .milligramsPerDeciliter)
+                      < $1.quantity.doubleValue(for: .milligramsPerDeciliter)
+              })
+        else {
+            return nil
+        }
+
+        return peak.startDate.timeIntervalSince(mealDate)
+    }
+    
+    var startingIOB: Double? {
+        guard let mealDate = carbEntry?.startDate else {
+            return nil
+        }
+
+        return historicalIOBValues.min(by: {
+            abs($0.startDate.timeIntervalSince(mealDate)) <
+            abs($1.startDate.timeIntervalSince(mealDate))
+        })?.value
+    }
+
+    private var mealBolusWindow: DateInterval? {
+        guard let mealDate = carbEntry?.startDate else {
+            return nil
+        }
+
+        return DateInterval(
+            start: mealDate.addingTimeInterval(.minutes(-30)),
+            end: mealDate.addingTimeInterval(.minutes(5))
+        )
+    }
+
+//    private var postMealBolusWindow: DateInterval? {
+//        guard let mealDate = carbEntry?.startDate else {
+//            return nil
+//       }
+//
+//        return DateInterval(
+//            start: mealDate.addingTimeInterval(.minutes(5)),
+//            end: mealDate.addingTimeInterval(
+//                FavoriteFoodInsightsViewModel.minTimeIntervalFollowingFoodEaten
+//            )
+//        )
+//    }
+
+    private var bolusDoses: [DoseEntry] {
+        historicalRawDoses.filter {
+            $0.type == .bolus
+        }
+    }
+
+    var mealBolus: Double {
+        guard let window = mealBolusWindow else {
+            return 0
+        }
+
+        return bolusDoses
+            .filter {
+                window.contains($0.startDate) &&
+                $0.automatic != true
+            }
+            .map {
+                $0.deliveredUnits ?? $0.programmedUnits
+            }
+            .reduce(0, +)
+    }
+
+    var additionalBolus: Double {
+        guard let mealDate = carbEntry?.startDate,
+              let responseEndDate
+        else {
+            return 0
+        }
+
+        let mealBolusWindowEnd = mealDate.addingTimeInterval(.minutes(5))
+
+        return bolusDoses
+            .filter {
+                $0.startDate > mealBolusWindowEnd &&
+                $0.startDate < responseEndDate
+            }
+            .map {
+                $0.deliveredUnits ?? $0.programmedUnits
+            }
+            .reduce(0, +)
+    }
+
+    var totalBolus: Double {
+        mealBolus + additionalBolus
+    }
+    
+    private var defaultResponseEndDate: Date? {
+        guard let mealDate = carbEntry?.startDate else {
+            return nil
+        }
+
+        return mealDate.addingTimeInterval(
+            FavoriteFoodInsightsViewModel.minTimeIntervalFollowingFoodEaten
+        )
+    }
+
+    var nextCarbEntryAfterMeal: StoredCarbEntry? {
+        guard let mealDate = carbEntry?.startDate,
+              let defaultEnd = defaultResponseEndDate
+        else {
+            return nil
+        }
+
+        return historicalCarbEntries
+            .filter {
+                $0.startDate > mealDate &&
+                $0.startDate < defaultEnd
+            }
+            .min {
+                $0.startDate < $1.startDate
+            }
+    }
+
+    private var responseEndDate: Date? {
+        guard let defaultEnd = defaultResponseEndDate else {
+            return nil
+        }
+
+        if let nextCarbEntryAfterMeal {
+            return min(defaultEnd, nextCarbEntryAfterMeal.startDate)
+        }
+
+        return defaultEnd
+    }
+
+    var hasOverlappingFood: Bool {
+        nextCarbEntryAfterMeal != nil
+    }
+
+    var timeUntilOverlappingFood: TimeInterval? {
+        guard let mealDate = carbEntry?.startDate,
+              let nextCarbEntryAfterMeal
+        else {
+            return nil
+        }
+
+        return nextCarbEntryAfterMeal.startDate.timeIntervalSince(mealDate)
+    }
     
     var preferredCarbUnit = LoopUnit.gram
     lazy var carbFormatter = QuantityFormatter(for: preferredCarbUnit)
@@ -143,6 +344,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
                     self.historicalGlucoseValues = historicalChartsData.glucoseValues
                     self.historicalCarbEntries = carbEntriesWithCorrectedFavoriteFoods
                     self.historicalDoses = historicalChartsData.doses
+                    self.historicalRawDoses = historicalChartsData.rawDoses
                     self.historicalIOBValues = historicalChartsData.iobValues
                     self.historicalCarbAbsorptionReview = historicalChartsData.carbAbsorptionReview
                 }
