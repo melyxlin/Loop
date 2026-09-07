@@ -23,6 +23,7 @@ struct BolusEntryView: View {
     @ObservedObject var viewModel: BolusEntryViewModel
 
     @State private var enteredBolusString = ""
+    @State private var showingBolusCalculationDetails = false
 
     @State private var isInteractingWithChart = false
     @State private var editedBolusAmount = false
@@ -45,6 +46,21 @@ struct BolusEntryView: View {
         .navigationBarTitle(self.title)
         .supportedInterfaceOrientations(.portrait)
         .alert(item: self.$viewModel.activeAlert, content: self.alert(for:))
+        .sheet(isPresented: $showingBolusCalculationDetails) {
+            NavigationStack {
+                BolusCalculationDetailsView(
+                    details: viewModel.bolusCalculationDetails
+                )
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") {
+                            showingBolusCalculationDetails = false
+                        }
+                    }
+                }
+            }
+        }
         .onReceive(self.viewModel.$recommendedBolus) { recommendation in
             // If the recommendation changes, and the user has not edited the bolus amount, update the bolus amount
             let amount = recommendation?.doubleValue(for: .internationalUnit) ?? 0
@@ -257,7 +273,22 @@ struct BolusEntryView: View {
 
     private var recommendedBolusRow: some View {
         HStack {
-            Text("Recommended Bolus", comment: "Label for recommended bolus row on bolus screen")
+            HStack(spacing: 6) {
+                        Text(
+                            "Recommended Bolus",
+                            comment: "Label for recommended bolus row on bolus screen"
+                        )
+
+                        Button {
+                            showingBolusCalculationDetails = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Bolus Calculation Details")
+                    }
+
             Spacer()
             HStack(alignment: .firstTextBaseline) {
                 Text(viewModel.recommendedBolusString)

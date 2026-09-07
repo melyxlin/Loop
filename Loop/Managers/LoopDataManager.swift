@@ -909,34 +909,95 @@ final class LoopDataManager: ObservableObject {
         originalCarbEntry: StoredCarbEntry? = nil,
         truncatingActiveOverride: Bool = false
     ) async throws -> ManualBolusRecommendation? {
+        let result = try await recommendManualBolusWithDetails(
+            manualGlucoseSample: manualGlucoseSample,
+            potentialCarbEntry: potentialCarbEntry,
+            originalCarbEntry: originalCarbEntry,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+
+        return result.recommendation
+    }
+    
+    func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        potentialCarbEntry: NewCarbEntry?,
+        originalCarbEntry: StoredCarbEntry?,
+        truncatingActiveOverride: Bool
+    ) async throws -> ManualBolusRecommendationResult {
+
+        let now = self.now
 
         var endingPremealOverride = false
 
         if potentialCarbEntry != nil,
-            let activeOverride = temporaryPresetsManager.activeOverride,
-            activeOverride.context == .preMeal
+           let activeOverride = temporaryPresetsManager.activeOverride,
+           activeOverride.context == .preMeal
         {
             endingPremealOverride = true
         }
 
-        var input = try await self.fetchData(for: now, presumePresetEndingNow: truncatingActiveOverride || endingPremealOverride)
-            .addingGlucoseSample(sample: manualGlucoseSample?.asStoredGlucoseSample)
-            .removingCarbEntry(carbEntry: originalCarbEntry)
-            .addingCarbEntry(carbEntry: potentialCarbEntry?.asStoredCarbEntry)
+        var input = try await self.fetchData(
+            for: now,
+            presumePresetEndingNow:
+                truncatingActiveOverride || endingPremealOverride
+        )
+            .addingGlucoseSample(
+                sample: manualGlucoseSample?.asStoredGlucoseSample
+            )
+            .removingCarbEntry(
+                carbEntry: originalCarbEntry
+            )
+            .addingCarbEntry(
+                carbEntry: potentialCarbEntry?.asStoredCarbEntry
+            )
 
-        input.includePositiveVelocityAndRC = usePositiveMomentumAndRCForManualBoluses
+        input.includePositiveVelocityAndRC =
+            usePositiveMomentumAndRCForManualBoluses
+
         input.recommendationType = .manualBolus
 
         let output = LoopAlgorithm.run(input: input)
 
+        let momentumEffect =
+            output.effects.momentum.last?.quantity.doubleValue(
+                for: .milligramsPerDeciliter
+            )
+
+        let retrospectiveCorrectionEffect =
+            output.effects.totalRetrospectiveCorrectionEffect?.doubleValue(
+                for: .milligramsPerDeciliter
+            )
 
         switch output.recommendationResult {
+
         case .success(let prediction):
-            guard var manualBolusRecommendation = prediction.manual else { return nil }
-            if let roundedAmount = deliveryDelegate?.roundBolusVolume(units: manualBolusRecommendation.amount) {
+            guard var manualBolusRecommendation = prediction.manual else {
+                return ManualBolusRecommendationResult(
+                    recommendation: nil,
+                    calculatedBolus: nil,
+                    momentumEffect: momentumEffect,
+                    retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
+                )
+            }
+            let calculatedBolus = manualBolusRecommendation.amount
+
+            if let roundedAmount =
+                deliveryDelegate?.roundBolusVolume(
+                    units: manualBolusRecommendation.amount
+                )
+            {
                 manualBolusRecommendation.amount = roundedAmount
             }
-            return manualBolusRecommendation
+
+            return ManualBolusRecommendationResult(
+                recommendation: manualBolusRecommendation,
+                calculatedBolus: calculatedBolus,
+                momentumEffect: momentumEffect,
+                retrospectiveCorrectionEffect:
+                    retrospectiveCorrectionEffect
+            )
+
         case .failure(let error):
             throw error
         }

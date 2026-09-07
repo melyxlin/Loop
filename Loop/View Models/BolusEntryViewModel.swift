@@ -64,6 +64,13 @@ protocol BolusEntryViewModelDelegate: AnyObject {
         originalCarbEntry: StoredCarbEntry?,
         truncatingActiveOverride: Bool
     ) async throws -> ManualBolusRecommendation?
+    
+    func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        potentialCarbEntry: NewCarbEntry?,
+        originalCarbEntry: StoredCarbEntry?,
+        truncatingActiveOverride: Bool
+    ) async throws -> ManualBolusRecommendationResult
 
     func generatePrediction(
         originalCarbEntry: StoredCarbEntry?,
@@ -140,6 +147,7 @@ final class BolusEntryViewModel: ObservableObject {
     let selectedCarbAbsorptionTimeEmoji: String?
 
     @Published var recommendedBolus: LoopQuantity?
+    @Published var bolusCalculationDetails = BolusCalculationDetails()
     var recommendedBolusAmount: Double? {
         recommendedBolus?.doubleValue(for: .internationalUnit)
     }
@@ -776,10 +784,33 @@ final class BolusEntryViewModel: ObservableObject {
 
             storedGlucoseValues = glucoseHistory
             predictedGlucoseValues = prediction
+            if let lowestPredicted = prediction.min(by: {
+                $0.quantity.doubleValue(for: .milligramsPerDeciliter) <
+                    $1.quantity.doubleValue(for: .milligramsPerDeciliter)
+            }) {
+                self.bolusCalculationDetails.lowestPredictedGlucose =
+                    lowestPredicted.quantity.doubleValue(
+                        for: .milligramsPerDeciliter
+                    )
+            } else {
+                self.bolusCalculationDetails.lowestPredictedGlucose = nil
+            }
+
+            if let eventualPredicted = prediction.last {
+                self.bolusCalculationDetails.eventualPredictedGlucose =
+                    eventualPredicted.quantity.doubleValue(
+                        for: .milligramsPerDeciliter
+                    )
+            } else {
+                self.bolusCalculationDetails.eventualPredictedGlucose = nil
+            }
             dosingDecision.predictedGlucose = prediction
         } catch {
             predictedGlucoseValues = []
             dosingDecision.predictedGlucose = []
+            
+            self.bolusCalculationDetails.lowestPredictedGlucose = nil
+            self.bolusCalculationDetails.eventualPredictedGlucose = nil
         }
 
     }
@@ -838,12 +869,15 @@ final class BolusEntryViewModel: ObservableObject {
             assertionFailure("Missing BolusEntryViewModelDelegate")
             return
         }
+        self.presetEffectedRecommendation = nil
 
         var recommendation: ManualBolusRecommendation?
+        var recommendationDetails: ManualBolusRecommendationResult?
         let recommendedBolus: LoopQuantity?
         let notice: Notice?
         do {
-            recommendation = try await computeBolusRecommendation()
+            recommendationDetails = try await computeBolusRecommendationDetails()
+            recommendation = recommendationDetails?.recommendation
 
             if let recommendation, deliveryDelegate != nil {
                 if let originalAmount = try await computeBolusRecommendation(
@@ -900,10 +934,67 @@ final class BolusEntryViewModel: ObservableObject {
 
         let priorRecommendedBolus = self.recommendedBolus
         self.recommendedBolus = recommendedBolus
+        self.bolusCalculationDetails.recommendedBolus =
+            self.recommendedBolus?.doubleValue(for: .internationalUnit)
+
+        self.bolusCalculationDetails.activeInsulin =
+            self.activeInsulin?.doubleValue(for: .internationalUnit)
+        
+        self.bolusCalculationDetails.activeCarbs =
+            self.activeCarbs?.doubleValue(for: .gram)
+
+        let hasActivePreset =
+            scheduleOverride != nil || preMealOverride != nil
+
+        if hasActivePreset,
+           let presetEffectedRecommendation = self.presetEffectedRecommendation
+        {
+            self.bolusCalculationDetails.recommendationWithoutPreset =
+                presetEffectedRecommendation.originalAmount
+
+            self.bolusCalculationDetails.recommendationWithPreset =
+                presetEffectedRecommendation.recommendedAmount
+        }
+        else {
+            self.bolusCalculationDetails.recommendationWithoutPreset = nil
+            self.bolusCalculationDetails.recommendationWithPreset = nil
+        }
+        if let details = recommendationDetails {
+            self.bolusCalculationDetails.calculatedBolus =
+                details.calculatedBolus
+
+            if let momentumEffect = details.momentumEffect {
+                self.bolusCalculationDetails.glucoseMomentumDescription =
+                    String(format: "%+.0f mg/dL", momentumEffect)
+            } else {
+                self.bolusCalculationDetails.glucoseMomentumDescription = nil
+            }
+
+            if let retrospectiveCorrectionEffect =
+                details.retrospectiveCorrectionEffect
+            {
+                self.bolusCalculationDetails.retrospectiveCorrectionDescription =
+                    String(
+                        format: "%+.0f mg/dL",
+                        retrospectiveCorrectionEffect
+                    )
+            } else {
+                self.bolusCalculationDetails.retrospectiveCorrectionDescription = nil
+            }
+        } else {
+            self.bolusCalculationDetails.calculatedBolus = nil
+            self.bolusCalculationDetails.glucoseMomentumDescription = nil
+            self.bolusCalculationDetails.retrospectiveCorrectionDescription = nil
+        }
         self.dosingDecision.manualBolusRecommendation = recommendation.map {
             ManualBolusRecommendationWithDate(recommendation: $0, date: now())
         }
+        
         self.activeNotice = notice
+        
+        
+        
+        await updateBolusCalculationReferenceValues()
 
         if priorRecommendedBolus != nil,
             priorRecommendedBolus != recommendedBolus,
@@ -927,6 +1018,148 @@ final class BolusEntryViewModel: ObservableObject {
             originalCarbEntry: originalCarbEntry,
             truncatingActiveOverride: truncatingActiveOverride
         )
+    }
+    
+    private func computeBolusRecommendationDetails(
+        truncatingActiveOverride: Bool = false
+    ) async throws -> ManualBolusRecommendationResult? {
+        guard let delegate else {
+            return nil
+        }
+
+        return try await delegate.recommendManualBolusWithDetails(
+            manualGlucoseSample: manualGlucoseSample,
+            potentialCarbEntry: potentialCarbEntry,
+            originalCarbEntry: originalCarbEntry,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+    }
+    
+    private func updateBolusCalculationReferenceValues() async {
+        guard let delegate else {
+            return
+        }
+
+        do {
+            let shouldEndPreMealOverride =
+                potentialCarbEntry != nil &&
+                delegate.preMealOverride != nil
+
+            let input = try await delegate.fetchData(
+                for: now(),
+                presumePresetEndingNow: shouldEndPreMealOverride,
+                ensureDosingCoverageStart: nil,
+                projectOngoingDoses: false
+            )
+            .addingGlucoseSample(
+                sample: manualGlucoseSample?.asStoredGlucoseSample
+            )
+            .removingCarbEntry(
+                carbEntry: originalCarbEntry
+            )
+            .addingCarbEntry(
+                carbEntry: potentialCarbEntry?.asStoredCarbEntry
+            )
+
+            let referenceDate = input.predictionStart
+
+            // Current glucose
+            let currentGlucose =
+                input.glucoseHistory.last?.quantity.doubleValue(
+                    for: .milligramsPerDeciliter
+                )
+
+            self.bolusCalculationDetails.currentGlucose = currentGlucose
+
+            // Effective target at the start of the prediction.
+            if let targetRange =
+                input.target.closestPrior(to: referenceDate)?.value
+            {
+                let lowerTarget =
+                    targetRange.lowerBound.doubleValue(
+                        for: .milligramsPerDeciliter
+                    )
+
+                let upperTarget =
+                    targetRange.upperBound.doubleValue(
+                        for: .milligramsPerDeciliter
+                    )
+
+                self.bolusCalculationDetails.targetGlucose =
+                    (lowerTarget + upperTarget) / 2
+            } else {
+                self.bolusCalculationDetails.targetGlucose = nil
+            }
+
+            // ISF active at the start of the prediction.
+            if let sensitivity = input.sensitivity.first(where: {
+                $0.startDate <= referenceDate &&
+                    $0.endDate >= referenceDate
+            })?.value {
+                self.bolusCalculationDetails.insulinSensitivity =
+                    sensitivity.doubleValue(
+                        for: .milligramsPerDeciliter
+                    )
+            } else {
+                self.bolusCalculationDetails.insulinSensitivity = nil
+            }
+
+            // Traditional reference correction only.
+            if let currentGlucose =
+                    self.bolusCalculationDetails.currentGlucose,
+               let targetGlucose =
+                    self.bolusCalculationDetails.targetGlucose,
+               let insulinSensitivity =
+                    self.bolusCalculationDetails.insulinSensitivity,
+               insulinSensitivity > 0
+            {
+                self.bolusCalculationDetails.glucoseCorrectionReference =
+                    (currentGlucose - targetGlucose) / insulinSensitivity
+            } else {
+                self.bolusCalculationDetails.glucoseCorrectionReference = nil
+            }
+            // Carb coverage reference
+            if let potentialCarbEntry {
+                let enteredCarbs =
+                    potentialCarbEntry.quantity.doubleValue(for: .gram)
+
+                self.bolusCalculationDetails.enteredCarbs = enteredCarbs
+
+                if let carbRatio = input.carbRatio.first(where: {
+                    $0.startDate <= referenceDate &&
+                        $0.endDate >= referenceDate
+                })?.value {
+                    let carbRatioValue = carbRatio
+
+                    self.bolusCalculationDetails.carbRatio =
+                        carbRatioValue
+
+                    if carbRatioValue > 0 {
+                        self.bolusCalculationDetails.carbCoverageReference =
+                            enteredCarbs / carbRatioValue
+                    } else {
+                        self.bolusCalculationDetails.carbCoverageReference = nil
+                    }
+                } else {
+                    self.bolusCalculationDetails.carbRatio = nil
+                    self.bolusCalculationDetails.carbCoverageReference = nil
+                }
+            } else {
+                self.bolusCalculationDetails.enteredCarbs = nil
+                self.bolusCalculationDetails.carbRatio = nil
+                self.bolusCalculationDetails.carbCoverageReference = nil
+            }
+
+        } catch {
+            self.bolusCalculationDetails.currentGlucose = nil
+            self.bolusCalculationDetails.targetGlucose = nil
+            self.bolusCalculationDetails.insulinSensitivity = nil
+            self.bolusCalculationDetails.glucoseCorrectionReference = nil
+
+            self.bolusCalculationDetails.enteredCarbs = nil
+            self.bolusCalculationDetails.carbRatio = nil
+            self.bolusCalculationDetails.carbCoverageReference = nil
+        }
     }
 
     func updateSettings() {
