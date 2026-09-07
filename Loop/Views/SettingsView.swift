@@ -528,8 +528,26 @@ struct SettingsView: View {
 
     private var closedLoopToggleState: Binding<Bool> {
         Binding(
-            get: { self.viewModel.closedLoopPreference },
-            set: { self.viewModel.closedLoopPreference = $0 }
+            get: {
+                if self.viewModel.isCGMInputPaused {
+                    return false
+                }
+
+                return self.viewModel.closedLoopPreference
+            },
+            set: { newValue in
+                guard !self.viewModel.isCGMInputPaused else {
+                    return
+                }
+
+                self.viewModel.closedLoopPreference = newValue
+            }
+        )
+    }
+    private var cgmInputPausedToggleState: Binding<Bool> {
+        Binding(
+            get: { self.viewModel.isCGMInputPaused },
+            set: { self.viewModel.isCGMInputPaused = $0 }
         )
     }
 }
@@ -588,7 +606,19 @@ extension SettingsView {
                         Text("Closed Loop", comment: "The title text for the looping enabled switch cell")
                         DescriptiveText(label: NSLocalizedString("Insulin Automation", comment: "Closed loop settings button descriptive text"))
                         if !viewModel.isOnboardingComplete {
-                            DescriptiveText(label: NSLocalizedString("Closed Loop requires Setup to be Complete", comment: "The description text for the looping enabled switch cell when onboarding is not complete"))
+                            DescriptiveText(
+                                label: NSLocalizedString(
+                                    "Closed Loop requires Setup to be Complete",
+                                    comment: "The description text for the looping enabled switch cell when onboarding is not complete"
+                                )
+                            )
+                        } else if viewModel.isCGMInputPaused {
+                            DescriptiveText(
+                                label: NSLocalizedString(
+                                    "Closed Loop is unavailable while CGM input is paused.",
+                                    comment: "Closed loop description while CGM input is paused"
+                                )
+                            )
                         } else if let closedLoopDescriptiveText = viewModel.closedLoopDescriptiveText {
                             DescriptiveText(label: closedLoopDescriptiveText)
                         }
@@ -596,7 +626,7 @@ extension SettingsView {
                 }
             }
             .accessibilityIdentifier("settingsViewClosedLoopToggle")
-            .disabled(!viewModel.isOnboardingComplete)
+            .disabled(!viewModel.isOnboardingComplete || viewModel.isCGMInputPaused)
             .padding(.vertical)
         }
     }
@@ -940,6 +970,20 @@ extension SettingsView {
                         imageView: deviceImage(uiImage: viewModel.cgmManagerSettingsViewModel.image()),
                         label: viewModel.cgmManagerSettingsViewModel.name(),
                         descriptiveText: NSLocalizedString("Continuous Glucose Monitor", comment: "Descriptive text for Continuous Glucose Monitor"))
+
+            Toggle(isOn: cgmInputPausedToggleState) {
+                VStack(alignment: .leading) {
+                    Text("Pause CGM Input")
+                    DescriptiveText(
+                        label: NSLocalizedString(
+                            "Ignore new CGM glucose readings in Loop while keeping the CGM connected. Closed Loop will be turned off.",
+                            comment: "Description for Pause CGM Input toggle"
+                        )
+                    )
+                }
+            }
+            .accessibilityIdentifier("settingsViewPauseCGMInputToggle")
+
         } else {
             LargeButton(action: { actionSheet = .cgmPicker },
                         includeArrow: false,

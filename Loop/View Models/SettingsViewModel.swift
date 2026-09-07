@@ -102,16 +102,33 @@ class SettingsViewModel {
         delegate?.closedLoopDescriptiveText
     }
 
+    @MainActor
+    var isCGMInputPaused: Bool = false {
+        didSet {
+            deviceManager?.cgmInputPaused = isCGMInputPaused
+
+            if isCGMInputPaused {
+                closedLoopPreference = false
+            }
+        }
+    }
+
     var automaticDosingStrategy: AutomaticDosingStrategy {
         didSet {
             delegate?.dosingStrategyChanged(automaticDosingStrategy)
         }
     }
 
+    private var isSynchronizingClosedLoopPreference = false
+
     var closedLoopPreference: Bool {
-       didSet {
-           delegate?.dosingEnabledChanged(closedLoopPreference)
-       }
+        didSet {
+            guard !isSynchronizingClosedLoopPreference else {
+                return
+            }
+
+            delegate?.dosingEnabledChanged(closedLoopPreference)
+        }
     }
     
     private(set) var deviceManager: DeviceDataManager?
@@ -182,6 +199,7 @@ class SettingsViewModel {
         self.presetHistory = presetHistory
         self.deliveryDelegate = deliveryDelegate
         self.deviceManager = deviceManager
+        self.isCGMInputPaused = deviceManager?.isCGMInputPaused ?? false
 
         // This strangeness ensures the composed ViewModels' (ObservableObjects') changes get reported to this ViewModel (ObservableObject)
         lastLoopCompletion
@@ -206,8 +224,18 @@ class SettingsViewModel {
             try? await deviceManager?.deleteTestingAlertData()
         }
     }
-}
 
+    @MainActor
+    func synchronizeClosedLoopPreference(_ enabled: Bool) {
+        guard closedLoopPreference != enabled else {
+            return
+        }
+
+        isSynchronizingClosedLoopPreference = true
+        closedLoopPreference = enabled
+        isSynchronizingClosedLoopPreference = false
+    }
+}
 // For previews only
 @MainActor
 extension SettingsViewModel {

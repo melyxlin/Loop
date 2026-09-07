@@ -884,7 +884,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                   deviceManager.pumpManager?.isOnboarded == true {
             statusRowMode = .onboardingSuspended
         } else if onboardingManager.isComplete,
-                  deviceManager.isGlucoseValueStale {
+                  (deviceManager.isGlucoseValueStale || deviceManager.isCGMInputPaused) {
             statusRowMode = .recommendManualGlucoseEntry
         } else if case .tempBasal(let dose) = basalDeliveryState,
                   dose.automatic == false,
@@ -1300,8 +1300,35 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     cell.accessoryView = nil
                     return cell
                 case .recommendManualGlucoseEntry:
-                    let cell = tableView.dequeueReusableCell(withIdentifier: RecentGlucoseTableViewCell.className, for: indexPath) as! RecentGlucoseTableViewCell
+                    let cell = tableView.dequeueReusableCell(
+                        withIdentifier: RecentGlucoseTableViewCell.className,
+                        for: indexPath
+                    ) as! RecentGlucoseTableViewCell
+
                     cell.selectionStyle = .default
+
+                    if deviceManager.isCGMInputPaused {
+                        cell.title.text = NSLocalizedString(
+                            "CGM Input Paused",
+                            comment: "Title for status row while CGM input is paused"
+                        )
+
+                        cell.caption.text = NSLocalizedString(
+                            "Tap to Enter Fingerstick Glucose",
+                            comment: "Caption prompting manual glucose entry while CGM input is paused"
+                        )
+                    } else {
+                        cell.title.text = NSLocalizedString(
+                            "No Recent Glucose",
+                            comment: "Title for status row when recent glucose data is unavailable"
+                        )
+
+                        cell.caption.text = NSLocalizedString(
+                            "Tap to Add",
+                            comment: "Caption prompting manual glucose entry when glucose data is stale"
+                        )
+                    }
+
                     return cell
                 }
             }
@@ -1839,9 +1866,12 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     private func automaticDosingStatusChanged(_ automaticDosingEnabled: Bool) {
         log.debug("automaticDosingStatusChanged -> %{public}@", String(describing: automaticDosingEnabled))
+
         hudView?.loopCompletionHUD.loopIconClosed = automaticDosingEnabled
         hudView?.loopCompletionHUD.closedLoopDisallowedLocalizedDescription = deviceManager.closedLoopDisallowedLocalizedDescription
-        
+
+        statusTableViewModel.settingsViewModel.synchronizeClosedLoopPreference(automaticDosingEnabled)
+
         if automaticDosingEnabled {
             Task {
                 log.debug("Triggering loop() from automatic dosing flag")
@@ -1977,8 +2007,66 @@ final class StatusTableViewController: LoopChartsTableViewController {
         }
     }
 
-    @objc private func cgmStatusTapped( _ sender: UIGestureRecognizer) {
-        executeHUDTapAction(deviceManager.didTapOnCGMStatus(), from: sender.view)
+    @objc private func cgmStatusTapped(_ sender: UIGestureRecognizer) {
+        guard let action = deviceManager.didTapOnCGMStatus() else {
+            return
+        }
+
+        switch action {
+        case .presentViewController:
+            presentCGMControls()
+
+        default:
+            executeHUDTapAction(action, from: sender.view)
+        }
+    }
+
+    private func presentCGMControls() {
+        guard let cgmManager = deviceManager.cgmManager as? CGMManagerUI else {
+            return
+        }
+
+        let pauseBinding = Binding<Bool>(
+            get: { [weak self] in
+                self?.statusTableViewModel.settingsViewModel.isCGMInputPaused ?? false
+            },
+            set: { [weak self] newValue in
+                self?.statusTableViewModel.settingsViewModel.isCGMInputPaused = newValue
+            }
+        )
+
+        let controlsView = CGMInputControlsView(
+            isPaused: pauseBinding,
+            showCGMSettings: { [weak self] in
+                guard let self else {
+                    return
+                }
+
+                var settings = cgmManager.settingsViewController(
+                    bluetoothProvider: self.deviceManager.bluetoothProvider,
+                    displayGlucosePreference: self.deviceManager.displayGlucosePreference,
+                    colorPalette: .default,
+                    allowDebugFeatures: FeatureFlags.allowDebugFeatures
+                )
+
+                settings.cgmManagerOnboardingDelegate = self.deviceManager
+                settings.completionDelegate = self
+
+                guard let presentedController = self.presentedViewController else {
+                       return
+                   }
+
+                   presentedController.present(settings, animated: true)
+            }
+        )
+
+        let hostingController = DismissibleHostingController(
+            content: controlsView,
+            isModalInPresentation: false,
+            colorPalette: .default
+        )
+
+        present(hostingController, animated: true)
     }
 
     private func executeHUDTapAction(_ action: HUDTapAction?, from sourceView: UIView?) {

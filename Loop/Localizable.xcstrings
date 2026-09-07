@@ -12093,8 +12093,17 @@
     "CAUTION - Investigational device. Limited by Federal (or United States) law to investigational use." : {
 
     },
+    "CGM" : {
+
+    },
     "CGM Active" : {
       "comment" : "Percent of time CGM data present metric title"
+    },
+    "CGM Input Paused" : {
+      "comment" : "Title for status row while CGM input is paused"
+    },
+    "CGM Settings" : {
+
     },
     "Change the pump battery immediately" : {
       "comment" : "The notification alert describing a low pump battery",
@@ -13217,6 +13226,9 @@
           }
         }
       }
+    },
+    "Closed Loop is unavailable while CGM input is paused." : {
+      "comment" : "Closed loop description while CGM input is paused"
     },
     "Closed Loop OFF" : {
       "comment" : "Alert title for closed loop off informational modal",
@@ -22669,6 +22681,12 @@
     "If your glucose isn't dropping, eating too many carbs can raise your blood sugar, trigger more insulin, and increase the risk of low blood sugar during or after the activity." : {
 
     },
+    "Ignore new CGM glucose readings in Loop while keeping the CGM connected. Closed Loop will be turned off." : {
+      "comment" : "Description for Pause CGM Input toggle"
+    },
+    "Ignore new CGM glucose readings in Loop without disconnecting your sensor." : {
+
+    },
     "Immediate" : {
       "comment" : "Immediate Delivery status text",
       "localizations" : {
@@ -26113,6 +26131,9 @@
           }
         }
       }
+    },
+    "Loop" : {
+
     },
     "Loop Crashed" : {
       "comment" : "Title for crash recovery alert",
@@ -29594,8 +29615,7 @@
       }
     },
     "No Recent Glucose" : {
-      "comment" : "The title of the cell indicating that there is no recent glucose",
-      "extractionState" : "stale",
+      "comment" : "Title for status row when recent glucose data is unavailable",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -31239,6 +31259,9 @@
 
     },
     "Paloma’s Current Therapy Settings" : {
+
+    },
+    "Pause CGM Input" : {
 
     },
     "Pay attention to your insulin needs before and after exercising, playing sports, or doing unusually hard physical labor." : {
@@ -37915,8 +37938,7 @@
 
     },
     "Tap to Add" : {
-      "comment" : "The subtitle of the cell displaying an action to add a manually measurement glucose value",
-      "extractionState" : "stale",
+      "comment" : "Caption prompting manual glucose entry when glucose data is stale",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -38009,6 +38031,9 @@
           }
         }
       }
+    },
+    "Tap to Enter Fingerstick Glucose" : {
+      "comment" : "Caption prompting manual glucose entry while CGM input is paused"
     },
     "Tap to listen" : {
 
@@ -42254,6 +42279,9 @@
       "comment" : "Time-in-range band label (<54 mg/dL)"
     },
     "View Debug Logs" : {
+
+    },
+    "View sensor information and settings" : {
 
     },
     "Voice recognition failed: %@" : {

@@ -112,6 +112,28 @@ final class DeviceDataManager {
 
     var deviceWhitelist = DeviceWhitelist()
 
+    @PersistedProperty(key: "CGMInputPaused")
+    var cgmInputPaused: Bool? {
+        didSet {
+            let isPaused = cgmInputPaused ?? false
+            let wasPaused = oldValue ?? false
+
+            // Only capture the previous Closed Loop state when
+            // transitioning from unpaused -> paused.
+            if isPaused && !wasPaused {
+                restoreClosedLoopAfterCGMResume = settingsManager.dosingEnabled
+                settingsManager.dosingEnabled = false
+            }
+        }
+    }
+
+    var isCGMInputPaused: Bool {
+        cgmInputPaused ?? false
+    }
+
+    @PersistedProperty(key: "RestoreClosedLoopAfterCGMResume")
+    var restoreClosedLoopAfterCGMResume: Bool?
+
     // MARK: - CGM
 
     var cgmManager: CGMManager? {
@@ -469,17 +491,36 @@ final class DeviceDataManager {
     private func processCGMReadingResult(_ manager: CGMManager, readingResult: CGMReadingResult) async {
         switch readingResult {
         case .newData(let values):
-            do {
-                let _ = try await glucoseStore.addGlucoseSamples(values)
-            } catch {
-                log.error("Unable to store glucose: %{public}@", String(describing: error))
+            if !isCGMInputPaused {
+                do {
+                    let storedSamples = try await glucoseStore.addGlucoseSamples(values)
+
+                    if restoreClosedLoopAfterCGMResume == true,
+                       let newestSample = storedSamples.max(by: { $0.startDate < $1.startDate }),
+                       abs(newestSample.startDate.timeIntervalSinceNow) <= .minutes(5)
+                    {
+                        log.default("Fresh CGM data received after CGM input resumed; restoring Closed Loop")
+
+                        restoreClosedLoopAfterCGMResume = false
+                        settingsManager.dosingEnabled = true
+                    }
+                } catch {
+                    log.error("Unable to store glucose: %{public}@", String(describing: error))
+                }
+            } else if !values.isEmpty {
+                log.default(
+                    "Ignoring %{public}d CGM glucose sample(s) while CGM input is paused",
+                    values.count
+                )
             }
             if !values.isEmpty {
                 self.cgmStalenessMonitor.cgmGlucoseSamplesAvailable(values)
                 // GlucoseAlertManager owns the decision based on the
                 // active CGM's providesOwnGlucoseAlerts flag and the
                 // user's override; we just hand it the samples.
-                await self.glucoseAlertManager.evaluate(samples: values)
+                if !isCGMInputPaused {
+                       await self.glucoseAlertManager.evaluate(samples: values)
+                   }
             }
         case .unreliableData:
             await self.receivedUnreliableCGMReading()
@@ -938,7 +979,10 @@ extension DeviceDataManager: CGMManagerDelegate {
             log.default("CGMManager:%{public}@ did update with %{public}@", String(describing: type(of: manager)), String(describing: readingResult))
             await processCGMReadingResult(manager, readingResult: readingResult)
             let now = Date()
-            if case .newData = readingResult, now.timeIntervalSince(self.lastCGMLoopTrigger) > .minutes(4.2) {
+            if case .newData = readingResult,
+               !self.isCGMInputPaused,
+               now.timeIntervalSince(self.lastCGMLoopTrigger) > .minutes(4.2)
+            {
                 self.log.default("Triggering loop from new CGM data at %{public}@", String(describing: now))
                 self.lastCGMLoopTrigger = now
                 await self.checkPumpDataAndLoop()
