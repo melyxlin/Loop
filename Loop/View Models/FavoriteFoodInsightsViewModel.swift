@@ -45,6 +45,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
     @Published var historicalCarbEntries: [StoredCarbEntry] = []
     @Published var historicalDoses: [BasalRelativeDose] = []
     @Published var historicalRawDoses: [DoseEntry] = []
+    private var originalHistoricalCarbEntries: [StoredCarbEntry] = []
     @Published var historicalIOBValues: [InsulinValue] = []
     @Published var historicalCarbAbsorptionReview: CarbAbsorptionReview? = nil
     
@@ -220,10 +221,11 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
             return nil
         }
 
-        return historicalCarbEntries
+        return originalHistoricalCarbEntries
             .filter {
                 $0.startDate > mealDate &&
-                $0.startDate < defaultEnd
+                $0.startDate < defaultEnd &&
+                $0.foodType != "🥩"
             }
             .min {
                 $0.startDate < $1.startDate
@@ -333,6 +335,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 if let historicalChartsData = try await delegate?.getHistoricalChartsData(start: dateInterval.start, end: dateInterval.end) {
+                    self.originalHistoricalCarbEntries = historicalChartsData.carbEntries
                     var carbEntriesWithCorrectedFavoriteFoods = historicalChartsData.carbEntries.map({ historicalCarbEntry in
                         // only show a favorite food icon in the glcuose-carb chart if carb entry is currently viewed favorite food
                         StoredCarbEntry(
