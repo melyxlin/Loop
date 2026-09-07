@@ -78,8 +78,14 @@ struct FavoriteFoodInsightsView: View {
                         .buttonStyle(BorderlessButtonStyle())
                         .contentShape(Rectangle())
                         
-                        Text("Viewing entry \(viewModel.carbEntryIndex + 1) of \(viewModel.carbEntries.count)")
-                            .font(.headline)
+                        VStack(spacing: 2) {
+                            Text(viewModel.dateFormater.string(from: carbEntry.startDate))
+                                .font(.headline)
+
+                            Text("\(viewModel.carbEntryIndex + 1) of \(viewModel.carbEntries.count)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         
                         let isAtEnd = viewModel.carbEntryIndex >= viewModel.carbEntries.count - 1
                         Button(action: {
