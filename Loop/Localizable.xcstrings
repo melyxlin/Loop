@@ -17955,6 +17955,12 @@
     "During this kind of hard exercise, your body may release hormones that raise glucose. This is more common in the morning before eating." : {
 
     },
+    "Dynamic ISF" : {
+      "comment" : "Navigation title for Dynamic ISF experiment settings\nTitle of dynamic ISF experiment"
+    },
+    "Dynamic ISF detects persistent high glucose that is not responding as expected and may adjust correction sensitivity. This is an experimental feature." : {
+      "comment" : "Description of the Dynamic ISF algorithm experiment"
+    },
     "e.g. /chat/completions" : {
 
     },
@@ -18109,6 +18115,9 @@
     },
     "Enable Debug Logging" : {
 
+    },
+    "Enable Dynamic ISF" : {
+      "comment" : "Toggle to enable the Dynamic ISF algorithm experiment"
     },
     "Enable FoodFinder" : {
 

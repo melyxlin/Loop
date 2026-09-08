@@ -249,6 +249,7 @@
 		505DB1E7304CE45900181691 /* AutoPresets_GeofenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */; };
 		505DB1E9304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */; };
 		506CD3C6304F7A3B007514D5 /* CGMInputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */; };
+		507E720F304FBE1800F0224C /* DynamicISFSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
 		50977928304E64470092D37E /* BolusCalculationDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50977927304E64420092D37E /* BolusCalculationDetails.swift */; };
 		5097792A304E64F80092D37E /* BolusCalculationDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50977929304E64F00092D37E /* BolusCalculationDetailsView.swift */; };
@@ -1134,6 +1135,7 @@
 		505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceManager.swift; sourceTree = "<group>"; };
 		505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceSettingsView.swift; sourceTree = "<group>"; };
 		506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMInputControlsView.swift; sourceTree = "<group>"; };
+		507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicISFSelectionView.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
 		50977927304E64420092D37E /* BolusCalculationDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusCalculationDetails.swift; sourceTree = "<group>"; };
 		50977929304E64F00092D37E /* BolusCalculationDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusCalculationDetailsView.swift; sourceTree = "<group>"; };
@@ -2205,6 +2207,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */,
 				506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */,
 				50977929304E64F00092D37E /* BolusCalculationDetailsView.swift */,
 				505DB1E4304CCB5900181691 /* AutoPresets */,
@@ -3938,6 +3941,7 @@
 				43E3449F1B9D68E900C85C07 /* StatusTableViewController.swift in Sources */,
 				50977928304E64470092D37E /* BolusCalculationDetails.swift in Sources */,
 				84213C892D94941000642E78 /* InsulinDeliveryLogEvent.swift in Sources */,
+				507E720F304FBE1800F0224C /* DynamicISFSelectionView.swift in Sources */,
 				B42D124328D371C400E43D22 /* AlertMuter.swift in Sources */,
 				A96DAC242838325900D94E38 /* DiagnosticLog.swift in Sources */,
 				A9CBE45A248ACBE1008E7BA2 /* DosingDecisionStore+SimulatedCoreData.swift in Sources */,
