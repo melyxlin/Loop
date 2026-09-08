@@ -81,6 +81,8 @@ final class DeviceDataManager {
             return nil
         }
     }
+    
+    private var shouldPromptSiteAtlasAfterPumpOnboarding = false
 
     lazy private var cancellables = Set<AnyCancellable>()
     
@@ -1128,7 +1130,9 @@ extension DeviceDataManager: PumpManagerDelegate {
     }
 
     nonisolated func pumpManagerPumpWasReplaced(_ pumpManager: PumpManager) {
-        NotificationCenter.default.post(name: .pumpSiteDeactivated, object: nil)
+        Task { @MainActor in
+            self.shouldPromptSiteAtlasAfterPumpOnboarding = true
+        }
     }
 
     nonisolated func pumpManagerWillDeactivate(_ pumpManager: PumpManager) {
@@ -1223,8 +1227,12 @@ extension DeviceDataManager: PumpManagerOnboardingDelegate {
             await refreshDeviceData()
             settingsManager.storeSettings()
         }
-    }
 
+        if shouldPromptSiteAtlasAfterPumpOnboarding {
+            shouldPromptSiteAtlasAfterPumpOnboarding = false
+            NotificationCenter.default.post(name: .pumpSiteDeactivated, object: nil)
+        }
+    }
     func pumpManagerOnboarding(didPauseOnboarding pumpManager: PumpManagerUI) {
         
     }
