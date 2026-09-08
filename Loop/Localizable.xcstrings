@@ -22681,9 +22681,6 @@
     "If your glucose isn't dropping, eating too many carbs can raise your blood sugar, trigger more insulin, and increase the risk of low blood sugar during or after the activity." : {
 
     },
-    "Ignore new CGM glucose readings in Loop while keeping the CGM connected. Closed Loop will be turned off." : {
-      "comment" : "Description for Pause CGM Input toggle"
-    },
     "Ignore new CGM glucose readings in Loop without disconnecting your sensor." : {
 
     },

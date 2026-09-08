@@ -544,12 +544,6 @@ struct SettingsView: View {
             }
         )
     }
-    private var cgmInputPausedToggleState: Binding<Bool> {
-        Binding(
-            get: { self.viewModel.isCGMInputPaused },
-            set: { self.viewModel.isCGMInputPaused = $0 }
-        )
-    }
 }
 
 struct PluginMenuItem<Content: View>: Identifiable {
@@ -970,19 +964,6 @@ extension SettingsView {
                         imageView: deviceImage(uiImage: viewModel.cgmManagerSettingsViewModel.image()),
                         label: viewModel.cgmManagerSettingsViewModel.name(),
                         descriptiveText: NSLocalizedString("Continuous Glucose Monitor", comment: "Descriptive text for Continuous Glucose Monitor"))
-
-            Toggle(isOn: cgmInputPausedToggleState) {
-                VStack(alignment: .leading) {
-                    Text("Pause CGM Input")
-                    DescriptiveText(
-                        label: NSLocalizedString(
-                            "Ignore new CGM glucose readings in Loop while keeping the CGM connected. Closed Loop will be turned off.",
-                            comment: "Description for Pause CGM Input toggle"
-                        )
-                    )
-                }
-            }
-            .accessibilityIdentifier("settingsViewPauseCGMInputToggle")
 
         } else {
             LargeButton(action: { actionSheet = .cgmPicker },
