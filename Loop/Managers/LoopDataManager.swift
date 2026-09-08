@@ -118,6 +118,7 @@ final class LoopDataManager: ObservableObject {
     @Published private(set) var publishedMostRecentGlucoseDataDate: Date?
     @Published private(set) var publishedMostRecentPumpDataDate: Date?
     @Published private(set) var lastManualBolus: LastManualBolus?
+    private var lastDynamicISFShadowGlucoseDate: Date?
 
 
     var deliveryDelegate: DeliveryDelegate?
@@ -674,6 +675,17 @@ final class LoopDataManager: ObservableObject {
             newState.input = input
             newState.output = await runAlgorithm(input: input)
 
+            if UserDefaults.standard.dynamicISFEnabled,
+               let output = newState.output
+            {
+                logDynamicISFShadowResponse(
+                    input: input,
+                    output: output
+                )
+            }
+            
+            
+
             let lastStoredManualBolus = input.doses.last(
                 where: {
                     $0.startDate >= lastManualBolusVisibilityWindowStartDate && $0.deliveryType == .bolus && $0.automatic == false
@@ -711,6 +723,184 @@ final class LoopDataManager: ObservableObject {
         )
 
         await updateRemoteRecommendation(force: forceStoreRemoteRecommendation)
+    }
+    
+    private func logDynamicISFShadowResponse(
+        input: StoredDataAlgorithmInput,
+        output: AlgorithmOutput<StoredCarbEntry>
+    ) {
+        let observationEnd = input.predictionStart
+        let observationStart = observationEnd.addingTimeInterval(-.minutes(30))
+
+        let glucoseSamples = input.glucoseHistory
+            .filter {
+                $0.startDate >= observationStart &&
+                $0.startDate <= observationEnd
+            }
+            .sorted {
+                $0.startDate < $1.startDate
+            }
+        
+        guard
+            let firstGlucose = glucoseSamples.first,
+            let lastGlucose = glucoseSamples.last
+        else {
+            print(
+                "DYNAMIC ISF SHADOW | insufficient glucose history"
+            )
+            return
+        }
+
+
+        guard lastGlucose.startDate != lastDynamicISFShadowGlucoseDate else {
+            return
+        }
+
+        lastDynamicISFShadowGlucoseDate = lastGlucose.startDate
+
+        let observationDuration =
+            lastGlucose.startDate.timeIntervalSince(firstGlucose.startDate)
+
+        guard observationDuration >= .minutes(25) else {
+            print(
+                "DYNAMIC ISF SHADOW | observation window immature | " +
+                "duration=\(String(format: "%.1f", observationDuration / 60))m"
+            )
+            return
+        }
+
+        let glucoseUnit = LoopUnit.milligramsPerDeciliter
+        let observedGlucoseChange =
+            lastGlucose.quantity.doubleValue(for: glucoseUnit) -
+            firstGlucose.quantity.doubleValue(for: glucoseUnit)
+
+        let historicalInsulinEffects =
+            output.dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
+                insulinSensitivityHistory: input.sensitivity,
+                from: observationStart.dateFlooredToTimeInterval(
+                    GlucoseMath.defaultDelta
+                ),
+                to: observationEnd
+            )
+
+        let expectedInsulinEffect = effectChange(
+            historicalInsulinEffects,
+            from: observationStart,
+            to: observationEnd,
+            unit: glucoseUnit
+        )
+
+        // Reconstruct historical carb effects using the same dynamic-carb
+        // machinery Loop uses for carb absorption.
+
+        let carbHistoryStart =
+            observationStart
+                .addingTimeInterval(-CarbMath.maximumAbsorptionTimeInterval)
+                .dateFlooredToTimeInterval(GlucoseMath.defaultDelta)
+
+        let insulinEffectsForCarbHistory =
+            output.dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
+                insulinSensitivityHistory: input.sensitivity,
+                from: carbHistoryStart,
+                to: observationEnd
+            )
+
+        let glucoseForCarbHistory = input.glucoseHistory
+            .filter {
+                $0.startDate >= carbHistoryStart &&
+                $0.startDate <= observationEnd
+            }
+            .sorted {
+                $0.startDate < $1.startDate
+            }
+
+        let insulinCounteractionEffects =
+            glucoseForCarbHistory.counteractionEffects(
+                to: insulinEffectsForCarbHistory
+            )
+
+        let carbEntriesForHistory = input.carbEntries.filter {
+            $0.startDate <= observationEnd
+        }
+
+        let historicalCarbStatus = carbEntriesForHistory.map(
+            to: insulinCounteractionEffects,
+            carbRatio: input.carbRatio,
+            insulinSensitivity: input.sensitivity
+        )
+
+        let historicalCarbEffects =
+            historicalCarbStatus.dynamicGlucoseEffects(
+                from: observationStart,
+                to: observationEnd,
+                carbRatios: input.carbRatio,
+                insulinSensitivities: input.sensitivity,
+                absorptionModel: input.carbAbsorptionModel.model
+            )
+
+        let expectedCarbEffect = effectChange(
+            historicalCarbEffects,
+            from: observationStart,
+            to: observationEnd,
+            unit: glucoseUnit
+        )
+
+        let remainingInsulinEffect = effectChange(
+            output.effects.insulin,
+            from: observationEnd,
+            to: output.effects.insulin.last?.startDate ?? observationEnd,
+            unit: glucoseUnit
+        )
+
+        let insulinEffectString = expectedInsulinEffect.map {
+            String(format: "%.1f", $0)
+        } ?? "nil"
+
+        let carbEffectString = expectedCarbEffect.map {
+            String(format: "%.1f", $0)
+        } ?? "nil"
+
+        let remainingInsulinEffectString = remainingInsulinEffect.map {
+            String(format: "%.1f", $0)
+        } ?? "nil"
+        
+        print(
+            "DYNAMIC ISF SHADOW | " +
+            "glucose=\(String(format: "%.1f", lastGlucose.quantity.doubleValue(for: glucoseUnit))) | " +
+            "observed30m=\(String(format: "%.1f", observedGlucoseChange)) | " +
+            "insulin30m=\(insulinEffectString) | " +
+            "carbs30m=\(carbEffectString) | " +
+            "remainingInsulin=\(remainingInsulinEffectString)"
+        )
+    }
+    
+    private func effectChange(
+        _ effects: [GlucoseEffect],
+        from start: Date,
+        to end: Date,
+        unit: LoopUnit
+    ) -> Double? {
+        guard !effects.isEmpty else {
+            return nil
+        }
+
+        let startEffect =
+            effects.last(where: { $0.startDate <= start }) ??
+            effects.first
+
+        let endEffect =
+            effects.last(where: { $0.startDate <= end }) ??
+            effects.first
+
+        guard
+            let startEffect,
+            let endEffect
+        else {
+            return nil
+        }
+
+        return endEffect.quantity.doubleValue(for: unit) -
+            startEffect.quantity.doubleValue(for: unit)
     }
 
     private nonisolated func runAlgorithm(input: StoredDataAlgorithmInput) async -> AlgorithmOutput<StoredCarbEntry> {
