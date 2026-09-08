@@ -27,6 +27,12 @@ protocol BolusEntryViewModelDelegate: AnyObject {
     var mostRecentGlucoseDataDate: Date? { get }
     var mostRecentPumpDataDate: Date? { get }
 
+    func addManuallyEnteredDose(
+        startDate: Date,
+        units: Double,
+        insulinType: InsulinType?
+    ) async
+
     func fetchData(
         for baseTime: Date?,
         presumePresetEndingNow: Bool,
@@ -155,6 +161,7 @@ final class BolusEntryViewModel: ObservableObject {
         unit: .internationalUnit,
         doubleValue: 0
     )
+    @Published var isExternalInsulin = false
     var enteredBolusAmount: Double {
         enteredBolus.doubleValue(for: .internationalUnit)
     }
@@ -412,9 +419,15 @@ final class BolusEntryViewModel: ObservableObject {
             return false
         }
 
-        let amountToDeliver = deliveryDelegate.roundBolusVolume(
-            units: enteredBolusAmount
-        )
+        let amountToDeliver: Double
+
+        if isExternalInsulin {
+            amountToDeliver = enteredBolusAmount
+        } else {
+            amountToDeliver = deliveryDelegate.roundBolusVolume(
+                units: enteredBolusAmount
+            )
+        }
 
         guard enteredBolusAmount == 0 || amountToDeliver > 0 else {
             presentAlert(.bolusTooSmall)
@@ -589,9 +602,12 @@ final class BolusEntryViewModel: ObservableObject {
             }
         }
 
-        dosingDecision.manualBolusRequested = amountToDeliver
-
         let now = self.now()
+
+        if !isExternalInsulin {
+            dosingDecision.manualBolusRequested = amountToDeliver
+        }
+
         await delegate.storeManualBolusDosingDecision(
             dosingDecision,
             withDate: now
@@ -599,22 +615,32 @@ final class BolusEntryViewModel: ObservableObject {
 
         if amountToDeliver > 0 {
             savedPreMealOverride = nil
-            do {
-                try await delegate.enactBolus(
+
+            if isExternalInsulin {
+                await delegate.addManuallyEnteredDose(
+                    startDate: now,
                     units: amountToDeliver,
-                    decisionId: dosingDecision.id,
-                    activationType: activationType
+                    insulinType: deliveryDelegate.pumpInsulinType
                 )
-            } catch {
-                log.error(
-                    "Failed to enact bolus: %{public}@",
-                    String(describing: error)
+            } else {
+                do {
+                    try await delegate.enactBolus(
+                        units: amountToDeliver,
+                        decisionId: dosingDecision.id,
+                        activationType: activationType
+                    )
+                } catch {
+                    log.error(
+                        "Failed to enact bolus: %{public}@",
+                        String(describing: error)
+                    )
+                }
+
+                self.analyticsServicesManager?.didBolus(
+                    source: "Phone",
+                    units: amountToDeliver
                 )
             }
-            self.analyticsServicesManager?.didBolus(
-                source: "Phone",
-                units: amountToDeliver
-            )
         }
         return true
     }

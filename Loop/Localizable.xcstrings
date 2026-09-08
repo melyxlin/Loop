@@ -19926,7 +19926,7 @@
       }
     },
     "External Insulin" : {
-      "comment" : "Dose type label for a manually-entered bolus"
+      "comment" : "Dose type label for a manually-entered bolus\nLabel for insulin manually administered outside of Loop"
     },
     "Failed to Cancel Temporary Basal" : {
       "comment" : "Alert title when canceling a manual temporary basal fails"
@@ -30119,6 +30119,9 @@
     "Not enough data to plot a profile." : {
       "comment" : "AGP empty state"
     },
+    "Not Selected" : {
+
+    },
     "Not Set" : {
       "comment" : "Health sharing status: not determined"
     },
@@ -35835,6 +35838,9 @@
       }
     },
     "Select your preset for %@" : {
+
+    },
+    "Selected" : {
 
     },
     "Selecting a favorite food in the carb entry screen automatically fills in the carb quantity, food type, and absorption time fields! Tap the add button below to create your first favorite food!" : {

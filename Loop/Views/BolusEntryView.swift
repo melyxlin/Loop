@@ -61,19 +61,22 @@ struct BolusEntryView: View {
                 }
             }
         }
-        .onReceive(self.viewModel.$recommendedBolus) { recommendation in
-            // If the recommendation changes, and the user has not edited the bolus amount, update the bolus amount
+        .onChange(of: viewModel.recommendedBolus, initial: true) { oldRecommendation, recommendation in
             let amount = recommendation?.doubleValue(for: .internationalUnit) ?? 0
+
             if !editedBolusAmount {
-                var newEnteredBolusString: String
+                let newEnteredBolusString: String
+
                 if amount == 0 {
                     newEnteredBolusString = ""
                 } else {
                     newEnteredBolusString = viewModel.formatBolusAmount(amount)
                 }
+
                 enteredBolusStringBinding.wrappedValue = newEnteredBolusString
-            } else {
-                // If the recommendation changes, and the user has edited the bolus amount, set the bolus amount to 0
+            } else if oldRecommendation != recommendation {
+                // Only clear a manually-edited bolus if the recommendation
+                // actually changed.
                 enteredBolusStringBinding.wrappedValue = "0"
             }
         }
@@ -241,6 +244,7 @@ struct BolusEntryView: View {
             }
 
             bolusEntryRow
+            externalInsulinRow
         }
     }
 
@@ -306,6 +310,33 @@ struct BolusEntryView: View {
             enteredBolusStringBinding.wrappedValue = ""
             editedBolusAmount = true
         }
+    }
+
+    private var externalInsulinRow: some View {
+        Button {
+            viewModel.isExternalInsulin.toggle()
+        } label: {
+            HStack {
+                Text(
+                    "External Insulin",
+                    comment: "Label for insulin manually administered outside of Loop"
+                )
+
+                Spacer()
+
+                Image(
+                    systemName: viewModel.isExternalInsulin
+                        ? "checkmark.square.fill"
+                        : "square"
+                )
+                .foregroundStyle(Color(.loopAccent))
+                .font(.title3)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("External Insulin")
+        .accessibilityValue(viewModel.isExternalInsulin ? "Selected" : "Not Selected")
     }
 
     private var bolusEntryRow: some View {
