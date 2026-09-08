@@ -94,6 +94,7 @@ struct StatisticsView: View {
                 metricsSection(stats)
                 timeInRangeSection(stats)
                 agpSection(stats)
+                glucoseDistributionSection(stats)
             } else if viewModel.isLoading {
                 Section {
                     HStack { Spacer(); ProgressView(); Spacer() }
@@ -212,6 +213,40 @@ struct StatisticsView: View {
                     .frame(height: 240)
                     .padding(.vertical, 8)
             }
+        }
+    }
+}
+
+@ViewBuilder
+private func glucoseDistributionSection(_ stats: GlucoseStatistics) -> some View {
+    Section(
+        header: Text(
+            NSLocalizedString(
+                "Distribution by Time",
+                comment: "Glucose distribution by time section header"
+            )
+        ),
+        footer: Text(
+            NSLocalizedString(
+                "Percentage of glucose readings in each range, by time of day.",
+                comment: "Glucose distribution by time chart explanation"
+            )
+        )
+    ) {
+        if !stats.glucoseDistribution.contains(where: { $0.fractions != nil }) {
+            Text(
+                NSLocalizedString(
+                    "Not enough data to plot a distribution.",
+                    comment: "Glucose distribution empty state"
+                )
+            )
+            .foregroundColor(.secondary)
+        } else {
+            GlucoseDistributionChartView(
+                distribution: stats.glucoseDistribution
+            )
+            .frame(height: 240)
+            .padding(.vertical, 8)
         }
     }
 }

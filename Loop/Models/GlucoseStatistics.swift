@@ -50,6 +50,14 @@ struct AGPBand: Equatable {
     let p95: Double
 }
 
+struct HourlyGlucoseDistribution: Equatable {
+    /// Midpoint of the bucket, in seconds since midnight.
+    let timeOfDay: TimeInterval
+
+    /// Fraction of readings in each glucose band. Values should sum to 1.
+    let fractions: [GlucoseBand: Double]?
+}
+
 /// Summary statistics computed over a window of glucose, modelled after the
 /// standard Ambulatory Glucose Profile report. Pure value type — callers pass
 /// already-filtered samples (e.g. excluding display-only / manually entered).
@@ -70,6 +78,8 @@ struct GlucoseStatistics: Equatable {
     let percentActive: Double
     /// Per-time-of-day percentile bands for the AGP chart, ordered by time of day.
     let agpProfile: [AGPBand]
+    /// Per-time-of-day glucose-range distribution, ordered by time of day.
+    let glucoseDistribution: [HourlyGlucoseDistribution]
 
     /// Expected CGM cadence; used for gap-capping and percent-active.
     static let assumedCadence: TimeInterval = .minutes(5)
@@ -155,6 +165,37 @@ struct GlucoseStatistics: Equatable {
                 p50: Self.percentile(v, 0.50),
                 p75: Self.percentile(v, 0.75),
                 p95: Self.percentile(v, 0.95)
+            )
+        }
+        glucoseDistribution = buckets.enumerated().map { bucketIndex, bucketValues in
+            guard bucketValues.count >= minReadingsPerBucket else {
+                return HourlyGlucoseDistribution(
+                    timeOfDay: (Double(bucketIndex) + 0.5) * bucketDuration,
+                    fractions: nil
+                )
+            }
+
+            var counts: [GlucoseBand: Int] = [:]
+
+            for value in bucketValues {
+                let band = GlucoseBand.classify(mgdl: value)
+                counts[band, default: 0] += 1
+            }
+
+            let total = Double(bucketValues.count)
+
+            let fractions = Dictionary(
+                uniqueKeysWithValues: GlucoseBand.allCases.map { band in
+                    (
+                        band,
+                        Double(counts[band, default: 0]) / total
+                    )
+                }
+            )
+
+            return HourlyGlucoseDistribution(
+                timeOfDay: (Double(bucketIndex) + 0.5) * bucketDuration,
+                fractions: fractions
             )
         }
     }
