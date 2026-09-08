@@ -24068,7 +24068,7 @@
       }
     },
     "Insulin Type" : {
-      "comment" : "Insulin type label",
+      "comment" : "Insulin type label\nInsulin type label for externally administered insulin",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -25904,6 +25904,9 @@
           }
         }
       }
+    },
+    "Log External Insulin" : {
+      "comment" : "Button text to log externally administered insulin without delivering a pump bolus"
     },
     "Log New Site" : {
 
@@ -35564,7 +35567,7 @@
       }
     },
     "Save Carbs & Deliver" : {
-      "comment" : "Button text to save carbs and/or manual glucose entry and deliver a bolus",
+      "comment" : "Button text to save carbs and deliver a bolus\nButton text to save carbs and/or manual glucose entry and deliver a bolus",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -35603,6 +35606,9 @@
           }
         }
       }
+    },
+    "Save Carbs & Log Insulin" : {
+      "comment" : "Button text to save carbs and log externally administered insulin"
     },
     "Save Site" : {
 

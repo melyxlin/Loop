@@ -245,6 +245,9 @@ struct BolusEntryView: View {
 
             bolusEntryRow
             externalInsulinRow
+            if viewModel.isExternalInsulin {
+                externalInsulinTypePicker
+            }
         }
     }
 
@@ -310,6 +313,17 @@ struct BolusEntryView: View {
             enteredBolusStringBinding.wrappedValue = ""
             editedBolusAmount = true
         }
+    }
+
+    private var externalInsulinTypePicker: some View {
+        ExpandablePicker(
+            with: viewModel.externalInsulinTypePickerOptions,
+            selectedValue: $viewModel.selectedExternalInsulinType,
+            label: NSLocalizedString(
+                "Insulin Type",
+                comment: "Insulin type label for externally administered insulin"
+            )
+        )
     }
 
     private var externalInsulinRow: some View {
@@ -470,13 +484,42 @@ struct BolusEntryView: View {
             label: {
                 switch viewModel.actionButtonAction {
                 case .saveWithoutBolusing:
-                    return Text("Save without Bolusing", comment: "Button text to save carbs and/or manual glucose entry without a bolus")
+                    return Text(
+                        "Save without Bolusing",
+                        comment: "Button text to save carbs and/or manual glucose entry without a bolus"
+                    )
+
                 case .saveAndDeliver:
-                    return Text("Save Carbs & Deliver", comment: "Button text to save carbs and/or manual glucose entry and deliver a bolus")
+                    if viewModel.isExternalInsulin {
+                        return Text(
+                            "Save Carbs & Log Insulin",
+                            comment: "Button text to save carbs and log externally administered insulin"
+                        )
+                    } else {
+                        return Text(
+                            "Save Carbs & Deliver",
+                            comment: "Button text to save carbs and deliver a bolus"
+                        )
+                    }
+
                 case .enterBolus:
-                    return Text("Enter Bolus", comment: "Button text to begin entering a bolus")
+                    return Text(
+                        "Enter Bolus",
+                        comment: "Button text to begin entering a bolus"
+                    )
+
                 case .deliver:
-                    return Text("Deliver", comment: "Button text to deliver a bolus")
+                    if viewModel.isExternalInsulin {
+                        return Text(
+                            "Log External Insulin",
+                            comment: "Button text to log externally administered insulin without delivering a pump bolus"
+                        )
+                    } else {
+                        return Text(
+                            "Deliver",
+                            comment: "Button text to deliver a bolus"
+                        )
+                    }
                 }
             }
         )

@@ -162,6 +162,16 @@ final class BolusEntryViewModel: ObservableObject {
         doubleValue: 0
     )
     @Published var isExternalInsulin = false
+    @Published var selectedExternalInsulinType: InsulinType = .novolog
+
+    let externalInsulinTypePickerOptions: [InsulinType] = [
+        .novolog,
+        .humalog,
+        .apidra,
+        .fiasp,
+        .lyumjev,
+        .afrezza
+    ]
     var enteredBolusAmount: Double {
         enteredBolus.doubleValue(for: .internationalUnit)
     }
@@ -201,7 +211,13 @@ final class BolusEntryViewModel: ObservableObject {
 
     // MARK: - Seams
     private weak var delegate: BolusEntryViewModelDelegate?
-    weak var deliveryDelegate: DeliveryDelegate?
+    weak var deliveryDelegate: DeliveryDelegate? {
+        didSet {
+            if let pumpInsulinType = deliveryDelegate?.pumpInsulinType {
+                selectedExternalInsulinType = pumpInsulinType
+            }
+        }
+    }
     private let now: () -> Date
     private let screenWidth: CGFloat
     private let debounceIntervalMilliseconds: Int
@@ -620,7 +636,7 @@ final class BolusEntryViewModel: ObservableObject {
                 await delegate.addManuallyEnteredDose(
                     startDate: now,
                     units: amountToDeliver,
-                    insulinType: deliveryDelegate.pumpInsulinType
+                    insulinType: selectedExternalInsulinType
                 )
             } else {
                 do {
