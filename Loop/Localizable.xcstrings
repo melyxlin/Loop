@@ -17584,6 +17584,9 @@
         }
       }
     },
+    "Distribution by Time" : {
+      "comment" : "Glucose distribution by time section header"
+    },
     "Don't Start" : {
       "comment" : "Label for do not start preset action on scheduled preset reminder alert\nThe title of the notification action to not start a preset"
     },
@@ -21773,6 +21776,9 @@
           }
         }
       }
+    },
+    "Glucose distribution by time" : {
+      "comment" : "Accessibility label for glucose distribution by time chart"
     },
     "Glucose effect of suspending insulin delivery" : {
       "comment" : "Description of the prediction input effect for suspension of insulin delivery",
@@ -30128,6 +30134,9 @@
     "None in last 24 hours" : {
 
     },
+    "Not enough data to plot a distribution." : {
+      "comment" : "Glucose distribution empty state"
+    },
     "Not enough data to plot a profile." : {
       "comment" : "AGP empty state"
     },
@@ -31278,6 +31287,9 @@
     },
     "Pay attention to your insulin needs before and after exercising, playing sports, or doing unusually hard physical labor." : {
 
+    },
+    "Percentage of glucose readings in each range, by time of day." : {
+      "comment" : "Glucose distribution by time chart explanation"
     },
     "Performance History" : {
       "comment" : "The title of the view that shows the user's preset performance history.",

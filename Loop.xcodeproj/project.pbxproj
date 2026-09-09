@@ -252,6 +252,7 @@
 		5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */; };
 		5067FCCD3051DEE400FBD2C2 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */; };
 		506CD3C6304F7A3B007514D5 /* CGMInputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */; };
+		5076E27F30508FC300A76E43 /* GlucoseDistributionChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */; };
 		507E720F304FBE1800F0224C /* DynamicISFSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
 		50977928304E64470092D37E /* BolusCalculationDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50977927304E64420092D37E /* BolusCalculationDetails.swift */; };
@@ -1141,6 +1142,7 @@
 		5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryItem.swift; sourceTree = "<group>"; };
 		5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
 		506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMInputControlsView.swift; sourceTree = "<group>"; };
+		5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseDistributionChartView.swift; sourceTree = "<group>"; };
 		507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicISFSelectionView.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
 		50977927304E64420092D37E /* BolusCalculationDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusCalculationDetails.swift; sourceTree = "<group>"; };
@@ -2478,6 +2480,7 @@
 		505CE3BE303CB78500E6F5CB /* Statistics */ = {
 			isa = PBXGroup;
 			children = (
+				5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */,
 				505CE3C4303CB7C300E6F5CB /* StatisticsRangeEditor.swift */,
 				505CE3BB303CB78500E6F5CB /* AGPChartView.swift */,
 				505CE3BC303CB78500E6F5CB /* StatisticsView.swift */,
@@ -3984,6 +3987,7 @@
 				50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */,
 				C1A1A00001000000000000A1 /* CriticalAlertAlarmScheduler.swift in Sources */,
 				C9A47B0280AAB1FC572D3EFF /* GlucoseAlertManager.swift in Sources */,
+				5076E27F30508FC300A76E43 /* GlucoseDistributionChartView.swift in Sources */,
 				43C0944A1CACCC73001F6403 /* NotificationManager.swift in Sources */,
 				149A28E42A8A63A700052EDF /* FavoriteFoodDetailView.swift in Sources */,
 				1DDE274024AEA4F200796622 /* NotificationsCriticalAlertPermissionsView.swift in Sources */,
