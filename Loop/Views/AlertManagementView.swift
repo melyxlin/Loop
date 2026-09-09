@@ -6,11 +6,11 @@
 //  Copyright © 2022 LoopKit Authors. All rights reserved.
 //
 
-import SwiftUI
+import HealthKit
 import LoopCore
 import LoopKit
 import LoopKitUI
-import HealthKit
+import SwiftUI
 
 struct AlertManagementView: View {
     @Environment(\.appName) private var appName
@@ -19,16 +19,17 @@ struct AlertManagementView: View {
     @ObservedObject private var checker: AlertPermissionsChecker
     @ObservedObject private var alertMuter: AlertMuter
     private let glucoseAlertManager: GlucoseAlertManager?
+    private let alertStore: AlertStore?
 
     enum Sheet: Hashable, Identifiable {
         case durationSelection
         case confirmation(resumeDate: Date)
-        
+
         var id: Int {
             hashValue
         }
     }
-    
+
     @State private var sheet: Sheet?
     @State private var durationSelection: TimeInterval?
     @State private var durationWasSelection: Bool = false
@@ -44,17 +45,22 @@ struct AlertManagementView: View {
         Binding(
             get: { formatter.string(from: alertMuter.configuration.duration)! },
             set: { newValue in
-                guard let selectedDurationIndex = AlertMuter.allowedDurations.compactMap({ formatter.string(from: $0) }).firstIndex(of: newValue)
+                guard
+                    let selectedDurationIndex = AlertMuter.allowedDurations
+                        .compactMap({ formatter.string(from: $0) }).firstIndex(
+                            of: newValue
+                        )
                 else { return }
                 DispatchQueue.main.async {
                     // avoid publishing during view update
                     alertMuter.configuration.startTime = Date()
-                    alertMuter.configuration.duration = AlertMuter.allowedDurations[selectedDurationIndex]
+                    alertMuter.configuration.duration =
+                        AlertMuter.allowedDurations[selectedDurationIndex]
                 }
             }
         )
     }
-    
+
     private var missedMealNotificationsEnabled: Binding<Bool> {
         Binding(
             get: { UserDefaults.standard.missedMealNotificationsEnabled },
@@ -64,32 +70,51 @@ struct AlertManagementView: View {
         )
     }
 
-    public init(checker: AlertPermissionsChecker,
-                alertMuter: AlertMuter = AlertMuter(),
-                glucoseAlertManager: GlucoseAlertManager? = nil) {
+    public init(
+        checker: AlertPermissionsChecker,
+        alertMuter: AlertMuter = AlertMuter(),
+        glucoseAlertManager: GlucoseAlertManager? = nil,
+        alertStore: AlertStore? = nil
+    ) {
         self.checker = checker
         self.alertMuter = alertMuter
         self.glucoseAlertManager = glucoseAlertManager
+        self.alertStore = alertStore
     }
 
     var body: some View {
         List {
+            historySection
             alertPermissionsSection
             muteAlertsSection
+
             if let glucoseAlertManager {
                 glucoseAlertsSection(manager: glucoseAlertManager)
             }
+
             if FeatureFlags.missedMealNotifications {
                 missedMealAlertSection
             }
+
             supportSection
         }
-        .navigationTitle(NSLocalizedString("Alert Management", comment: "Title of alert management screen"))
+        .navigationTitle(
+            NSLocalizedString(
+                "Alert Management",
+                comment: "Title of alert management screen"
+            )
+        )
     }
 
-    private func glucoseAlertsSection(manager: GlucoseAlertManager) -> some View {
+    private func glucoseAlertsSection(manager: GlucoseAlertManager) -> some View
+    {
         Section(header: Text("Glucose").textCase(nil)) {
-            NavigationLink(destination: GlucoseAlertSettingsView(manager: manager, permissionsChecker: checker)) {
+            NavigationLink(
+                destination: GlucoseAlertSettingsView(
+                    manager: manager,
+                    permissionsChecker: checker
+                )
+            ) {
                 HStack {
                     Image(systemName: "drop.fill")
                         .foregroundStyle(.tint)
@@ -100,19 +125,54 @@ struct AlertManagementView: View {
         }
     }
 
+    private var historySection: some View {
+        Section(header: Text("History").textCase(nil)) {
+            NavigationLink {
+                AlertHistoryView(alertStore: alertStore)
+            } label: {
+                HStack {
+                    Image(systemName: "bell.badge.fill")
+                        .foregroundStyle(.tint)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Alert History")
+
+                        Text("Active and past Loop alerts")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .accessibilityIdentifier("alertManagementAlertHistory")
+        }
+    }
+
     private var alertPermissionsSection: some View {
         Section(header: Text("iOS").textCase(nil)) {
-            NavigationLink(destination:
-                            NotificationsCriticalAlertPermissionsView(mode: .flow, checker: checker))
-            {
+            NavigationLink(
+                destination:
+                    NotificationsCriticalAlertPermissionsView(
+                        mode: .flow,
+                        checker: checker
+                    )
+            ) {
                 HStack {
-                    Text(NSLocalizedString("iOS Permissions", comment: "iOS Permissions button text"))
-                    if checker.showWarning ||
-                        checker.notificationCenterSettings.scheduledDeliveryEnabled {
+                    Text(
+                        NSLocalizedString(
+                            "iOS Permissions",
+                            comment: "iOS Permissions button text"
+                        )
+                    )
+                    if checker.showWarning
+                        || checker.notificationCenterSettings
+                            .scheduledDeliveryEnabled
+                    {
                         Spacer()
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.critical)
-                            .accessibilityIdentifier("settingsViewAlertManagementAlertPermissionsAlertWarning")
+                            .accessibilityIdentifier(
+                                "settingsViewAlertManagementAlertPermissionsAlertWarning"
+                            )
                     }
                 }
             }
@@ -123,7 +183,16 @@ struct AlertManagementView: View {
     private var muteAlertsSection: some View {
         Section(
             header: Text(String(format: "%1$@", appName)),
-            footer: !alertMuter.configuration.shouldMute ? Text(String(format: NSLocalizedString("Temporarily silence all sounds from %1$@, including sounds for all critical alerts such as Urgent Low, Sensor Fail, Pump Expiration and others.", comment: ""), appName)) : nil
+            footer: !alertMuter.configuration.shouldMute
+                ? Text(
+                    String(
+                        format: NSLocalizedString(
+                            "Temporarily silence all sounds from %1$@, including sounds for all critical alerts such as Urgent Low, Sensor Fail, Pump Expiration and others.",
+                            comment: ""
+                        ),
+                        appName
+                    )
+                ) : nil
         ) {
             if !alertMuter.configuration.shouldMute {
                 muteAlertsButton
@@ -134,7 +203,7 @@ struct AlertManagementView: View {
             }
         }
     }
-    
+
     private var muteAlertsButton: some View {
         Button {
             if !alertMuter.configuration.shouldMute {
@@ -143,8 +212,13 @@ struct AlertManagementView: View {
         } label: {
             HStack(spacing: 12) {
                 Spacer()
-                Text(NSLocalizedString("Mute All App Sounds", comment: "Label for button to mute all app sounds"))
-                    .fontWeight(.semibold)
+                Text(
+                    NSLocalizedString(
+                        "Mute All App Sounds",
+                        comment: "Label for button to mute all app sounds"
+                    )
+                )
+                .fontWeight(.semibold)
                 Spacer()
             }
             .padding(.vertical, 8)
@@ -163,60 +237,107 @@ struct AlertManagementView: View {
             }
         }
         .onChange(of: durationWasSelection) { _ in
-            if durationWasSelection, let durationSelection, let durationSelectionString = formatter.string(from: durationSelection) {
-                sheet = .confirmation(resumeDate: Date().addingTimeInterval(durationSelection))
+            if durationWasSelection, let durationSelection,
+                let durationSelectionString = formatter.string(
+                    from: durationSelection
+                )
+            {
+                sheet = .confirmation(
+                    resumeDate: Date().addingTimeInterval(durationSelection)
+                )
                 formattedSelectedDuration.wrappedValue = durationSelectionString
                 self.durationSelection = nil
                 self.durationWasSelection = false
             }
         }
     }
-    
+
     private var unmuteAlertsButton: some View {
         Button(action: alertMuter.unmuteAlerts) {
             Group {
                 Text(Image(systemName: "speaker.slash.fill"))
                     .foregroundColor(guidanceColors.critical)
-                + Text("  ")
-                + Text(NSLocalizedString("Tap to Unmute All App Sounds", comment: "Label for button to unmute all app sounds"))
+                    + Text("  ")
+                    + Text(
+                        NSLocalizedString(
+                            "Tap to Unmute All App Sounds",
+                            comment: "Label for button to unmute all app sounds"
+                        )
+                    )
                     .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity)
             .padding(8)
         }
     }
-    
+
     private var muteAlertsSummary: some View {
         VStack(spacing: 12) {
             HStack {
-                Text(NSLocalizedString("Muted until", comment: "Label for when mute alert will end"))
+                Text(
+                    NSLocalizedString(
+                        "Muted until",
+                        comment: "Label for when mute alert will end"
+                    )
+                )
                 Spacer()
                 Text(alertMuter.formattedEndTime)
                     .foregroundColor(.secondary)
             }
-            
-            Text("All app sounds, including sounds for all critical alerts such as Urgent Low, Sensor Fail, Pump Expiration, and others will NOT sound.", comment: "Warning label that all alerts will not sound")
-                .font(.footnote)
-                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(
+                "All app sounds, including sounds for all critical alerts such as Urgent Low, Sensor Fail, Pump Expiration, and others will NOT sound.",
+                comment: "Warning label that all alerts will not sound"
+            )
+            .font(.footnote)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     private var missedMealAlertSection: some View {
-        Section(footer: DescriptiveText(label: NSLocalizedString("When enabled, Loop can notify you when it detects a meal that wasn't logged.", comment: "Description of missed meal notifications."))) {
-            Toggle(NSLocalizedString("Missed Meal Notifications", comment: "Title for missed meal notifications toggle"), isOn: missedMealNotificationsEnabled)
+        Section(
+            footer: DescriptiveText(
+                label: NSLocalizedString(
+                    "When enabled, Loop can notify you when it detects a meal that wasn't logged.",
+                    comment: "Description of missed meal notifications."
+                )
+            )
+        ) {
+            Toggle(
+                NSLocalizedString(
+                    "Missed Meal Notifications",
+                    comment: "Title for missed meal notifications toggle"
+                ),
+                isOn: missedMealNotificationsEnabled
+            )
         }
     }
-    
+
     @ViewBuilder
     private var supportSection: some View {
         Section(
-            header: SectionHeader(label: NSLocalizedString("Support", comment: "Section title for Support")).padding(.leading, -16).padding(.bottom, 4),
-            footer: Text(String(format: "Frequently asked questions about alerts from iOS and %1$@.", appName))) {
-                NavigationLink {
-                    HowMuteAlertWorkView()
-                } label: {
-                    Text("Learn more about Alerts", comment: "Link to learn more about alerts")
-                }
+            header: SectionHeader(
+                label: NSLocalizedString(
+                    "Support",
+                    comment: "Section title for Support"
+                )
+            ).padding(.leading, -16).padding(.bottom, 4),
+            footer: Text(
+                String(
+                    format:
+                        "Frequently asked questions about alerts from iOS and %1$@.",
+                    appName
+                )
+            )
+        ) {
+            NavigationLink {
+                HowMuteAlertWorkView()
+            } label: {
+                Text(
+                    "Learn more about Alerts",
+                    comment: "Link to learn more about alerts"
+                )
+            }
 
         }
     }
@@ -224,12 +345,14 @@ struct AlertManagementView: View {
 
 extension UserDefaults {
     private enum Key: String {
-        case missedMealNotificationsEnabled = "com.loopkit.Loop.MissedMealNotificationsEnabled"
+        case missedMealNotificationsEnabled =
+            "com.loopkit.Loop.MissedMealNotificationsEnabled"
     }
-    
+
     var missedMealNotificationsEnabled: Bool {
         get {
-            return object(forKey: Key.missedMealNotificationsEnabled.rawValue) as? Bool ?? false
+            return object(forKey: Key.missedMealNotificationsEnabled.rawValue)
+                as? Bool ?? false
         }
         set {
             set(newValue, forKey: Key.missedMealNotificationsEnabled.rawValue)
@@ -239,6 +362,9 @@ extension UserDefaults {
 
 struct AlertManagementView_Previews: PreviewProvider {
     static var previews: some View {
-        AlertManagementView(checker: AlertPermissionsChecker(), alertMuter: AlertMuter())
+        AlertManagementView(
+            checker: AlertPermissionsChecker(),
+            alertMuter: AlertMuter()
+        )
     }
 }

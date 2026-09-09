@@ -436,7 +436,8 @@ struct SettingsView: View {
                 destination: AlertManagementView(
                     checker: viewModel.alertPermissionsChecker,
                     alertMuter: viewModel.alertMuter,
-                    glucoseAlertManager: viewModel.deviceManager?.glucoseAlertManager
+                    glucoseAlertManager: viewModel.deviceManager?.glucoseAlertManager,
+                    alertStore: viewModel.deviceManager?.alertManager?.alertStore
                 )
             ) {
                 LargeButton(
@@ -666,7 +667,12 @@ extension SettingsView {
 
     private var alertManagementSection: some View {
         Section {
-            NavigationLink(destination: AlertManagementView(checker: viewModel.alertPermissionsChecker, alertMuter: viewModel.alertMuter, glucoseAlertManager: viewModel.deviceManager?.glucoseAlertManager)) {
+            NavigationLink(destination: AlertManagementView(
+                checker: viewModel.alertPermissionsChecker,
+                alertMuter: viewModel.alertMuter,
+                glucoseAlertManager: viewModel.deviceManager?.glucoseAlertManager,
+                alertStore: viewModel.deviceManager?.alertManager?.alertStore
+            )) {
                 LargeButton(
                     action: {},
                     includeArrow: false,

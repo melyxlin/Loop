@@ -69,7 +69,7 @@ public final class AlertManager {
          userNotificationAlertScheduler: UserNotificationAlertScheduler,
          fileManager: FileManager = FileManager.default,
          alertStore: AlertStore? = nil,
-         expireAfter: TimeInterval = 24 /* hours */ * 60 /* minutes */ * 60 /* seconds */,
+         expireAfter: TimeInterval = 90 /* days */ * 24 /* hours */ * 60 /* minutes */ * 60 /* seconds */,
          bluetoothProvider: BluetoothProvider,
          analyticsServicesManager: AnalyticsServicesManager,
          preventIssuanceBeforePlayback: Bool = true

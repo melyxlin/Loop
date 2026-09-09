@@ -48,7 +48,7 @@ public class AlertStore {
     private let predicateExpressionNotYetExpiredInMemory = "CAST(issuedDate, 'NSNumber') + triggerInterval < CAST(%@, 'NSNumber')"
     private let predicateExpressionNotYetExpired: String
     
-    public init(storageDirectoryURL: URL? = nil, expireAfter: TimeInterval = 24 /* hours */ * 60 /* minutes */ * 60 /* seconds */) {
+    public init(storageDirectoryURL: URL? = nil, expireAfter: TimeInterval = 90 /* days */ * 24 /* hours */ * 60 /* minutes */ * 60 /* seconds */) {
         managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         managedObjectContext.mergePolicy = NSMergeByPropertyStoreTrumpMergePolicy
         managedObjectContext.automaticallyMergesChangesFromParent = true
@@ -151,6 +151,28 @@ public class AlertStore {
             }
             fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
             fetchRequest.sortDescriptors = [ NSSortDescriptor(key: "modificationCounter", ascending: !mostRecentFirst) ]
+            return try self.managedObjectContext.fetch(fetchRequest)
+        }
+    }
+
+    public func lookupAlertHistory(
+        since startDate: Date,
+        limit: Int = 500
+    ) async throws -> [StoredAlert] {
+        try await managedObjectContext.perform {
+            let fetchRequest: NSFetchRequest<StoredAlert> = StoredAlert.fetchRequest()
+
+            fetchRequest.predicate = NSPredicate(
+                format: "issuedDate >= %@",
+                startDate as NSDate
+            )
+
+            fetchRequest.sortDescriptors = [
+                NSSortDescriptor(key: "issuedDate", ascending: false)
+            ]
+
+            fetchRequest.fetchLimit = limit
+
             return try self.managedObjectContext.fetch(fetchRequest)
         }
     }

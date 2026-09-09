@@ -248,6 +248,9 @@
 		505DB1E5304CCB5900181691 /* AutoPresets_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */; };
 		505DB1E7304CE45900181691 /* AutoPresets_GeofenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */; };
 		505DB1E9304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */; };
+		5067FCC93051DCA900FBD2C2 /* AlertHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */; };
+		5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */; };
+		5067FCCD3051DEE400FBD2C2 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */; };
 		506CD3C6304F7A3B007514D5 /* CGMInputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */; };
 		507E720F304FBE1800F0224C /* DynamicISFSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
@@ -1134,6 +1137,9 @@
 		505DB1E3304CCB5900181691 /* AutoPresets_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_SettingsView.swift; sourceTree = "<group>"; };
 		505DB1E6304CE45900181691 /* AutoPresets_GeofenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceManager.swift; sourceTree = "<group>"; };
 		505DB1E8304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_GeofenceSettingsView.swift; sourceTree = "<group>"; };
+		5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryView.swift; sourceTree = "<group>"; };
+		5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryItem.swift; sourceTree = "<group>"; };
+		5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
 		506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMInputControlsView.swift; sourceTree = "<group>"; };
 		507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicISFSelectionView.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
@@ -1884,6 +1890,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */,
 				5097792B304E71710092D37E /* ManualBolusRecommendationResult.swift */,
 				50977927304E64420092D37E /* BolusCalculationDetails.swift */,
 				505DB1E1304CCB4100181691 /* AutoPresets */,
@@ -2207,6 +2214,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */,
 				507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */,
 				506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */,
 				50977929304E64F00092D37E /* BolusCalculationDetailsView.swift */,
@@ -2938,6 +2946,7 @@
 		897A5A9724C22DCE00C4E71D /* View Models */ = {
 			isa = PBXGroup;
 			children = (
+				5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */,
 				509B03A4304C942E00715755 /* FoodFinder */,
 				C10509762D8B590D00118A37 /* StatusTableViewModel.swift */,
 				897A5A9824C22DE800C4E71D /* BolusEntryViewModel.swift */,
@@ -3982,6 +3991,7 @@
 				509B0374304C82A300715755 /* SiteAtlas_Coordinator.swift in Sources */,
 				509B0375304C82A300715755 /* SiteAtlas_Storage.swift in Sources */,
 				5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */,
+				5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */,
 				A9A056B524B94123007CF06D /* CriticalEventLogExportViewModel.swift in Sources */,
 				434FF1EE1CF27EEF000DB779 /* UITableViewCell.swift in Sources */,
 				84DF48C32F6A0AF600BEDB40 /* Image+Crop.swift in Sources */,
@@ -4175,6 +4185,7 @@
 				509B036B304C77F800715755 /* BolusPro_CarbEntrySection.swift in Sources */,
 				1452F4A92A851C9400F8B9E4 /* FavoriteFoodAddEditViewModel.swift in Sources */,
 				438D42FB1D7D11A4003244B0 /* PredictionInputEffectTableViewCell.swift in Sources */,
+				5067FCC93051DCA900FBD2C2 /* AlertHistoryView.swift in Sources */,
 				505DB1E9304CE47200181691 /* AutoPresets_GeofenceSettingsView.swift in Sources */,
 				C1C660D1252E4DD5009B5C32 /* LoopConstants.swift in Sources */,
 				432E73CB1D24B3D6009AD15D /* RemoteDataServicesManager.swift in Sources */,
@@ -4182,6 +4193,7 @@
 				509B03A6304C942E00715755 /* FoodFinder_FavoritesViewModel.swift in Sources */,
 				7E69CFFC2A16A77E00203CBD /* ResetLoopManager.swift in Sources */,
 				B40D07C7251A89D500C1C6D7 /* GlucoseDisplay.swift in Sources */,
+				5067FCCD3051DEE400FBD2C2 /* AlertsViewModel.swift in Sources */,
 				43C2FAE11EB656A500364AFF /* GlucoseEffectVelocity.swift in Sources */,
 				14C970862C5C358C00E8A01B /* FavoriteFoodInsightsChartsView.swift in Sources */,
 			);

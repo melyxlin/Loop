@@ -64,7 +64,11 @@ extension StoredAlert {
     public var title: String? {
         return try? Alert.Content(contentString: foregroundContent ?? backgroundContent)?.title
     }
-    
+
+    public var body: String? {
+        return try? Alert.Content(contentString: foregroundContent ?? backgroundContent)?.body
+    }
+
     public var identifier: Alert.Identifier {
         return Alert.Identifier(managerIdentifier: managerIdentifier, alertIdentifier: alertIdentifier)
     }
