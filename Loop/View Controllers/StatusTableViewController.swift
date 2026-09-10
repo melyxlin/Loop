@@ -1216,8 +1216,32 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 case .noAdjustment:
                     let cell = UITableViewCell()
 
+                    let now = Date()
+
+                    let basalRate = settingsManager.settings
+                        .basalRateSchedule?
+                        .value(at: now)
+
+                    let carbRatio = settingsManager.settings
+                        .carbRatioSchedule?
+                        .value(at: now)
+
+                    let insulinSensitivity = settingsManager.settings
+                        .insulinSensitivitySchedule?
+                        .quantity(at: now)
+
+                    let glucoseUnit = deviceManager.displayGlucosePreference.unit
+
                     cell.contentConfiguration = UIHostingConfiguration {
-                        NoActiveAdjustmentBanner(profileName: UserDefaults.standard.string(forKey: "currentProfileName"))
+                        NoActiveAdjustmentBanner(
+                            profileName: UserDefaults.standard.string(
+                                forKey: "currentProfileName"
+                            ),
+                            basalRate: basalRate,
+                            carbRatio: carbRatio,
+                            insulinSensitivity: insulinSensitivity,
+                            glucoseUnit: glucoseUnit
+                        )
                     }
                     .margins(.all, 0)
 

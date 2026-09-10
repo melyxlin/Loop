@@ -9244,7 +9244,7 @@
       "comment" : "Average daily basal insulin metric title"
     },
     "Basal Rate" : {
-
+      "comment" : "Current profile basal rate"
     },
     "Basal Rate Schedule" : {
       "comment" : "Details for configuration error when basal rate schedule is missing",
@@ -11380,7 +11380,7 @@
       }
     },
     "Carb Ratio" : {
-
+      "comment" : "Current profile carbohydrate ratio"
     },
     "Carb Ratio Schedule" : {
       "comment" : "Details for configuration error when carb ratio schedule is missing",
@@ -13038,7 +13038,7 @@
 
     },
     "Close" : {
-      "comment" : "Preset training needed alert cancel button\nThe button label of the action used to dismiss the unsafe notification permission alert",
+      "comment" : "Button to close current profile details\nPreset training needed alert cancel button\nThe button label of the action used to dismiss the unsafe notification permission alert",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -15305,6 +15305,12 @@
           }
         }
       }
+    },
+    "Current Profile" : {
+      "comment" : "Title for current therapy profile details"
+    },
+    "Current Therapy Settings" : {
+      "comment" : "Subtitle for current profile therapy settings"
     },
     "Custom Override" : {
       "comment" : "The title of the cell indicating a generic temporary override is enabled",
@@ -23966,6 +23972,9 @@
           }
         }
       }
+    },
+    "Insulin Sensitivity" : {
+      "comment" : "Current profile insulin sensitivity"
     },
     "Insulin Sensitivity Factor (ISF)" : {
 
