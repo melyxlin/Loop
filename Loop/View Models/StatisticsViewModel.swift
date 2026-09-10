@@ -31,23 +31,31 @@ final class StatisticsViewModel: ObservableObject {
     }
 
     @Published private(set) var statistics: GlucoseStatistics?
+    @Published private(set) var insulinStatistics: InsulinStatistics?
     @Published private(set) var isLoading = false
     /// Days of glucose actually available (bounded by data accumulated and the cache).
     @Published private(set) var availableDays: Double = 0
 
     private var allSamples: [StoredGlucoseSample] = []
+    private var allDoses: [DoseEntry] = []
+
     private let glucoseStore: GlucoseStoreProtocol
+    private let doseStore: DoseStoreProtocol?
     private let calendar: Calendar
     private let now: () -> Date
 
     /// Configured local cache duration (how far back glucose is retained on device).
     let cacheDuration: TimeInterval
 
-    init(glucoseStore: GlucoseStoreProtocol,
-         cacheDuration: TimeInterval = Bundle.main.localCacheDuration,
-         calendar: Calendar = .current,
-         now: @escaping () -> Date = { Date() }) {
+    init(
+        glucoseStore: GlucoseStoreProtocol,
+        doseStore: DoseStoreProtocol? = nil,
+        cacheDuration: TimeInterval = Bundle.main.localCacheDuration,
+        calendar: Calendar = .current,
+        now: @escaping () -> Date = { Date() }
+    ) {
         self.glucoseStore = glucoseStore
+        self.doseStore = doseStore
         self.cacheDuration = cacheDuration
         self.calendar = calendar
         self.now = now
@@ -85,6 +93,19 @@ final class StatisticsViewModel: ObservableObject {
         } catch {
             allSamples = []
         }
+        if let doseStore {
+            do {
+                allDoses = try await doseStore.getNormalizedDoseEntries(
+                    start: start,
+                    end: end
+                )
+                .sorted { $0.startDate < $1.startDate }
+            } catch {
+                allDoses = []
+            }
+        } else {
+            allDoses = []
+        }
         availableDays = allSamples.first.map { end.timeIntervalSince($0.startDate) / 86400 } ?? 0
         recompute()
     }
@@ -96,5 +117,11 @@ final class StatisticsViewModel: ObservableObject {
         let start = calendar.date(byAdding: .day, value: -selectedRange.days, to: end)
             ?? end.addingTimeInterval(-Double(selectedRange.days) * 24 * 60 * 60)
         statistics = GlucoseStatistics(samples: allSamples, start: start, end: end, calendar: calendar)
+        insulinStatistics = InsulinStatistics(
+            doses: allDoses,
+            start: start,
+            end: end,
+            calendar: calendar
+        )
     }
 }

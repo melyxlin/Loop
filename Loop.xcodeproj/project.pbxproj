@@ -251,6 +251,7 @@
 		5067FCC93051DCA900FBD2C2 /* AlertHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */; };
 		5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */; };
 		5067FCCD3051DEE400FBD2C2 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */; };
+		5067FCCF30520C8B00FBD2C2 /* InsulinStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */; };
 		506CD3C6304F7A3B007514D5 /* CGMInputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */; };
 		5076E27F30508FC300A76E43 /* GlucoseDistributionChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */; };
 		507E720F304FBE1800F0224C /* DynamicISFSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */; };
@@ -322,6 +323,7 @@
 		509B03C0304C966300715755 /* FoodFinder_SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */; };
 		509B03C1304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */; };
 		509B03C3304C967E00715755 /* FoodFinder_AnalysisRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */; };
+		50A4CDE230523A4A00EAC618 /* InsulinUsageChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */; };
 		50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */; };
 		50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */; };
 		50E71BB0304DD60800415AAA /* ManualTempBasalBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E71BAF304DD60400415AAA /* ManualTempBasalBanner.swift */; };
@@ -1141,6 +1143,7 @@
 		5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryView.swift; sourceTree = "<group>"; };
 		5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryItem.swift; sourceTree = "<group>"; };
 		5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
+		5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStatistics.swift; sourceTree = "<group>"; };
 		506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMInputControlsView.swift; sourceTree = "<group>"; };
 		5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseDistributionChartView.swift; sourceTree = "<group>"; };
 		507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicISFSelectionView.swift; sourceTree = "<group>"; };
@@ -1212,6 +1215,7 @@
 		509B03BE304C966300715755 /* FoodFinder_AnalysisHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisHistoryStore.swift; sourceTree = "<group>"; };
 		509B03BF304C966300715755 /* FoodFinder_SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_SecureStorage.swift; sourceTree = "<group>"; };
 		509B03C2304C967E00715755 /* FoodFinder_AnalysisRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_AnalysisRecord.swift; sourceTree = "<group>"; };
+		50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinUsageChartView.swift; sourceTree = "<group>"; };
 		50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarManager.swift; sourceTree = "<group>"; };
 		50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarSettingsView.swift; sourceTree = "<group>"; };
 		50E71BAF304DD60400415AAA /* ManualTempBasalBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualTempBasalBanner.swift; sourceTree = "<group>"; };
@@ -1892,6 +1896,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */,
 				5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */,
 				5097792B304E71710092D37E /* ManualBolusRecommendationResult.swift */,
 				50977927304E64420092D37E /* BolusCalculationDetails.swift */,
@@ -2216,6 +2221,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */,
 				5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */,
 				507E720E304FBE1300F0224C /* DynamicISFSelectionView.swift */,
 				506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */,
@@ -4126,6 +4132,7 @@
 				BAF043BF0BC70EC99AE79F71 /* HealthAccessView.swift in Sources */,
 				A9B607B0247F000F00792BE4 /* UserNotifications+Loop.swift in Sources */,
 				43F89CA322BDFBBD006BB54E /* UIActivityIndicatorView.swift in Sources */,
+				5067FCCF30520C8B00FBD2C2 /* InsulinStatistics.swift in Sources */,
 				A999D40624663D18004C89D4 /* PumpManagerError.swift in Sources */,
 				437D9BA31D7BC977007245E8 /* PredictionTableViewController.swift in Sources */,
 				A987CD4924A58A0100439ADC /* ZipArchive.swift in Sources */,
@@ -4183,6 +4190,7 @@
 				43A51E211EB6DBDD000736CC /* LoopChartsTableViewController.swift in Sources */,
 				8968B1122408B3520074BB48 /* UIFont.swift in Sources */,
 				509B0367304C77F800715755 /* BolusPro_InfoSheet.swift in Sources */,
+				50A4CDE230523A4A00EAC618 /* InsulinUsageChartView.swift in Sources */,
 				509B0368304C77F800715755 /* BolusPro_ManualMacroFields.swift in Sources */,
 				509B0369304C77F800715755 /* BolusPro_SettingsView.swift in Sources */,
 				509B036A304C77F800715755 /* BolusPro_OnboardingView.swift in Sources */,

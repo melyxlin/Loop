@@ -9225,6 +9225,9 @@
     "Average" : {
       "comment" : "Average glucose metric title"
     },
+    "Average / Day" : {
+      "comment" : "Average daily insulin metric title"
+    },
     "Average Glucose" : {
 
     },
@@ -9233,6 +9236,12 @@
     },
     "Barcode scanning failed: %@" : {
       "comment" : "Error message when scanning fails"
+    },
+    "Basal" : {
+      "comment" : "Daily insulin basal label\nInsulin statistics basal legend"
+    },
+    "Basal / Day" : {
+      "comment" : "Average daily basal insulin metric title"
     },
     "Basal Rate" : {
 
@@ -9987,7 +9996,7 @@
 
     },
     "Bolus" : {
-      "comment" : "Label for bolus entry row on bolus screen\nLabel for bolus entry row on simple bolus screen\nTitle for bolus entry screen",
+      "comment" : "Daily insulin bolus label\nInsulin statistics bolus legend\nLabel for bolus entry row on bolus screen\nLabel for bolus entry row on simple bolus screen\nTitle for bolus entry screen",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10110,6 +10119,9 @@
           }
         }
       }
+    },
+    "Bolus / Day" : {
+      "comment" : "Average daily bolus insulin metric title"
     },
     "Bolus Calculation Details" : {
 
@@ -12037,6 +12049,9 @@
     },
     "Carbs shown for %@ x 1 medium item" : {
 
+    },
+    "Category" : {
+      "comment" : "Statistics category picker label"
     },
     "Caution" : {
       "localizations" : {
@@ -15544,6 +15559,12 @@
     },
     "Daily Glucose Pattern" : {
       "comment" : "Daily glucose pattern (AGP) section header"
+    },
+    "Daily insulin delivery split between basal and bolus." : {
+      "comment" : "Insulin usage chart explanation"
+    },
+    "Daily insulin usage" : {
+      "comment" : "Accessibility label for daily insulin usage chart"
     },
     "Damper Strength: %1$@%%" : {
       "comment" : "Format string describing damper strength. (1: damper strength percentage)"
@@ -21289,7 +21310,7 @@
 
     },
     "Glucose" : {
-      "comment" : "Health access row label for glucose\nThe title of the glucose and prediction graph\nTitle for predicted glucose chart on bolus screen",
+      "comment" : "Health access row label for glucose\nStatistics category picker glucose option\nThe title of the glucose and prediction graph\nTitle for predicted glucose chart on bolus screen",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -23029,7 +23050,7 @@
       "comment" : "Error when quota is insufficient"
     },
     "Insulin" : {
-      "comment" : "Health access row label for insulin\nTitle of the prediction input effect for insulin",
+      "comment" : "Health access row label for insulin\nStatistics category picker insulin option\nTitle of the prediction input effect for insulin",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -24203,6 +24224,9 @@
           }
         }
       }
+    },
+    "Insulin Usage" : {
+      "comment" : "Insulin statistics section header"
     },
     "Integral Retrospective Correction" : {
       "comment" : "Title for integral retrospective correction experiment description\nTitle of integral retrospective correction experiment",
@@ -29447,6 +29471,9 @@
     },
     "No glucose data for this period." : {
       "comment" : "Statistics empty state"
+    },
+    "No insulin data for this period." : {
+      "comment" : "Insulin statistics empty state"
     },
     "No keywords saved" : {
 
@@ -39969,6 +39996,9 @@
     },
     "Too many requests. Please try again later." : {
       "comment" : "Error message for API rate limiting"
+    },
+    "Total" : {
+      "comment" : "Daily insulin total label\nTotal insulin metric title"
     },
     "Total\nBolus" : {
 

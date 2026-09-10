@@ -704,9 +704,15 @@ extension SettingsView {
 
     @ViewBuilder
     private var statisticsSection: some View {
-        if let glucoseStore = viewModel.deviceManager?.glucoseStore {
+        if let glucoseStore = viewModel.deviceManager?.glucoseStore,
+           let doseStore = viewModel.deviceManager?.doseStore {
             Section {
-                NavigationLink(destination: StatisticsView(glucoseStore: glucoseStore)) {
+                NavigationLink(
+                    destination: StatisticsView(
+                        glucoseStore: glucoseStore,
+                        doseStore: doseStore
+                    )
+                ) {
                     LargeButton(
                         action: {},
                         includeArrow: false,
