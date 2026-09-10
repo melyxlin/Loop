@@ -14,9 +14,17 @@ import SwiftUI
 import LoopAlgorithm
 // MARK: - Data Model
 
+enum GraphDetailSource {
+    case glucose
+    case insulin
+    case carbohydrates
+}
+
 struct GraphDetailData {
     var date: Date
+    var source: GraphDetailSource = .glucose
     var glucoseValue: Double?
+    var predictedGlucoseValue: Double?
     var glucoseUnit: LoopUnit = .milligramsPerDeciliter
     var insulinOnBoard: Double?
     var carbsOnBoard: Double?
@@ -74,80 +82,57 @@ struct GraphDetailView: View {
 
     // MARK: - Data Rows
 
+    @ViewBuilder
     private var dataRows: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let glucose = data.glucoseValue {
-                dataRow(
-                    icon: "drop.fill",
-                    color: glucoseColor(glucose),
-                    label: "Glucose",
-                    value: formattedGlucose(glucose)
-                )
-            }
+            switch data.source {
+            case .glucose:
+                if let glucose = data.glucoseValue {
+                    dataRow(
+                        icon: "drop.fill",
+                        color: glucoseColor(glucose),
+                        label: "Glucose",
+                        value: formattedGlucose(glucose)
+                    )
+                }
 
-            if let iob = data.insulinOnBoard {
-                dataRow(
-                    icon: "syringe.fill",
-                    color: .orange,
-                    label: "IOB",
-                    value: String(format: "%.2f U", iob)
-                )
-            }
+                if let predictedGlucose = data.predictedGlucoseValue {
+                    dataRow(
+                        icon: "chart.line.uptrend.xyaxis",
+                        color: .purple,
+                        label: "Predicted",
+                        value: formattedGlucose(predictedGlucose)
+                    )
+                }
 
-            if let cob = data.carbsOnBoard {
-                dataRow(
-                    icon: "fork.knife",
-                    color: .green,
-                    label: "COB",
-                    value: String(format: "%.0f g", cob)
-                )
-            }
+            case .insulin:
+                if let iob = data.insulinOnBoard {
+                    dataRow(
+                        icon: "syringe.fill",
+                        color: .orange,
+                        label: "IOB",
+                        value: String(format: "%.2f U", iob)
+                    )
+                }
 
-            if let bolus = data.recentBolus {
-                let offset = data.date.timeIntervalSince(bolus.date)
-                let offsetStr = abs(offset) < 60 ? "at this time" : "\(Int(abs(offset) / 60)) min \(offset > 0 ? "before" : "after")"
-                dataRow(
-                    icon: "cross.vial.fill",
-                    color: .blue,
-                    label: "Bolus",
-                    value: String(format: "%.2f U (%@)", bolus.units, offsetStr)
-                )
-            }
+                if let basal = data.basalRate {
+                    dataRow(
+                        icon: "waveform.path.ecg",
+                        color: .teal,
+                        label: "Basal",
+                        value: String(format: "%.3f U/hr", basal)
+                    )
+                }
 
-            if let basal = data.basalRate {
-                dataRow(
-                    icon: "waveform.path.ecg",
-                    color: .teal,
-                    label: "Basal",
-                    value: String(format: "%.3f U/hr", basal)
-                )
-            }
-
-            if let preset = data.activePreset {
-                dataRow(
-                    icon: "slider.horizontal.3",
-                    color: .purple,
-                    label: "Preset",
-                    value: preset
-                )
-            }
-
-            if let autoPreset = data.activeAutoPreset {
-                dataRow(
-                    icon: "figure.walk",
-                    color: Color(red: 76/255, green: 175/255, blue: 80/255),
-                    label: "AutoPreset",
-                    value: autoPreset
-                )
-            }
-
-            if let hr = data.heartRate {
-                dataRow(
-                    icon: "heart.fill",
-                    color: .red,
-                    label: "Heart Rate",
-                    value: "\(Int(hr)) bpm"
-                )
+            case .carbohydrates:
+                if let cob = data.carbsOnBoard {
+                    dataRow(
+                        icon: "fork.knife",
+                        color: .green,
+                        label: "COB",
+                        value: String(format: "%.0f g", cob)
+                    )
+                }
             }
         }
     }

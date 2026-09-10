@@ -21,6 +21,8 @@ final class GraphDetailViewModel: ObservableObject {
 
     private let deviceManager: DeviceDataManager
     private let loopManager: LoopDataManager
+    private let source: GraphDetailSource
+    private let statusCharts: StatusChartsManager
     private var scrubThrottleTimer: Timer?
     
     private let historicalStartDate: Date
@@ -31,15 +33,23 @@ final class GraphDetailViewModel: ObservableObject {
 
     init(
         date: Date,
+        source: GraphDetailSource,
         glucoseUnit: LoopUnit,
         deviceManager: DeviceDataManager,
         loopManager: LoopDataManager,
+        statusCharts: StatusChartsManager,
         historicalStartDate: Date,
         historicalEndDate: Date
     ) {
         self.deviceManager = deviceManager
         self.loopManager = loopManager
-        self.data = GraphDetailData(date: date, glucoseUnit: glucoseUnit)
+        self.statusCharts = statusCharts
+        self.source = source
+        self.data = GraphDetailData(
+            date: date,
+            source: source,
+            glucoseUnit: glucoseUnit
+        )
         self.historicalStartDate = historicalStartDate
         self.historicalEndDate = historicalEndDate
         loadData()
@@ -64,6 +74,7 @@ final class GraphDetailViewModel: ObservableObject {
             let currentDate = self.data.date
             self.data = GraphDetailData(
                 date: currentDate,
+                source: self.source,
                 glucoseUnit: self.data.glucoseUnit
             )
             
@@ -79,6 +90,7 @@ final class GraphDetailViewModel: ObservableObject {
 
     private func loadData() {
         loadGlucose()
+        loadPredictedGlucose()
         loadBolus()
         loadBasalRate()
         loadOverride()
@@ -120,6 +132,33 @@ final class GraphDetailViewModel: ObservableObject {
         }
     }
     
+    private func loadPredictedGlucose() {
+        let targetDate = data.date
+        let values = statusCharts.displayedPredictedGlucoseValues
+
+        guard
+            let firstValue = values.first,
+            let lastValue = values.last,
+            targetDate >= firstValue.startDate,
+            targetDate <= lastValue.startDate
+        else {
+            data.predictedGlucoseValue = nil
+            return
+        }
+
+        guard let closest = values.min(by: {
+            abs($0.startDate.timeIntervalSince(targetDate)) <
+                abs($1.startDate.timeIntervalSince(targetDate))
+        }) else {
+            data.predictedGlucoseValue = nil
+            return
+        }
+
+        data.predictedGlucoseValue = closest.quantity.doubleValue(
+            for: data.glucoseUnit
+        )
+    }
+    
     private func loadHistoricalData() {
         let start = historicalStartDate
         let end = historicalEndDate
@@ -155,11 +194,11 @@ final class GraphDetailViewModel: ObservableObject {
             data.insulinOnBoard = closest.value
         }
 
-        if let review = historicalCarbAbsorptionReview {
-            data.carbsOnBoard = review.carbStatuses.dynamicCarbsOnBoard(
-                at: date,
-                absorptionModel: CarbAbsorptionModel.piecewiseLinear.model
-            )
+        if let closest = statusCharts.displayedCOBValues.min(by: {
+            abs($0.startDate.timeIntervalSince(date)) <
+            abs($1.startDate.timeIntervalSince(date))
+        }) {
+            data.carbsOnBoard = closest.quantity.doubleValue(for: .gram)
         }
     }
 
@@ -287,13 +326,17 @@ final class GraphDetailViewModel: ObservableObject {
     private func loadBasalRate() {
         let targetDate = data.date
 
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-
-            if let schedule = self.loopManager.settings.basalRateSchedule {
-                self.data.basalRate = schedule.value(at: targetDate)
+        let basalEntry = statusCharts.displayedDoseEntries
+            .filter {
+                ($0.type == .basal || $0.type == .tempBasal) &&
+                $0.startDate <= targetDate &&
+                targetDate < $0.endDate
             }
-        }
+            .max {
+                $0.startDate < $1.startDate
+            }
+
+        data.basalRate = basalEntry?.unitsPerHour
     }
 
     private func loadOverride() {

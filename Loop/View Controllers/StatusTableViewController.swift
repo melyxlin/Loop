@@ -2571,15 +2571,31 @@ extension StatusTableViewController: ServicesViewModelDelegate {
         switch recognizer.state {
         case .began:
             let point = recognizer.location(in: tableView)
+
             guard let indexPath = tableView.indexPathForRow(at: point),
                   indexPath.section == Section.charts.rawValue,
-                  indexPath.row == ChartRow.glucose.rawValue else {
+                  let chartRow = ChartRow(rawValue: indexPath.row) else {
                 return
+            }
+
+            let source: GraphDetailSource
+
+            switch chartRow {
+            case .glucose:
+                source = .glucose
+            case .iob:
+                source = .insulin
+            case .cob:
+                source = .carbohydrates
             }
             graphDetailScrubFeedback.prepare()
             let touchedDate = dateForTouch(recognizer)
             graphDetailLastScrubDate = touchedDate
-            presentGraphDetail(for: touchedDate, anchorPoint: point)
+            presentGraphDetail(
+                for: touchedDate,
+                source: source,
+                anchorPoint: point
+            )
 
         case .changed:
             guard graphDetailHostingController != nil else { return }
@@ -2629,7 +2645,11 @@ extension StatusTableViewController: ServicesViewModelDelegate {
         return startDate.addingTimeInterval(timeRange * Double(clampedX))
     }
 
-    private func presentGraphDetail(for date: Date, anchorPoint: CGPoint) {
+    private func presentGraphDetail(
+        for date: Date,
+        source: GraphDetailSource,
+        anchorPoint: CGPoint
+    ) {
         // Dismiss any existing popup immediately (no animation when replacing)
         dismissGraphDetail(animated: false)
 
@@ -2637,9 +2657,11 @@ extension StatusTableViewController: ServicesViewModelDelegate {
 
         let viewModel = GraphDetailViewModel(
             date: date,
+            source: source,
             glucoseUnit: glucoseUnit,
             deviceManager: deviceManager,
             loopManager: loopManager,
+            statusCharts: statusCharts,
             historicalStartDate: charts.startDate,
             historicalEndDate: charts.maxEndDate
         )

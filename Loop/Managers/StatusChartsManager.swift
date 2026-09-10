@@ -25,6 +25,10 @@ class StatusChartsManager: ChartsManager {
     let dose: DoseChart
     let iob: IOBChart
     let cob: COBChart
+    
+    private(set) var displayedDoseEntries: [DoseEntry] = []
+    private(set) var displayedCOBValues: [CarbValue] = []
+    private(set) var displayedPredictedGlucoseValues: [GlucoseValue] = []
 
     init(colors: ChartColorPalette, settings: ChartSettings, traitCollection: UITraitCollection) {
         let glucose = PredictedGlucoseChart(predictedGlucoseBounds: FeatureFlags.predictedGlucoseChartClampEnabled ? .default : nil,
@@ -59,8 +63,8 @@ extension StatusChartsManager {
     }
 
     func setPredictedGlucoseValues(_ glucoseValues: [GlucoseValue]) {
+        displayedPredictedGlucoseValues = glucoseValues
         glucose.setPredictedGlucoseValues(glucoseValues)
-        invalidateChart(atIndex: ChartIndex.glucose.rawValue)
     }
 
     func setAlternatePredictedGlucoseValues(_ glucoseValues: [GlucoseValue]) {
@@ -117,6 +121,7 @@ extension StatusChartsManager {
 
 extension StatusChartsManager {
     func setDoseEntries(_ doseEntries: [DoseEntry]) {
+        displayedDoseEntries = doseEntries
         dose.doseEntries = doseEntries
         invalidateChart(atIndex: ChartIndex.dose.rawValue)
     }
@@ -129,6 +134,7 @@ extension StatusChartsManager {
 
 extension StatusChartsManager {
     func setCOBValues(_ cobValues: [CarbValue]) {
+        displayedCOBValues = cobValues
         cob.setCOBValues(cobValues)
         invalidateChart(atIndex: ChartIndex.cob.rawValue)
     }
