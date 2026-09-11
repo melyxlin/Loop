@@ -39,7 +39,7 @@ struct ManualGlucoseEntryRow: View {
                     shouldBecomeFirstResponder: isManualGlucoseEntryRowVisible,
                     maxLength: 4,
                     doneButtonColor: .loopAccent,
-                    isDismissible: false
+                    isDismissible: true
                 )
                 .onChange(of: valueText, perform: { value in
                     if let manualGlucoseValue = displayGlucosePreference.formatter.numberFormatter.number(from: valueText)?.doubleValue {
