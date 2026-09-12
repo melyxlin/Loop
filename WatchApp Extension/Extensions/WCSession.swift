@@ -63,6 +63,20 @@ extension WCSession {
         }
         return context
     }
+    
+    func sendManualGlucoseMessage(_ userInfo: SetManualGlucoseUserInfo) async throws -> WatchContext {
+        let reply = try await sendMessage(userInfo.rawValue)
+
+        guard let context = WatchContext(rawValue: reply as WatchContext.RawValue) else {
+            log.error(
+                "sendManualGlucoseMessage: could not decode reply: %{public}@",
+                reply
+            )
+            throw MessageError.decoding
+        }
+
+        return context
+    }
 
     func sendSetPreset(presetIdentifier: String?, alertIdentifier: String?) async throws {
         let _ = try await sendMessage(SetPresetUserInfo(presetIdentifier: presetIdentifier, alertIdentifier: alertIdentifier).rawValue)

@@ -17,7 +17,7 @@
                BlueprintIdentifier = "A9E6758022713F4700E25293"
                BuildableName = "LoopKit.framework"
                BlueprintName = "LoopKit-watchOS"
-               ReferencedContainer = "container:../Common/LoopKit/LoopKit.xcodeproj">
+               ReferencedContainer = "container:../LoopKit/LoopKit.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry

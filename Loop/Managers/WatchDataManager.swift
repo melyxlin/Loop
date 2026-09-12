@@ -403,6 +403,42 @@ final class WatchDataManager: NSObject {
 
         return context
     }
+    
+    private func addManualGlucoseFromWatchMessage(_ message: [String: Any]) async throws {
+        guard let manualGlucose = SetManualGlucoseUserInfo(rawValue: message) else {
+            log.error(
+                "Could not add manual glucose from unknown message: %{public}@",
+                String(describing: message)
+            )
+            throw WatchDataManagerError.decodingError
+        }
+
+        let quantity = LoopQuantity(
+            unit: .milligramsPerDeciliter,
+            doubleValue: manualGlucose.valueInMgDL
+        )
+
+        guard LoopConstants.validManualGlucoseEntryRange.contains(quantity) else {
+            log.error(
+                "Manual glucose from watch was outside acceptable range: %{public}@",
+                String(describing: quantity)
+            )
+            throw WatchDataManagerError.decodingError
+        }
+
+        let sample = NewGlucoseSample(
+            date: manualGlucose.date,
+            quantity: quantity,
+            condition: nil,
+            trend: nil,
+            trendRate: nil,
+            isDisplayOnly: false,
+            wasUserEntered: true,
+            syncIdentifier: manualGlucose.syncIdentifier
+        )
+
+        _ = try await loopDataManager.saveGlucose(sample: sample)
+    }
 
     private func addCarbEntryAndBolusFromWatchMessage(_ message: [String: Any]) async throws {
         guard let bolus = SetBolusUserInfo(rawValue: message as SetBolusUserInfo.RawValue) else {
@@ -452,6 +488,13 @@ final class WatchDataManager: NSObject {
             } else {
                 log.error("Could not recommend bolus from from unknown message: %{public}@", String(describing: message))
             }
+        case SetManualGlucoseUserInfo.name?:
+            try await addManualGlucoseFromWatchMessage(message)
+
+            let updatedContext = await createWatchContext()
+            lastComplicationContext = updatedContext
+
+            return updatedContext.rawValue
         case SetBolusUserInfo.name?:
             // Add carbs if applicable; start the bolus and reply when it's successfully requested
             try await addCarbEntryAndBolusFromWatchMessage(message)

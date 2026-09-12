@@ -327,6 +327,9 @@
 		50A4CDE230523A4A00EAC618 /* InsulinUsageChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */; };
 		50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */; };
 		50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */; };
+		50E005B230548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */; };
+		50E005B330548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */; };
+		50E005B5305495EF004C6822 /* ManualGlucoseEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B4305495EC004C6822 /* ManualGlucoseEntryView.swift */; };
 		50E71BB0304DD60800415AAA /* ManualTempBasalBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E71BAF304DD60400415AAA /* ManualTempBasalBanner.swift */; };
 		50E71BB2304DDBC300415AAA /* InsulinSuspendedBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E71BB1304DDBC000415AAA /* InsulinSuspendedBanner.swift */; };
 		50E71BB4304DE08300415AAA /* NoActiveAdjustmentBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E71BB3304DE08000415AAA /* NoActiveAdjustmentBanner.swift */; };
@@ -1220,6 +1223,8 @@
 		50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinUsageChartView.swift; sourceTree = "<group>"; };
 		50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarManager.swift; sourceTree = "<group>"; };
 		50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarSettingsView.swift; sourceTree = "<group>"; };
+		50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetManualGlucoseUserInfo.swift; sourceTree = "<group>"; };
+		50E005B4305495EC004C6822 /* ManualGlucoseEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualGlucoseEntryView.swift; sourceTree = "<group>"; };
 		50E71BAF304DD60400415AAA /* ManualTempBasalBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualTempBasalBanner.swift; sourceTree = "<group>"; };
 		50E71BB1304DDBC000415AAA /* InsulinSuspendedBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinSuspendedBanner.swift; sourceTree = "<group>"; };
 		50E71BB3304DE08000415AAA /* NoActiveAdjustmentBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoActiveAdjustmentBanner.swift; sourceTree = "<group>"; };
@@ -2891,6 +2896,7 @@
 		895788A3242E6947002CB114 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				50E005B4305495EC004C6822 /* ManualGlucoseEntryView.swift */,
 				895788AB242E69A2002CB114 /* ActionButton.swift */,
 				C10C57FD2E71E87400A4825C /* ActiveOverrideView.swift */,
 				895788B5242E6A25002CB114 /* Carb Entry & Bolus */,
@@ -3150,6 +3156,7 @@
 		C1ED6C632E7C6DA6002F91C2 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */,
 				C1DCEDF32E999D5A001A7BB0 /* LastManualBolus.swift */,
 				C1ED6C812E7D8E36002F91C2 /* AcknowledgeAlertUserInfo.swift */,
 				A9347F3024E7521800C99C34 /* CarbBackfillRequestUserInfo.swift */,
@@ -4238,6 +4245,7 @@
 				892FB4CD22040104005293EC /* OverridePresetRow.swift in Sources */,
 				C1550B0C2E6F249A009369DC /* LoopCircleView.swift in Sources */,
 				4F75F00220FCFE8C00B5570E /* GlucoseChartScene.swift in Sources */,
+				50E005B5305495EF004C6822 /* ManualGlucoseEntryView.swift in Sources */,
 				89E26800229267DF00A3F2AF /* Optional.swift in Sources */,
 				4328E02F1CFBF81800E199AA /* WKInterfaceImage.swift in Sources */,
 				89F9118F24352F1600ECCAF3 /* DigitalCrownRotation.swift in Sources */,
@@ -4344,6 +4352,7 @@
 				C1ED6C6B2E7C6E58002F91C2 /* LoopSettingsUserInfo.swift in Sources */,
 				C1ED6C7D2E7C811A002F91C2 /* SetPresetUserInfo.swift in Sources */,
 				4345E40221F67300009E00E5 /* GetBolusRecommendationUserInfo.swift in Sources */,
+				50E005B230548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */,
 				C1ED6C692E7C6E41002F91C2 /* GlucoseBackfillRequestUserInfo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4380,6 +4389,7 @@
 				C1ED6C6A2E7C6E58002F91C2 /* LoopSettingsUserInfo.swift in Sources */,
 				C1ED6C7E2E7C811A002F91C2 /* SetPresetUserInfo.swift in Sources */,
 				4345E40121F67300009E00E5 /* GetBolusRecommendationUserInfo.swift in Sources */,
+				50E005B330548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */,
 				C1ED6C682E7C6E41002F91C2 /* GlucoseBackfillRequestUserInfo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

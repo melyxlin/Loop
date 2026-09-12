@@ -16,6 +16,7 @@ struct WatchActionsView: View {
 
     @State private var isShowingPresets: Bool = false
     @State private var overrideToShow: TemporaryScheduleOverride?
+    @State private var isShowingManualGlucoseEntry: Bool = false
 
     var overrideActive: Bool {
         return loopManager.watchInfo.scheduleOverride?.isActive() == true
@@ -44,7 +45,7 @@ struct WatchActionsView: View {
                 }
             }
             .padding(.bottom, 4)
-            HStack {
+            HStack(spacing: 0) {
                 CircleTintedButton(
                     label: "Presets",
                     image: Image("presets"),
@@ -57,8 +58,15 @@ struct WatchActionsView: View {
                         isShowingPresets = true
                     }
                 }
-                Spacer()
-                    .frame(maxWidth: .infinity)
+
+                CircleTintedButton(
+                    label: "Fingerstick",
+                    image: Image(systemName: "drop.fill"),
+                    foregroundTint: Color(UIColor.glucose),
+                    backgroundTint: Color(UIColor.darkGlucose)
+                ) {
+                    isShowingManualGlucoseEntry = true
+                }
             }
         }
         .font(.system(size: 14, weight: .light))
@@ -73,6 +81,9 @@ struct WatchActionsView: View {
         })) {
             let preset = loopManager.selectablePresets.first(where: { $0.id == overrideToShow!.presetId })
             PresetConfirmationView(preset: preset)
+        }
+        .sheet(isPresented: $isShowingManualGlucoseEntry) {
+            ManualGlucoseEntryView()
         }
         .sheet(isPresented:Binding(
             get: { loopManager.bolusViewModel != nil },
