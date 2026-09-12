@@ -10,6 +10,8 @@
 import SwiftUI
 import LoopKit
 import LoopCore
+import WatchConnectivity
+import WatchKit
 
 struct WatchActionsView: View {
     @Environment(LoopDataManager.self) var loopManager
@@ -17,6 +19,13 @@ struct WatchActionsView: View {
     @State private var isShowingPresets: Bool = false
     @State private var overrideToShow: TemporaryScheduleOverride?
     @State private var isShowingManualGlucoseEntry: Bool = false
+    @State private var isShowingLoopModeConfirmation = false
+    @State private var isChangingLoopMode = false
+    @State private var loopModeError: String?
+    
+    private var isClosedLoop: Bool {
+        loopManager.activeContext?.isClosedLoop == true
+    }
 
     var overrideActive: Bool {
         return loopManager.watchInfo.scheduleOverride?.isActive() == true
@@ -68,6 +77,19 @@ struct WatchActionsView: View {
                     isShowingManualGlucoseEntry = true
                 }
             }
+            HStack(spacing: 0) {
+                CircleTintedButton(
+                    label: isClosedLoop ? "Open Loop" : "Resume Loop",
+                    image: Image(systemName: isClosedLoop ? "pause.circle.fill" : "play.circle.fill"),
+                    foregroundTint: .orange,
+                    backgroundTint: .orange.opacity(0.2)
+                ) {
+                    isShowingLoopModeConfirmation = true
+                }
+                .disabled(isChangingLoopMode)
+
+                Spacer()
+            }
         }
         .font(.system(size: 14, weight: .light))
         .toolbar(.hidden, for: .navigationBar)
@@ -91,7 +113,76 @@ struct WatchActionsView: View {
         )) {
             CarbAndBolusFlow(viewModel: loopManager.bolusViewModel!)
         }
+        .confirmationDialog(
+            isClosedLoop ? "Turn Off Automatic Dosing?" : "Resume Automatic Dosing?",
+            isPresented: $isShowingLoopModeConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(
+                isClosedLoop ? "Open Loop" : "Resume Loop"
+            ) {
+                Task {
+                    await changeLoopMode()
+                }
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if isClosedLoop {
+                Text("Your pump and CGM will continue operating, but Loop will not make automatic insulin adjustments.")
+            } else {
+                Text("Loop will resume automatic insulin adjustments.")
+            }
+        }
+        .alert(
+            "Unable to Change Loop Mode",
+            isPresented: Binding(
+                get: { loopModeError != nil },
+                set: {
+                    if !$0 {
+                        loopModeError = nil
+                    }
+                }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(loopModeError ?? "")
+        }
         .environment(\.glucoseDisplayUnit, loopManager.displayGlucoseUnit)
+    }
+    
+    @MainActor
+    private func changeLoopMode() async {
+        guard !isChangingLoopMode else {
+            return
+        }
+
+        isChangingLoopMode = true
+        defer {
+            isChangingLoopMode = false
+        }
+
+        let requestedDosingEnabled = !isClosedLoop
+        let message = SetLoopModeUserInfo(
+            dosingEnabled: requestedDosingEnabled
+        )
+
+        do {
+            let updatedContext = try await WCSession.default
+                .sendLoopModeMessage(message)
+
+            LoopDataManager.shared.updateContext(updatedContext)
+
+            WKInterfaceDevice.current().play(.success)
+        } catch {
+            WKInterfaceDevice.current().play(.failure)
+
+            loopModeError = NSLocalizedString(
+                "Make sure your iPhone is nearby and try again.",
+                comment: "Recovery message after changing Loop mode from Apple Watch fails"
+            )
+        }
     }
 
 }

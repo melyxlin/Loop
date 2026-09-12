@@ -495,6 +495,23 @@ final class WatchDataManager: NSObject {
             lastComplicationContext = updatedContext
 
             return updatedContext.rawValue
+        case SetLoopModeUserInfo.name?:
+            guard let userInfo = SetLoopModeUserInfo(rawValue: message) else {
+                log.error(
+                    "Could not set Loop mode from unknown message: %{public}@",
+                    String(describing: message)
+                )
+                throw WatchDataManagerError.decodingError
+            }
+
+            settingsManager.mutateLoopSettings { settings in
+                settings.dosingEnabled = userInfo.dosingEnabled
+            }
+
+            let updatedContext = await createWatchContext()
+            lastComplicationContext = updatedContext
+
+            return updatedContext.rawValue
         case SetBolusUserInfo.name?:
             // Add carbs if applicable; start the bolus and reply when it's successfully requested
             try await addCarbEntryAndBolusFromWatchMessage(message)

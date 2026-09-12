@@ -328,6 +328,8 @@
 		50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */; };
 		50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */; };
 		50C85C193054D15A00A2CEBF /* OpenLoopBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C183054D15600A2CEBF /* OpenLoopBanner.swift */; };
+		50C85C1B3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */; };
+		50C85C1C3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */; };
 		50E005B230548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */; };
 		50E005B330548DE0004C6822 /* SetManualGlucoseUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */; };
 		50E005B5305495EF004C6822 /* ManualGlucoseEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E005B4305495EC004C6822 /* ManualGlucoseEntryView.swift */; };
@@ -1225,6 +1227,7 @@
 		50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarManager.swift; sourceTree = "<group>"; };
 		50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarSettingsView.swift; sourceTree = "<group>"; };
 		50C85C183054D15600A2CEBF /* OpenLoopBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenLoopBanner.swift; sourceTree = "<group>"; };
+		50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetLoopModeUserInfo.swift; sourceTree = "<group>"; };
 		50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetManualGlucoseUserInfo.swift; sourceTree = "<group>"; };
 		50E005B4305495EC004C6822 /* ManualGlucoseEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualGlucoseEntryView.swift; sourceTree = "<group>"; };
 		50E71BAF304DD60400415AAA /* ManualTempBasalBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualTempBasalBanner.swift; sourceTree = "<group>"; };
@@ -3159,6 +3162,7 @@
 		C1ED6C632E7C6DA6002F91C2 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */,
 				50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */,
 				C1DCEDF32E999D5A001A7BB0 /* LastManualBolus.swift */,
 				C1ED6C812E7D8E36002F91C2 /* AcknowledgeAlertUserInfo.swift */,
@@ -4343,6 +4347,7 @@
 				C1DCEDF42E999D5E001A7BB0 /* LastManualBolus.swift in Sources */,
 				C1ED6C752E7C6F36002F91C2 /* WatchContext.swift in Sources */,
 				43D9002021EB209400AF44BF /* NSTimeInterval.swift in Sources */,
+				50C85C1C3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */,
 				C1ED6C712E7C6F07002F91C2 /* SetBolusUserInfo.swift in Sources */,
 				C16575762539FEF3004AE16E /* LoopCoreConstants.swift in Sources */,
 				C17DDC9D28AC33A1005FBF4C /* PersistedProperty.swift in Sources */,
@@ -4380,6 +4385,7 @@
 				C1DCEDF52E999D5E001A7BB0 /* LastManualBolus.swift in Sources */,
 				C1ED6C742E7C6F36002F91C2 /* WatchContext.swift in Sources */,
 				43D9FFFB21EAF3D300AF44BF /* NSTimeInterval.swift in Sources */,
+				50C85C1B3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */,
 				C1ED6C702E7C6F07002F91C2 /* SetBolusUserInfo.swift in Sources */,
 				C16575752539FD60004AE16E /* LoopCoreConstants.swift in Sources */,
 				C17DDC9C28AC339E005FBF4C /* PersistedProperty.swift in Sources */,
