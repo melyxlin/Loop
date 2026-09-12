@@ -824,6 +824,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
     private enum StatusRowMode {
         case hidden
         case noAdjustment
+        case openLoop
         case preset(TemporaryScheduleOverride)
         case enactingBolus
         case bolusing(dose: DoseEntry)
@@ -891,18 +892,18 @@ final class StatusTableViewController: LoopChartsTableViewController {
                   dose.endDate > Date()
         {
             statusRowMode = .manualTempBasal(dose: dose)
-
         }
-        else if let preset = temporaryPresetsManager.scheduleOverride
-                    ?? temporaryPresetsManager.preMealOverride,
+
+        else if !settingsManager.dosingEnabled {
+            statusRowMode = .openLoop
+        } else if let preset = temporaryPresetsManager.scheduleOverride
+                  ?? temporaryPresetsManager.preMealOverride,
                   !preset.hasFinished()
         {
             statusRowMode = .preset(preset)
-        }
-        else {
+        } else {
             statusRowMode = .noAdjustment
         }
-
         return statusRowMode
     }
 
@@ -1242,6 +1243,29 @@ final class StatusTableViewController: LoopChartsTableViewController {
                             insulinSensitivity: insulinSensitivity,
                             glucoseUnit: glucoseUnit
                         )
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .none
+
+                    return cell
+                case .openLoop:
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        OpenLoopBanner(
+                            canResume: onboardingManager.isComplete
+                                && !deviceManager.isCGMInputPaused
+                        ) { [weak self] in
+                            guard let self else {
+                                return
+                            }
+
+                            self.settingsManager.mutateLoopSettings { settings in
+                                settings.dosingEnabled = true
+                            }
+                        }
                     }
                     .margins(.all, 0)
 
