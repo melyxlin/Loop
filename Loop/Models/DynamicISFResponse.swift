@@ -42,6 +42,7 @@ struct DynamicISFResponse {
     let expectedCarbEffect: Double
     let expectedNetEffect: Double
     let responseDiscrepancy: Double
+    let responseDeficitFraction: Double
     let remainingInsulinEffect: Double
     let insulinEffectProgress: Double
 }

@@ -1548,20 +1548,47 @@ final class StatusTableViewController: LoopChartsTableViewController {
                         }
                     }
                 case .pumpSuspended(let resuming) where !resuming:
-                    updateBannerAndHUDandStatusRows(statusRowMode: .pumpSuspended(resuming: true) , newSize: nil, animated: true)
+                    updateBannerAndHUDandStatusRows(
+                        statusRowMode: .pumpSuspended(resuming: true),
+                        newSize: nil,
+                        animated: true
+                    )
+
                     deviceManager.pumpManager?.resumeDelivery() { (error) in
                         Task { @MainActor in
                             if let error = error {
-                                let alert = UIAlertController(with: error, title: NSLocalizedString("Failed to Resume Insulin Delivery", comment: "The alert title for a resume error"))
+                                let alert = UIAlertController(
+                                    with: error,
+                                    title: NSLocalizedString(
+                                        "Failed to Resume Insulin Delivery",
+                                        comment: "The alert title for a resume error"
+                                    )
+                                )
+
                                 self.present(alert, animated: true, completion: nil)
+
                                 if case .suspended = self.basalDeliveryState {
-                                    self.updateBannerAndHUDandStatusRows(statusRowMode: .pumpSuspended(resuming: false), newSize: nil, animated: true)
+                                    self.updateBannerAndHUDandStatusRows(
+                                        statusRowMode: .pumpSuspended(resuming: false),
+                                        newSize: nil,
+                                        animated: true
+                                    )
                                 }
                             } else {
-                                self.updateBannerAndHUDandStatusRows(statusRowMode: self.determineStatusRowMode(), newSize: nil, animated: true)
+                                self.updateBannerAndHUDandStatusRows(
+                                    statusRowMode: self.determineStatusRowMode(),
+                                    newSize: nil,
+                                    animated: true
+                                )
+
                                 self.refreshContext.update(with: .insulin)
                                 self.log.debug("[reloadData] after manually resuming suspend")
+
                                 await self.reloadData()
+
+                                if SiteAtlas_FeatureFlags.isEnabled {
+                                    SiteAtlas_Coordinator.shared.promptManualLog(type: .pump)
+                                }
                             }
                         }
                     }

@@ -1260,17 +1260,31 @@ extension DeviceDataManager: CGMManagerDelegate {
             )
             await processCGMReadingResult(manager, readingResult: readingResult)
             let now = Date()
-            if case .newData = readingResult,
-                !self.isCGMInputPaused,
-                now.timeIntervalSince(self.lastCGMLoopTrigger) > .minutes(4.2)
-            {
-                self.log.default(
-                    "Triggering loop from new CGM data at %{public}@",
-                    String(describing: now)
-                )
-                self.lastCGMLoopTrigger = now
-                await self.checkPumpDataAndLoop()
-            }
+            #if targetEnvironment(simulator)
+                if case .newData = readingResult,
+                    !self.isCGMInputPaused
+                {
+                    self.log.default(
+                        "TESTING: Triggering loop from every new CGM value at %{public}@",
+                        String(describing: now)
+                    )
+                    self.lastCGMLoopTrigger = now
+                    await self.checkPumpDataAndLoop()
+                }
+            #else
+                if case .newData = readingResult,
+                    !self.isCGMInputPaused,
+                    now.timeIntervalSince(self.lastCGMLoopTrigger)
+                        > .minutes(4.2)
+                {
+                    self.log.default(
+                        "Triggering loop from new CGM data at %{public}@",
+                        String(describing: now)
+                    )
+                    self.lastCGMLoopTrigger = now
+                    await self.checkPumpDataAndLoop()
+                }
+            #endif
         }
     }
 

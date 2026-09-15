@@ -135,6 +135,27 @@ final class LoopDataManager: ObservableObject {
     private var lastDynamicISFShadowGlucoseDate: Date?
     private var lastDynamicISFState: DynamicISFState = .inactive
     private var dynamicISFConcernEpisode: DynamicISFConcernEpisode?
+    private var dynamicISFRecoveryObservationStartDate: Date?
+    // Tracks confirmed resistance within the current Dynamic ISF episode.
+    //
+    // An episode may continue through:
+    // waitingForResponse → resistant → recovering → waitingForResponse → resistant
+    //
+    // The episode ends when the state reaches .observing or .inactive.
+    private var dynamicISFHasConfirmedResistanceInEpisode = false
+
+    // Highest shadow strength reached while resistance was confirmed
+    // during the current episode.
+    //
+    // This remains remembered during .recovering and reconfirmation,
+    // but is not active unless the current state is .resistant.
+    private var dynamicISFRememberedResistanceStrength: Double = 0
+    // Number of distinct resistant confirmations within the current
+    // Dynamic ISF episode.
+    //
+    // Increment only when transitioning INTO .resistant.
+    // Reset when the episode ends.
+    private var dynamicISFResistanceConfirmationCount = 0
 
     private let dynamicISFLog = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Loop",
@@ -908,17 +929,23 @@ final class LoopDataManager: ObservableObject {
             let firstGlucose = glucoseSamples.first,
             let lastGlucose = glucoseSamples.last
         else {
-            print(
-                "DYNAMIC ISF SHADOW | insufficient glucose history"
-            )
+            print("DYNAMIC ISF DEBUG | insufficient glucose history")
             return
         }
 
+        print(
+            "DYNAMIC ISF TIMESTAMP DEBUG | "
+            + "current=\(lastGlucose.startDate) | "
+            + "previous=\(String(describing: lastDynamicISFShadowGlucoseDate))"
+        )
+
         guard lastGlucose.startDate != lastDynamicISFShadowGlucoseDate else {
+            print("DYNAMIC ISF TIMESTAMP DEBUG | duplicate glucose timestamp — returning")
             return
         }
 
         lastDynamicISFShadowGlucoseDate = lastGlucose.startDate
+
 
         let observationDuration =
             lastGlucose.startDate.timeIntervalSince(firstGlucose.startDate)
@@ -1080,6 +1107,8 @@ final class LoopDataManager: ObservableObject {
             previousState: previousDynamicISFState,
             evaluationDate: lastGlucose.startDate,
             concernEpisode: dynamicISFConcernEpisode,
+            hasConfirmedResistanceInEpisode: dynamicISFHasConfirmedResistanceInEpisode,
+            resistanceConfirmationCount: dynamicISFResistanceConfirmationCount,
             currentGlucose: currentGlucose,
             observedGlucoseChange: observedGlucoseChange,
             recentGlucoseChange: recentGlucoseChange,
@@ -1087,6 +1116,155 @@ final class LoopDataManager: ObservableObject {
             expectedCarbEffect: expectedCarbEffect,
             responseDiscrepancy: responseDiscrepancy,
             remainingInsulinEffect: unwrappedRemainingInsulinEffect
+        )
+
+        // Phase 4 Dynamic ISF candidate-strength experiment.
+        //
+        // This is SHADOW ONLY. It does not alter the sensitivity passed to
+        // LoopAlgorithm, the correction recommendation, or insulin delivery.
+        //
+        // A strength of 0 means no Dynamic ISF adjustment would be considered.
+        // A strength approaching 1 means the measured response deficit is large,
+        // but this value is NOT itself an ISF multiplier.
+        let dynamicISFShadowStrength: Double
+
+        if dynamicISFResponse.state == .resistant {
+            let minimumDeficitForAdjustment = 0.50
+
+            let currentEvidenceStrength = min(
+                1,
+                max(
+                    0,
+                    (dynamicISFResponse.responseDeficitFraction - minimumDeficitForAdjustment)
+                        / (1 - minimumDeficitForAdjustment)
+                )
+            )
+
+            // If resistance has already been confirmed in this episode,
+            // do not restart a reconfirmed resistant period below the
+            // strongest previously confirmed resistance strength.
+            //
+            // This remembered strength is inactive during .recovering and
+            // .waitingForResponse because this block only runs in .resistant.
+            if dynamicISFHasConfirmedResistanceInEpisode {
+                dynamicISFShadowStrength = max(
+                    currentEvidenceStrength,
+                    dynamicISFRememberedResistanceStrength
+                )
+            } else {
+                dynamicISFShadowStrength = currentEvidenceStrength
+            }
+
+        } else {
+            dynamicISFShadowStrength = 0
+        }
+
+        let scheduledISFAtPredictionStart =
+            input.sensitivity.first {
+                $0.startDate <= input.predictionStart &&
+                $0.endDate >= input.predictionStart
+            }?.value.doubleValue(for: glucoseUnit)
+
+        let scheduledISFString =
+            scheduledISFAtPredictionStart.map {
+                String(format: "%.1f", $0)
+            } ?? "nil"
+        
+        // Phase 4B Dynamic ISF candidate experiment.
+        //
+        // SHADOW ONLY: this value is logged for evaluation and is not passed
+        // into LoopAlgorithm or used for insulin delivery.
+        //
+        // Even at maximum resistance evidence, Dynamic ISF may reduce the
+        // scheduled ISF by no more than 20%.
+        let maximumISFReductionFraction = 0.20
+
+        let dynamicISFShadowReductionFraction =
+            dynamicISFShadowStrength * maximumISFReductionFraction
+
+        let dynamicISFCandidateISF =
+            scheduledISFAtPredictionStart.map {
+                $0 * (1 - dynamicISFShadowReductionFraction)
+            }
+
+        let dynamicISFCandidateISFString =
+            dynamicISFCandidateISF.map {
+                String(format: "%.1f", $0)
+            } ?? "nil"
+
+        dynamicISFLog.log(
+            level: .default,
+            "DYNAMIC ISF CANDIDATE | state=\(dynamicISFResponse.state.rawValue) | responseDeficit=\(dynamicISFResponse.responseDeficitFraction * 100)% | shadowStrength=\(dynamicISFShadowStrength * 100)% | shadowReduction=\(dynamicISFShadowReductionFraction * 100)% | scheduledISF=\(scheduledISFString) | candidateISF=\(dynamicISFCandidateISFString) | midAbsorptionISF=\(input.useMidAbsorptionISF)"
+        )
+        if dynamicISFResponse.state == .resistant {
+
+            // Increment only when entering a new resistant period.
+            if previousDynamicISFState != .resistant {
+                dynamicISFResistanceConfirmationCount += 1
+            }
+
+            dynamicISFHasConfirmedResistanceInEpisode = true
+
+            dynamicISFRememberedResistanceStrength = max(
+                dynamicISFRememberedResistanceStrength,
+                dynamicISFShadowStrength
+            )
+
+        } else if dynamicISFResponse.state == .inactive {
+
+            // .inactive is always a hard episode boundary.
+            dynamicISFHasConfirmedResistanceInEpisode = false
+            dynamicISFRememberedResistanceStrength = 0
+            dynamicISFResistanceConfirmationCount = 0
+            dynamicISFRecoveryObservationStartDate = nil
+
+        } else if dynamicISFResponse.state == .observing {
+
+            // After confirmed resistance, .observing does not immediately end
+            // the episode. Give recovery time to prove that it is sustained.
+            //
+            // SHADOW ONLY: temporary threshold for validating episode behavior.
+            let recoveryObservationGracePeriod: TimeInterval = 15 * 60
+
+            if dynamicISFHasConfirmedResistanceInEpisode {
+
+                if let recoveryObservationStartDate =
+                    dynamicISFRecoveryObservationStartDate
+                {
+                    let recoveryObservationDuration =
+                        lastGlucose.startDate.timeIntervalSince(
+                            recoveryObservationStartDate
+                        )
+
+                    if recoveryObservationDuration >= recoveryObservationGracePeriod {
+                        dynamicISFHasConfirmedResistanceInEpisode = false
+                        dynamicISFRememberedResistanceStrength = 0
+                        dynamicISFResistanceConfirmationCount = 0
+                        dynamicISFRecoveryObservationStartDate = nil
+                    }
+                } else {
+                    dynamicISFRecoveryObservationStartDate = lastGlucose.startDate
+                }
+
+            } else {
+                dynamicISFRecoveryObservationStartDate = nil
+            }
+
+        } else {
+
+            // waitingForResponse / resistant / recovering means we are no
+            // longer continuously observing recovery.
+            dynamicISFRecoveryObservationStartDate = nil
+        }
+
+        dynamicISFLog.log(
+            level: .default,
+            """
+            DYNAMIC ISF EPISODE | \
+            confirmed=\(self.dynamicISFHasConfirmedResistanceInEpisode) | \
+            confirmationCount=\(self.dynamicISFResistanceConfirmationCount) | \
+            rememberedStrength=\(self.dynamicISFRememberedResistanceStrength * 100)%
+            """
         )
 
         let hasActiveConcern =
@@ -1116,7 +1294,7 @@ final class LoopDataManager: ObservableObject {
 
             dynamicISFConcernEpisode = nil
         }
-        
+
         if let concernEpisode = dynamicISFConcernEpisode {
             let concernDuration =
                 lastGlucose.startDate.timeIntervalSince(concernEpisode.startDate)
@@ -1149,7 +1327,7 @@ final class LoopDataManager: ObservableObject {
             recentGlucoseChange.map {
                 String(format: "%+.1f", $0)
             } ?? "nil"
-        
+
         let insulinEffectProgressPercent =
             dynamicISFResponse.insulinEffectProgress * 100
 
@@ -1190,6 +1368,8 @@ final class LoopDataManager: ObservableObject {
         previousState: DynamicISFState,
         evaluationDate: Date,
         concernEpisode: DynamicISFConcernEpisode?,
+        hasConfirmedResistanceInEpisode: Bool,
+        resistanceConfirmationCount: Int,
         currentGlucose: Double,
         observedGlucoseChange: Double,
         recentGlucoseChange: Double?,
@@ -1231,15 +1411,26 @@ final class LoopDataManager: ObservableObject {
         // These values are test scaffolding only and do not affect insulin delivery.
         let minimumResponseDeficitFraction = 0.50
         let recoveringRecentChange = -2.0
-        // Shadow-only persistence thresholds.
-        //
-        // These are intentionally conservative starting values for evaluating
-        // detector behavior. They do not alter insulin delivery.
-        let minimumConcernDuration: TimeInterval = 10 * 60
 
-        // Additional fraction of the modeled insulin effect that must have moved
-        // from future to historical after the concern began.
-        let minimumProgressSinceConcern = 0.03
+        let minimumConcernDuration: TimeInterval
+        let minimumProgressSinceConcern: Double
+
+        switch resistanceConfirmationCount {
+        case 0:
+            // First confirmation in this episode.
+            minimumConcernDuration = 10 * 60
+            minimumProgressSinceConcern = 0.03
+
+        case 1:
+            // First reconfirmation / relapse.
+            minimumConcernDuration = 5 * 60
+            minimumProgressSinceConcern = 0.02
+
+        default:
+            // Second and later reconfirmations.
+            minimumConcernDuration = 2.5 * 60
+            minimumProgressSinceConcern = 0.01
+        }
 
         // If discrepancy has improved by more than this amount since concern began,
         // continue waiting rather than classifying the response as resistant.
@@ -1282,7 +1473,7 @@ final class LoopDataManager: ObservableObject {
         let responseIsMeaningfullyBelowExpected =
             hasEnoughExpectedInsulinEffectForResponse &&
             responseDeficitFraction >= minimumResponseDeficitFraction
-        
+
         let concernDuration: TimeInterval?
         let progressSinceConcern: Double?
         let discrepancyChangeSinceConcern: Double?
@@ -1387,6 +1578,7 @@ final class LoopDataManager: ObservableObject {
             expectedCarbEffect: expectedCarbEffect,
             expectedNetEffect: expectedInsulinEffect + expectedCarbEffect,
             responseDiscrepancy: responseDiscrepancy,
+            responseDeficitFraction: responseDeficitFraction,
             remainingInsulinEffect: remainingInsulinEffect,
             insulinEffectProgress: insulinEffectProgress
         )
