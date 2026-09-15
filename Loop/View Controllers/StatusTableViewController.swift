@@ -759,7 +759,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     private static let canceledBolusDisplayDuration: TimeInterval = 10
 
-    private static let canceledAutomaticBolusDisplayDuration: TimeInterval = 30
+    private static let canceledAutomaticBolusDisplayDuration: TimeInterval = 15
     
     private func determinePresetsRowMode() -> PresetsRowMode {
         if let preset = temporaryPresetsManager.scheduleOverride ?? temporaryPresetsManager.preMealOverride, !preset.hasFinished() {
