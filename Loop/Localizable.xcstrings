@@ -9159,6 +9159,12 @@
     "Automated insulin adjustments by %@ reduce a noticeable rise in glucose" : {
 
     },
+    "Automatic Bolus Canceled" : {
+      "comment" : "The alert title shown from the info button on a canceled automatic bolus"
+    },
+    "Automatic Bolus Information" : {
+      "comment" : "Accessibility label for information about a canceled automatic bolus"
+    },
     "Automatic dosing is paused" : {
       "comment" : "Description shown when automatic dosing is disabled"
     },
@@ -14714,6 +14720,9 @@
     },
     "Coverage, delay, absorption, and detection toggles will return to defaults. Your master toggle and onboarding status are unchanged." : {
 
+    },
+    "Create Issue Report" : {
+      "comment" : "The title of the action that opens the issue report screen"
     },
     "Create new presets" : {
 
@@ -26290,6 +26299,9 @@
         }
       }
     },
+    "Loop delivers an automatic bolus when its forecast stays above your correction range. If this dose was not what you expected, an issue report captures the glucose, insulin and settings behind the decision, and is the fastest way for someone to tell you why it happened.\n\nCreate one soon — the data it needs ages out." : {
+      "comment" : "The alert body shown from the info button on a canceled automatic bolus"
+    },
     "Loop doses against both entries the same way it doses any meal. Drag the slider to scale only the protein/fat tail — all the way left skips BolusPro for this meal." : {
 
     },
@@ -30202,6 +30214,9 @@
     },
     "Not enough data to plot a profile." : {
       "comment" : "AGP empty state"
+    },
+    "Not Now" : {
+      "comment" : "The title of the action that dismisses the canceled automatic bolus info alert"
     },
     "Not Selected" : {
 
