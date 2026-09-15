@@ -19,9 +19,15 @@ public class BolusProgressTableViewCell: UITableViewCell {
         case starting
         case bolusing(delivered: Double?, ofTotalVolume: Double)
         case canceling
-        case canceled(delivered: Double, ofTotalVolume: Double)
+        case canceled(
+            delivered: Double,
+            ofTotalVolume: Double,
+            automatic: Bool
+        )
     }
-    
+
+    public var onInfoTapped: (() -> Void)?
+
     private let paddedView = UIView()
 
     private let titleLabel: UILabel = {
@@ -68,6 +74,30 @@ public class BolusProgressTableViewCell: UITableViewCell {
         view.setContentHuggingPriority(.required, for: .horizontal)
         return view
     }()
+
+    private lazy var infoButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(
+            UIImage(systemName: "info.circle"),
+            for: .normal
+        )
+        button.accessibilityLabel = NSLocalizedString(
+            "Automatic Bolus Information",
+            comment: "Accessibility label for information about a canceled automatic bolus"
+        )
+        button.accessibilityIdentifier = "button_AutomaticBolusInfo"
+        button.addTarget(
+            self,
+            action: #selector(infoTapped),
+            for: .touchUpInside
+        )
+        button.isHidden = true
+        return button
+    }()
+
+    @objc private func infoTapped() {
+        onInfoTapped?()
+    }
     
     @IBOutlet weak var tapToStopLabel: UILabel! {
         didSet {
@@ -110,6 +140,7 @@ public class BolusProgressTableViewCell: UITableViewCell {
         percentLabel.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         cancelImageView.translatesAutoresizingMaskIntoConstraints = false
+        infoButton.translatesAutoresizingMaskIntoConstraints = false
 
         contentView.addSubview(paddedView)
 
@@ -119,6 +150,7 @@ public class BolusProgressTableViewCell: UITableViewCell {
         paddedView.addSubview(percentLabel)
         paddedView.addSubview(activityIndicator)
         paddedView.addSubview(cancelImageView)
+        paddedView.addSubview(infoButton)
 
         NSLayoutConstraint.activate([
             paddedView.leadingAnchor.constraint(
@@ -155,6 +187,15 @@ public class BolusProgressTableViewCell: UITableViewCell {
             ),
             cancelImageView.widthAnchor.constraint(equalToConstant: 22),
             cancelImageView.heightAnchor.constraint(equalToConstant: 22),
+            infoButton.trailingAnchor.constraint(
+                equalTo: paddedView.trailingAnchor,
+                constant: -14
+            ),
+            infoButton.centerYAnchor.constraint(
+                equalTo: titleLabel.centerYAnchor
+            ),
+            infoButton.widthAnchor.constraint(equalToConstant: 30),
+            infoButton.heightAnchor.constraint(equalToConstant: 30),
 
             titleLabel.trailingAnchor.constraint(
                 lessThanOrEqualTo: cancelImageView.leadingAnchor,
@@ -228,11 +269,13 @@ public class BolusProgressTableViewCell: UITableViewCell {
             progressView.isHidden = true
             percentLabel.isHidden = true
             cancelImageView.isHidden = true
+            infoButton.isHidden = true
             activityIndicator.isHidden = true
             return
         }
 
         titleLabel.isHidden = false
+        infoButton.isHidden = true
 
         switch configuration {
 
@@ -344,7 +387,7 @@ public class BolusProgressTableViewCell: UITableViewCell {
 
             titleLabel.accessibilityIdentifier = "text_BolusCanceling"
 
-        case let .canceled(delivered, totalVolume):
+        case let .canceled(delivered, totalVolume, automatic):
             titleLabel.text = NSLocalizedString(
                 "Bolus Stopped",
                 comment: "Title shown after a bolus has been canceled"
@@ -353,6 +396,7 @@ public class BolusProgressTableViewCell: UITableViewCell {
             activityIndicator.stopAnimating()
             activityIndicator.isHidden = true
             cancelImageView.isHidden = true
+            infoButton.isHidden = !automatic
             progressView.isHidden = true
             percentLabel.isHidden = true
             progressLabel.isHidden = false
@@ -392,6 +436,7 @@ public class BolusProgressTableViewCell: UITableViewCell {
     override public func prepareForReuse() {
         super.prepareForReuse()
 
+        onInfoTapped = nil
         configuration = nil
 
         progressView.setProgress(0, animated: false)
