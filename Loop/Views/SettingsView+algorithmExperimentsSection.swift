@@ -42,7 +42,6 @@ public struct ExperimentsSettingsView: View {
     @AppStorage(UserDefaults.Key.GlucoseBasedApplicationFactorEnabled.rawValue) private var isGlucoseBasedApplicationFactorEnabled = false
     @AppStorage(UserDefaults.Key.IntegralRetrospectiveCorrectionEnabled.rawValue) private var isIntegralRetrospectiveCorrectionEnabled = false
     @AppStorage(UserDefaults.Key.NegativeInsulinDamperEnabled.rawValue) private var isNegativeInsulinDamperEnabled = false
-    @AppStorage(UserDefaults.Key.DynamicISFEnabled.rawValue) private var isDynamicISFEnabled = false
     var automaticDosingStrategy: AutomaticDosingStrategy
 
     public var body: some View {
@@ -77,15 +76,6 @@ public struct ExperimentsSettingsView: View {
                         name: NSLocalizedString("Negative Insulin Damper", comment: "Title of negative insulin damper experiment"),
                         enabled: isNegativeInsulinDamperEnabled)
                 }
-                NavigationLink(destination: DynamicISFSelectionView(isDynamicISFEnabled: $isDynamicISFEnabled)) {
-                    ExperimentRow(
-                        name: NSLocalizedString(
-                            "Dynamic ISF",
-                            comment: "Title of dynamic ISF experiment"
-                        ),
-                        enabled: isDynamicISFEnabled
-                    )
-                }
                 Spacer()
             }
             .padding()
@@ -100,7 +90,6 @@ extension UserDefaults {
         case GlucoseBasedApplicationFactorEnabled = "com.loopkit.algorithmExperiments.glucoseBasedApplicationFactorEnabled"
         case IntegralRetrospectiveCorrectionEnabled = "com.loopkit.algorithmExperiments.integralRetrospectiveCorrectionEnabled"
         case NegativeInsulinDamperEnabled = "com.loopkit.algorithmExperiments.negativeInsulinDamperEnabled"
-        case DynamicISFEnabled = "com.loopkit.algorithmExperiments.dynamicISFEnabled"
     }
 
     var glucoseBasedApplicationFactorEnabled: Bool {
@@ -127,16 +116,6 @@ extension UserDefaults {
         }
         set {
             set(newValue, forKey: Key.NegativeInsulinDamperEnabled.rawValue)
-        }
-    }
-
-    var dynamicISFEnabled: Bool {
-        get {
-            bool(forKey: Key.DynamicISFEnabled.rawValue) as Bool
-        }
-
-        set {
-            set(newValue, forKey: Key.DynamicISFEnabled.rawValue)
         }
     }
 
