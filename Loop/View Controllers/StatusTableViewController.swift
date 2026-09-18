@@ -1499,10 +1499,6 @@ final class StatusTableViewController: LoopChartsTableViewController {
                                 self.log.debug("[reloadData] after manually resuming suspend")
 
                                 await self.reloadData()
-
-                                if SiteAtlas_FeatureFlags.isEnabled {
-                                    SiteAtlas_Coordinator.shared.promptManualLog(type: .pump)
-                                }
                             }
                         }
                     }

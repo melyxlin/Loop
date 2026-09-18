@@ -93,7 +93,6 @@ struct SettingsView: View {
                         presetsSection
                         autoPresetsSection
                         bolusProSection
-                        siteAtlasSection
                         foodFinderSection
                         deviceSettingsSection
                         healthAccessSection
@@ -300,15 +299,6 @@ struct SettingsView: View {
             "extended meal", "long absorption"
         ]) {
             bolusProSection
-        }
-
-        // Site Atlas
-        if matchesSearch(query, terms: [
-            "site atlas", "siteatlas",
-            "site rotation", "pump site",
-            "sensor site"
-        ]) {
-            siteAtlasSection
         }
 
         // FoodFinder
@@ -859,27 +849,6 @@ extension SettingsView {
                     descriptiveText: NSLocalizedString(
                         "Protein & fat-aware bolusing for long absorption meals",
                         comment: "Descriptive text for BolusPro Settings"
-                    )
-                )
-            }
-        }
-    }
-    
-    private var siteAtlasSection: some View {
-        Section {
-            NavigationLink(destination: SiteAtlas_SettingsView()) {
-                LargeButton(
-                    action: {},
-                    includeArrow: false,
-                    imageView: Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 30)),
-                    label: NSLocalizedString(
-                        "Site Atlas",
-                        comment: "Title text for button to Site Atlas Settings"
-                    ),
-                    descriptiveText: NSLocalizedString(
-                        "Track pump & sensor site rotation",
-                        comment: "Descriptive text for Site Atlas Settings"
                     )
                 )
             }

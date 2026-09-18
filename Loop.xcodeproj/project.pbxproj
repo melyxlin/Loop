@@ -287,13 +287,6 @@
 		509B0369304C77F800715755 /* BolusPro_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0365304C77F800715755 /* BolusPro_SettingsView.swift */; };
 		509B036A304C77F800715755 /* BolusPro_OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0364304C77F800715755 /* BolusPro_OnboardingView.swift */; };
 		509B036B304C77F800715755 /* BolusPro_CarbEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0361304C77F800715755 /* BolusPro_CarbEntrySection.swift */; };
-		509B036E304C828800715755 /* SiteAtlas_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B036C304C828800715755 /* SiteAtlas_Models.swift */; };
-		509B0373304C82A300715755 /* SiteAtlas_FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0370304C82A300715755 /* SiteAtlas_FeatureFlags.swift */; };
-		509B0374304C82A300715755 /* SiteAtlas_Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B036F304C82A300715755 /* SiteAtlas_Coordinator.swift */; };
-		509B0375304C82A300715755 /* SiteAtlas_Storage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0371304C82A300715755 /* SiteAtlas_Storage.swift */; };
-		509B037A304C82BD00715755 /* SiteAtlas_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0377304C82BD00715755 /* SiteAtlas_SettingsView.swift */; };
-		509B037B304C82BD00715755 /* SiteAtlas_BodyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0376304C82BD00715755 /* SiteAtlas_BodyMapView.swift */; };
-		509B037C304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */; };
 		509B0381304C93FC00715755 /* FoodFinder_Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037D304C93FC00715755 /* FoodFinder_Models.swift */; };
 		509B0382304C93FC00715755 /* FoodFinder_ScanResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037E304C93FC00715755 /* FoodFinder_ScanResult.swift */; };
 		509B0383304C93FC00715755 /* FoodFinder_VoiceResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509B037F304C93FC00715755 /* FoodFinder_VoiceResult.swift */; };
@@ -1186,13 +1179,6 @@
 		509B0363304C77F800715755 /* BolusPro_ManualMacroFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_ManualMacroFields.swift; sourceTree = "<group>"; };
 		509B0364304C77F800715755 /* BolusPro_OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_OnboardingView.swift; sourceTree = "<group>"; };
 		509B0365304C77F800715755 /* BolusPro_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_SettingsView.swift; sourceTree = "<group>"; };
-		509B036C304C828800715755 /* SiteAtlas_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_Models.swift; sourceTree = "<group>"; };
-		509B036F304C82A300715755 /* SiteAtlas_Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_Coordinator.swift; sourceTree = "<group>"; };
-		509B0370304C82A300715755 /* SiteAtlas_FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_FeatureFlags.swift; sourceTree = "<group>"; };
-		509B0371304C82A300715755 /* SiteAtlas_Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_Storage.swift; sourceTree = "<group>"; };
-		509B0376304C82BD00715755 /* SiteAtlas_BodyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_BodyMapView.swift; sourceTree = "<group>"; };
-		509B0377304C82BD00715755 /* SiteAtlas_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_SettingsView.swift; sourceTree = "<group>"; };
-		509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteAtlas_SiteSelectionSheet.swift; sourceTree = "<group>"; };
 		509B037D304C93FC00715755 /* FoodFinder_Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_Models.swift; sourceTree = "<group>"; };
 		509B037E304C93FC00715755 /* FoodFinder_ScanResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_ScanResult.swift; sourceTree = "<group>"; };
 		509B037F304C93FC00715755 /* FoodFinder_VoiceResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodFinder_VoiceResult.swift; sourceTree = "<group>"; };
@@ -1915,7 +1901,6 @@
 				50977927304E64420092D37E /* BolusCalculationDetails.swift */,
 				505DB1E1304CCB4100181691 /* AutoPresets */,
 				509B0380304C93FC00715755 /* FoodFinder */,
-				509B036D304C828800715755 /* SiteAtlas */,
 				509B0332304C775B00715755 /* BolusPro */,
 				5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */,
 				DDC389F52A2B61750066E2E8 /* ApplicationFactorStrategy.swift */,
@@ -2242,7 +2227,6 @@
 				50977929304E64F00092D37E /* BolusCalculationDetailsView.swift */,
 				505DB1E4304CCB5900181691 /* AutoPresets */,
 				509B03B2304C944700715755 /* FoodFinder */,
-				509B0379304C82BD00715755 /* SiteAtlas */,
 				509B0366304C77F800715755 /* BolusPro */,
 				501897E7304BC7D9004897D2 /* GraphDetailView.swift */,
 				84213C732D932EF400642E78 /* Insulin Delivery Log */,
@@ -2614,7 +2598,6 @@
 			isa = PBXGroup;
 			children = (
 				509B0394304C941D00715755 /* FoodFinder */,
-				509B0372304C82A300715755 /* SiteAtlas */,
 				509B035E304C77E500715755 /* BolusPro */,
 			);
 			path = Services;
@@ -2632,34 +2615,9 @@
 			path = BolusPro;
 			sourceTree = "<group>";
 		};
-		509B036D304C828800715755 /* SiteAtlas */ = {
-			isa = PBXGroup;
-			children = (
-				509B036C304C828800715755 /* SiteAtlas_Models.swift */,
-			);
-			path = SiteAtlas;
-			sourceTree = "<group>";
-		};
-		509B0372304C82A300715755 /* SiteAtlas */ = {
-			isa = PBXGroup;
-			children = (
-				509B036F304C82A300715755 /* SiteAtlas_Coordinator.swift */,
-				509B0370304C82A300715755 /* SiteAtlas_FeatureFlags.swift */,
-				509B0371304C82A300715755 /* SiteAtlas_Storage.swift */,
-			);
-			path = SiteAtlas;
-			sourceTree = "<group>";
-		};
-		509B0379304C82BD00715755 /* SiteAtlas */ = {
-			isa = PBXGroup;
-			children = (
-				509B0376304C82BD00715755 /* SiteAtlas_BodyMapView.swift */,
-				509B0377304C82BD00715755 /* SiteAtlas_SettingsView.swift */,
-				509B0378304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift */,
-			);
-			path = SiteAtlas;
-			sourceTree = "<group>";
-		};
+
+
+
 		509B0380304C93FC00715755 /* FoodFinder */ = {
 			isa = PBXGroup;
 			children = (
@@ -3903,7 +3861,6 @@
 				3ED3199A2EB65A6900820BCF /* LiveActivityBottomRowManagerView.swift in Sources */,
 				C1F2075C26D6F9B0007AB7EB /* AppExpirationAlerter.swift in Sources */,
 				FADE0001000000000000DE02 /* DevelopmentBranchAlerter.swift in Sources */,
-				509B036E304C828800715755 /* SiteAtlas_Models.swift in Sources */,
 				B4FEEF7D24B8A71F00A8DF9B /* DeviceDataManager+DeviceStatus.swift in Sources */,
 				142CB7592A60BF2E0075748A /* EditMode.swift in Sources */,
 				14C9706E2C5A83AF00E8A01B /* IOBChartView.swift in Sources */,
@@ -3953,9 +3910,6 @@
 				84F20DFD2D0B9C3A0089DF02 /* EditPresetDurationView.swift in Sources */,
 				89E267FC2292456700A3F2AF /* FeatureFlags.swift in Sources */,
 				43A567691C94880B00334FAC /* LoopDataManager.swift in Sources */,
-				509B037A304C82BD00715755 /* SiteAtlas_SettingsView.swift in Sources */,
-				509B037B304C82BD00715755 /* SiteAtlas_BodyMapView.swift in Sources */,
-				509B037C304C82BD00715755 /* SiteAtlas_SiteSelectionSheet.swift in Sources */,
 				C152B9F52C9C7D4A00ACBC06 /* AutomationHistoryEntry.swift in Sources */,
 				1DA649A9244126DA00F61E75 /* InAppModalAlertScheduler.swift in Sources */,
 				43B260491ED248FB008CAA77 /* CarbEntryTableViewCell.swift in Sources */,
@@ -4017,9 +3971,6 @@
 				43C0944A1CACCC73001F6403 /* NotificationManager.swift in Sources */,
 				149A28E42A8A63A700052EDF /* FavoriteFoodDetailView.swift in Sources */,
 				1DDE274024AEA4F200796622 /* NotificationsCriticalAlertPermissionsView.swift in Sources */,
-				509B0373304C82A300715755 /* SiteAtlas_FeatureFlags.swift in Sources */,
-				509B0374304C82A300715755 /* SiteAtlas_Coordinator.swift in Sources */,
-				509B0375304C82A300715755 /* SiteAtlas_Storage.swift in Sources */,
 				5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */,
 				5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */,
 				A9A056B524B94123007CF06D /* CriticalEventLogExportViewModel.swift in Sources */,
