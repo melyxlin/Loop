@@ -18006,12 +18006,6 @@
     "During this kind of hard exercise, your body may release hormones that raise glucose. This is more common in the morning before eating." : {
 
     },
-    "Dynamic ISF" : {
-      "comment" : "Navigation title for Dynamic ISF experiment settings\nTitle of dynamic ISF experiment"
-    },
-    "Dynamic ISF detects persistent high glucose that is not responding as expected and may adjust correction sensitivity. This is an experimental feature." : {
-      "comment" : "Description of the Dynamic ISF algorithm experiment"
-    },
     "e.g. /chat/completions" : {
 
     },
@@ -18167,9 +18161,6 @@
     "Enable Debug Logging" : {
 
     },
-    "Enable Dynamic ISF" : {
-      "comment" : "Toggle to enable the Dynamic ISF algorithm experiment"
-    },
     "Enable FoodFinder" : {
 
     },
@@ -18275,6 +18266,9 @@
     },
     "Enable this to show FoodFinder in the carb entry screen. Requires Internet connection. When disabled, the feature is hidden but settings are preserved." : {
 
+    },
+    "Enable Trio UAM" : {
+      "comment" : "Toggle to enable the Trio UAM algorithm experiment"
     },
     "Enabled" : {
       "comment" : "Title for enable live activity toggle",
@@ -39726,6 +39720,9 @@
     "This dose still has active insulin. Deleting it may cause Loop to make up for the reduced active insulin by dosing more." : {
       "comment" : "Warning when deleting a Loop-recorded dose that still has active insulin"
     },
+    "This experiment is currently shadow-only. Enabling it does not change Loop's glucose prediction or insulin delivery." : {
+      "comment" : "Shadow-only warning for the Trio UAM algorithm experiment"
+    },
     "This is the development version of Loop, built from the dev branch. Any updates on this branch may contain new, untested features, and may be unsafe. If you are not a tester, please do not use this branch, and switch to main." : {
       "comment" : "Body of the warning shown at launch on development builds"
     },
@@ -40117,6 +40114,12 @@
     },
     "Trigger Threshold" : {
 
+    },
+    "Trio UAM" : {
+      "comment" : "Navigation title for the Trio UAM algorithm experiment\nTitle of Trio UAM algorithm experiment"
+    },
+    "Trio UAM uses unannounced meal prediction to recognize glucose behavior that is not adequately explained by known carbohydrates and expected insulin effects." : {
+      "comment" : "Description of the Trio UAM algorithm experiment"
     },
     "Try Again" : {
       "comment" : "Critical event log export error alert try again button",
