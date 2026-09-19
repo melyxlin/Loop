@@ -31493,6 +31493,15 @@
         }
       }
     },
+    "Prebolus" : {
+      "comment" : "Label for enabling a prebolus timer"
+    },
+    "Prebolus Complete" : {
+      "comment" : "The alert title when a prebolus timer completes"
+    },
+    "Prebolus Time" : {
+      "comment" : "Label for prebolus timer duration"
+    },
     "Predicted glucose at %1$@ is %2$@." : {
       "comment" : "Message when offering bolus recommendation even though bg is below range and minBG is in future. (1: glucose time)(2: glucose number)",
       "localizations" : {
@@ -44308,6 +44317,9 @@
           }
         }
       }
+    },
+    "Your prebolus timer is complete." : {
+      "comment" : "The alert body when a prebolus timer completes"
     },
     "Your pump and CGM will continue operating but the app will not make automatic adjustments. You will receive your scheduled basal rate(s)." : {
       "comment" : "Closed loop alert message"

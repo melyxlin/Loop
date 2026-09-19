@@ -15,6 +15,7 @@ import UIKit
 private struct WrappedStatusTableViewController: UIViewControllerRepresentable {
     
     private let alertPermissionsChecker: AlertPermissionsChecker
+    private let alertManager: AlertManager!
     private let alertMuter: AlertMuter
     private let deviceDataManager: DeviceDataManager
     private let onboardingManager: OnboardingManager
@@ -35,8 +36,9 @@ private struct WrappedStatusTableViewController: UIViewControllerRepresentable {
     
     let viewController: StatusTableViewController
     
-    init(alertPermissionsChecker: AlertPermissionsChecker, alertMuter: AlertMuter, deviceDataManager: DeviceDataManager, onboardingManager: OnboardingManager, supportManager: SupportManager, testingScenariosManager: TestingScenariosManager?, settingsManager: SettingsManager, temporaryPresetsManager: TemporaryPresetsManager, loopDataManager: LoopDataManager, diagnosticReportGenerator: DiagnosticReportGenerator, simulatedData: SimulatedData, analyticsServicesManager: AnalyticsServicesManager, servicesManager: ServicesManager, carbStore: CarbStore, doseStore: DoseStore, criticalEventLogExportManager: CriticalEventLogExportManager, bluetoothStateManager: BluetoothStateManager, statusTableViewModel: StatusTableViewModel) {
+    init(alertPermissionsChecker: AlertPermissionsChecker, alertManager: AlertManager, alertMuter: AlertMuter, deviceDataManager: DeviceDataManager, onboardingManager: OnboardingManager, supportManager: SupportManager, testingScenariosManager: TestingScenariosManager?, settingsManager: SettingsManager, temporaryPresetsManager: TemporaryPresetsManager, loopDataManager: LoopDataManager, diagnosticReportGenerator: DiagnosticReportGenerator, simulatedData: SimulatedData, analyticsServicesManager: AnalyticsServicesManager, servicesManager: ServicesManager, carbStore: CarbStore, doseStore: DoseStore, criticalEventLogExportManager: CriticalEventLogExportManager, bluetoothStateManager: BluetoothStateManager, statusTableViewModel: StatusTableViewModel) {
         self.alertPermissionsChecker = alertPermissionsChecker
+        self.alertManager = alertManager
         self.alertMuter = alertMuter
         self.deviceDataManager = deviceDataManager
         self.onboardingManager = onboardingManager
@@ -58,6 +60,7 @@ private struct WrappedStatusTableViewController: UIViewControllerRepresentable {
         let storyboard = UIStoryboard(name: "Main", bundle: Bundle(for: StatusTableViewController.self))
         let statusTableViewController = storyboard.instantiateViewController(withIdentifier: "MainStatusViewController") as! StatusTableViewController
         statusTableViewController.alertPermissionsChecker = alertPermissionsChecker
+        statusTableViewController.alertManager = alertManager
         statusTableViewController.alertMuter = alertMuter
         statusTableViewController.deviceManager = deviceDataManager
         statusTableViewController.onboardingManager = onboardingManager
@@ -104,6 +107,7 @@ struct StatusTableView: View {
         
         self.wrapped = WrappedStatusTableViewController(
             alertPermissionsChecker: viewModel.alertPermissionsChecker,
+            alertManager: viewModel.alertManager,
             alertMuter: viewModel.alertMuter,
             deviceDataManager: viewModel.deviceDataManager,
             onboardingManager: viewModel.onboardingManager,

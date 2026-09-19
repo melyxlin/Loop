@@ -13,6 +13,7 @@ import LoopCore
 @Observable
 class StatusTableViewModel {
     let alertPermissionsChecker: AlertPermissionsChecker
+    let alertManager: AlertManager
     let alertMuter: AlertMuter
     let deviceDataManager: DeviceDataManager
     let supportManager: SupportManager
@@ -33,8 +34,9 @@ class StatusTableViewModel {
 
     var pendingPreset: SelectablePreset?
 
-    init(alertPermissionsChecker: AlertPermissionsChecker, alertMuter: AlertMuter, deviceDataManager: DeviceDataManager, onboardingManager: OnboardingManager, supportManager: SupportManager, testingScenariosManager: TestingScenariosManager?, settingsManager: SettingsManager, temporaryPresetsManager: TemporaryPresetsManager, loopDataManager: LoopDataManager, diagnosticReportGenerator: DiagnosticReportGenerator, simulatedData: SimulatedData, analyticsServicesManager: AnalyticsServicesManager, servicesManager: ServicesManager, carbStore: CarbStore, doseStore: DoseStore, criticalEventLogExportManager: CriticalEventLogExportManager, bluetoothStateManager: BluetoothStateManager, settingsViewModel: SettingsViewModel) {
+    init(alertPermissionsChecker: AlertPermissionsChecker, alertManager: AlertManager, alertMuter: AlertMuter, deviceDataManager: DeviceDataManager, onboardingManager: OnboardingManager, supportManager: SupportManager, testingScenariosManager: TestingScenariosManager?, settingsManager: SettingsManager, temporaryPresetsManager: TemporaryPresetsManager, loopDataManager: LoopDataManager, diagnosticReportGenerator: DiagnosticReportGenerator, simulatedData: SimulatedData, analyticsServicesManager: AnalyticsServicesManager, servicesManager: ServicesManager, carbStore: CarbStore, doseStore: DoseStore, criticalEventLogExportManager: CriticalEventLogExportManager, bluetoothStateManager: BluetoothStateManager, settingsViewModel: SettingsViewModel) {
         self.alertPermissionsChecker = alertPermissionsChecker
+        self.alertManager = alertManager
         self.alertMuter = alertMuter
         self.deviceDataManager = deviceDataManager
         self.onboardingManager = onboardingManager

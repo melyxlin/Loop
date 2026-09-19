@@ -321,6 +321,9 @@
 		50A4CDE230523A4A00EAC618 /* InsulinUsageChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */; };
 		50B064ED304CF12F0086F096 /* AutoPresets_CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */; };
 		50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */; };
+		50B37699305E318700982D70 /* PrebolusTimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B37698305E318400982D70 /* PrebolusTimerState.swift */; };
+		50B3769B305E31B600982D70 /* PrebolusTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B3769A305E31B400982D70 /* PrebolusTimerManager.swift */; };
+		50B3769D305E38BD00982D70 /* PrebolusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B3769C305E38B900982D70 /* PrebolusBanner.swift */; };
 		50C85C193054D15A00A2CEBF /* OpenLoopBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C183054D15600A2CEBF /* OpenLoopBanner.swift */; };
 		50C85C1B3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */; };
 		50C85C1C3054DD7700A2CEBF /* SetLoopModeUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */; };
@@ -1213,6 +1216,9 @@
 		50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinUsageChartView.swift; sourceTree = "<group>"; };
 		50B064EC304CF12F0086F096 /* AutoPresets_CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarManager.swift; sourceTree = "<group>"; };
 		50B064EE304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPresets_CalendarSettingsView.swift; sourceTree = "<group>"; };
+		50B37698305E318400982D70 /* PrebolusTimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebolusTimerState.swift; sourceTree = "<group>"; };
+		50B3769A305E31B400982D70 /* PrebolusTimerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebolusTimerManager.swift; sourceTree = "<group>"; };
+		50B3769C305E38B900982D70 /* PrebolusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebolusBanner.swift; sourceTree = "<group>"; };
 		50C85C183054D15600A2CEBF /* OpenLoopBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenLoopBanner.swift; sourceTree = "<group>"; };
 		50C85C1A3054DD7400A2CEBF /* SetLoopModeUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetLoopModeUserInfo.swift; sourceTree = "<group>"; };
 		50E005B130548DE0004C6822 /* SetManualGlucoseUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetManualGlucoseUserInfo.swift; sourceTree = "<group>"; };
@@ -1895,6 +1901,7 @@
 		43757D131C06F26C00910CB9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				50B37698305E318400982D70 /* PrebolusTimerState.swift */,
 				5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */,
 				5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */,
 				5097792B304E71710092D37E /* ManualBolusRecommendationResult.swift */,
@@ -2220,6 +2227,7 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				50B3769C305E38B900982D70 /* PrebolusBanner.swift */,
 				506BA371305CE6F400A7F01B /* TrioUAMSelectionView.swift */,
 				50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */,
 				5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */,
@@ -2286,6 +2294,7 @@
 		43F5C2E41B93C5D4003EB13D /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				50B3769A305E31B400982D70 /* PrebolusTimerManager.swift */,
 				505DB1DA304CCB2F00181691 /* AutoPresets */,
 				501897E5304BC7A8004897D2 /* GraphDetailViewModel.swift */,
 				B42D124228D371C400E43D22 /* AlertMuter.swift */,
@@ -2615,9 +2624,6 @@
 			path = BolusPro;
 			sourceTree = "<group>";
 		};
-
-
-
 		509B0380304C93FC00715755 /* FoodFinder */ = {
 			isa = PBXGroup;
 			children = (
@@ -3896,6 +3902,7 @@
 				149A28BB2A853E5100052EDF /* CarbEntryViewModel.swift in Sources */,
 				C19008FE25225D3900721625 /* SimpleBolusCalculator.swift in Sources */,
 				8446319F2F5A2AB3003825AE /* PresetsPerformanceHistoryViewModel.swift in Sources */,
+				50B3769D305E38BD00982D70 /* PrebolusBanner.swift in Sources */,
 				C1F8B243223E73FD00DD66CF /* BolusProgressTableViewCell.swift in Sources */,
 				84DF48B92F6A0ADB00BEDB40 /* MediaPlayerView.swift in Sources */,
 				89D6953E23B6DF8A002B3066 /* PotentialCarbEntryTableViewCell.swift in Sources */,
@@ -3967,6 +3974,7 @@
 				50B064EF304CF14B0086F096 /* AutoPresets_CalendarSettingsView.swift in Sources */,
 				C1A1A00001000000000000A1 /* CriticalAlertAlarmScheduler.swift in Sources */,
 				C9A47B0280AAB1FC572D3EFF /* GlucoseAlertManager.swift in Sources */,
+				50B3769B305E31B600982D70 /* PrebolusTimerManager.swift in Sources */,
 				5076E27F30508FC300A76E43 /* GlucoseDistributionChartView.swift in Sources */,
 				43C0944A1CACCC73001F6403 /* NotificationManager.swift in Sources */,
 				149A28E42A8A63A700052EDF /* FavoriteFoodDetailView.swift in Sources */,
@@ -4156,6 +4164,7 @@
 				C1EF747228D6A44A00C8C083 /* CrashRecoveryManager.swift in Sources */,
 				A9F66FC3247F451500096EA7 /* UIDevice+Loop.swift in Sources */,
 				84DF48BB2F6A0ADD00BEDB40 /* PlayerControls.swift in Sources */,
+				50B37699305E318700982D70 /* PrebolusTimerState.swift in Sources */,
 				84E8BBCA2CCA16290078E6CF /* PresetsView.swift in Sources */,
 				439706E622D2E84900C81566 /* PredictionSettingTableViewCell.swift in Sources */,
 				430D85891F44037000AF2D4F /* HUDViewTableViewCell.swift in Sources */,

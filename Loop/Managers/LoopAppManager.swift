@@ -596,6 +596,7 @@ class LoopAppManager: NSObject {
         
         let viewModel = StatusTableViewModel(
             alertPermissionsChecker: alertPermissionsChecker,
+            alertManager: alertManager,
             alertMuter: alertManager.alertMuter,
             deviceDataManager: deviceDataManager,
             onboardingManager: onboardingManager,

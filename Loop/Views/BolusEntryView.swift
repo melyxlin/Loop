@@ -245,6 +245,12 @@ struct BolusEntryView: View {
 
             bolusEntryRow
             externalInsulinRow
+            prebolusRow
+
+            if viewModel.isPrebolus {
+                prebolusTimeRow
+            }
+            
             if viewModel.isExternalInsulin {
                 externalInsulinTypePicker
             }
@@ -351,6 +357,53 @@ struct BolusEntryView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("External Insulin")
         .accessibilityValue(viewModel.isExternalInsulin ? "Selected" : "Not Selected")
+    }
+
+    private var prebolusRow: some View {
+        Button {
+            viewModel.isPrebolus.toggle()
+        } label: {
+            HStack {
+                Text(
+                    "Prebolus",
+                    comment: "Label for enabling a prebolus timer"
+                )
+                Spacer()
+                Image(
+                    systemName: viewModel.isPrebolus
+                        ? "checkmark.square.fill"
+                        : "square"
+                )
+                .foregroundStyle(Color(.loopAccent))
+                .font(.title3)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Prebolus")
+        .accessibilityValue(viewModel.isPrebolus ? "Selected" : "Not Selected")
+    }
+
+    private var prebolusTimeRow: some View {
+        HStack {
+            Text(
+                "Prebolus Time",
+                comment: "Label for prebolus timer duration"
+            )
+
+            Spacer()
+
+            Stepper(
+                value: $viewModel.prebolusMinutes,
+                in: 1...60
+            ) {
+                Text(
+                    "\(viewModel.prebolusMinutes) min"
+                )
+                .foregroundStyle(Color(.loopAccent))
+            }
+            .fixedSize()
+        }
     }
 
     private var bolusEntryRow: some View {

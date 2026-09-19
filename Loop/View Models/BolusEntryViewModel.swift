@@ -162,6 +162,10 @@ final class BolusEntryViewModel: ObservableObject {
         doubleValue: 0
     )
     @Published var isExternalInsulin = false
+    
+    @Published var isPrebolus = false
+    @Published var prebolusMinutes = 15
+    
     @Published var selectedExternalInsulinType: InsulinType = .novolog
 
     let externalInsulinTypePickerOptions: [InsulinType] = [
@@ -639,6 +643,12 @@ final class BolusEntryViewModel: ObservableObject {
                     insulinType: selectedExternalInsulinType
                 )
             } else {
+                if isPrebolus {
+                    PrebolusTimerManager.shared.prepare(
+                        decisionId: dosingDecision.id,
+                        durationMinutes: prebolusMinutes
+                    )
+                }
                 do {
                     try await delegate.enactBolus(
                         units: amountToDeliver,
@@ -646,6 +656,10 @@ final class BolusEntryViewModel: ObservableObject {
                         activationType: activationType
                     )
                 } catch {
+                    if isPrebolus {
+                        PrebolusTimerManager.shared.clear()
+                    }
+
                     log.error(
                         "Failed to enact bolus: %{public}@",
                         String(describing: error)

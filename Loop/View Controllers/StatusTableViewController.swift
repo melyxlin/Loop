@@ -42,6 +42,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
     var testingScenariosManager: TestingScenariosManager!
 
     var alertPermissionsChecker: AlertPermissionsChecker!
+    
+    var alertManager: AlertManager!
 
     var settingsManager: SettingsManager!
 
@@ -223,6 +225,13 @@ final class StatusTableViewController: LoopChartsTableViewController {
         addScenarioStepGestureRecognizers()
 
         setupPresetsStatusBar()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
 
     override func didReceiveMemoryWarning() {
@@ -244,6 +253,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
         alertPermissionsChecker.checkNow()
 
         updateBolusProgress()
+        updatePrebolusTimer()
 
         onboardingManager.$isComplete
             .merge(with: onboardingManager.$isSuspended)
@@ -328,12 +338,19 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     case .inProgress(let doseOld):
                         guard doseNew.syncIdentifier != doseOld.syncIdentifier else { break }
                         // A different bolus is being delivered
-                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(reportingOn: DispatchQueue.main)
+                        bolusProgressDecisionId = doseNew.decisionId
+                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(
+                            reportingOn: DispatchQueue.main
+                        )
                     case .canceling:
                         break
                     default:
                         // Bolus starting
-                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(reportingOn: DispatchQueue.main)
+                        // Bolus starting
+                        bolusProgressDecisionId = doseNew.decisionId
+                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(
+                            reportingOn: DispatchQueue.main
+                        )
                     }
                 default:
                     break
@@ -354,6 +371,44 @@ final class StatusTableViewController: LoopChartsTableViewController {
     }
 
     private var bolusProgressReporter: DoseProgressReporter?
+    private var bolusProgressDecisionId: UUID?
+    private var prebolusTimer: Timer?
+    
+    private var prebolusCompleteAlertIdentifier: LoopKit.Alert.Identifier {
+        LoopKit.Alert.Identifier(
+            managerIdentifier: "Loop",
+            alertIdentifier: "prebolusComplete"
+        )
+    }
+    
+    private func schedulePrebolusCompleteAlert(after delay: TimeInterval) {
+        guard delay > 0 else {
+            return
+        }
+
+        let content = LoopKit.Alert.Content(
+            title: NSLocalizedString(
+                "Prebolus Complete",
+                comment: "The alert title when a prebolus timer completes"
+            ),
+            body: NSLocalizedString(
+                "Your prebolus timer is complete.",
+                comment: "The alert body when a prebolus timer completes"
+            )
+        )
+
+        let alert = LoopKit.Alert(
+            identifier: prebolusCompleteAlertIdentifier,
+            foregroundContent: content,
+            backgroundContent: content,
+            trigger: .delayed(interval: delay),
+            interruptionLevel: .timeSensitive
+        )
+
+        Task {
+            await alertManager.issueAlert(alert)
+        }
+    }
 
     private func updateBolusProgress() {
         if let cell = tableView.cellForRow(at: IndexPath(row: StatusRow.status.rawValue, section: Section.status.rawValue)) as? BolusProgressTableViewCell {
@@ -361,6 +416,116 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 cell.configuration = .bolusing(delivered: bolusProgressReporter?.progress.deliveredUnits, ofTotalVolume: total)
             }
         }
+    }
+
+    private func updatePrebolusTimer() {
+        prebolusTimer?.invalidate()
+        prebolusTimer = nil
+
+        guard let state = PrebolusTimerManager.shared.state else {
+            return
+        }
+
+        switch state.phase {
+        case .pendingBolusCompletion:
+            return
+
+        case .countingDown:
+            guard let endDate = state.endDate else {
+                PrebolusTimerManager.shared.clear()
+                return
+            }
+
+            if endDate <= Date() {
+                PrebolusTimerManager.shared.markCompleted()
+
+                updateBannerAndHUDandStatusRows(
+                    statusRowMode: determineStatusRowMode(),
+                    newSize: nil,
+                    animated: true
+                )
+
+                updatePrebolusTimer()
+                return
+            }
+
+            prebolusTimer = Timer.scheduledTimer(
+                withTimeInterval: 1,
+                repeats: true
+            ) { [weak self] _ in
+                guard let self else {
+                    return
+                }
+
+                guard let state = PrebolusTimerManager.shared.state,
+                      state.phase == .countingDown,
+                      let endDate = state.endDate
+                else {
+                    self.updatePrebolusTimer()
+                    return
+                }
+
+                if endDate <= Date() {
+                    PrebolusTimerManager.shared.markCompleted()
+
+                    self.updateBannerAndHUDandStatusRows(
+                        statusRowMode: self.determineStatusRowMode(),
+                        newSize: nil,
+                        animated: true
+                    )
+
+                    self.updatePrebolusTimer()
+                }
+            }
+
+        case .completed:
+            guard let completedAt = state.completedAt else {
+                PrebolusTimerManager.shared.clear()
+                return
+            }
+
+            let remaining = 10 - Date().timeIntervalSince(completedAt)
+
+            guard remaining > 0 else {
+                PrebolusTimerManager.shared.clear()
+
+                updateBannerAndHUDandStatusRows(
+                    statusRowMode: determineStatusRowMode(),
+                    newSize: nil,
+                    animated: true
+                )
+                return
+            }
+
+            prebolusTimer = Timer.scheduledTimer(
+                withTimeInterval: remaining,
+                repeats: false
+            ) { [weak self] _ in
+                guard let self else {
+                    return
+                }
+
+                PrebolusTimerManager.shared.clear()
+
+                self.updateBannerAndHUDandStatusRows(
+                    statusRowMode: self.determineStatusRowMode(),
+                    newSize: nil,
+                    animated: true
+                )
+
+                self.prebolusTimer = nil
+            }
+        }
+    }
+    
+    @objc private func applicationDidBecomeActive() {
+        updatePrebolusTimer()
+
+        updateBannerAndHUDandStatusRows(
+            statusRowMode: determineStatusRowMode(),
+            newSize: nil,
+            animated: false
+        )
     }
 
     private func updateHUDActive() {
@@ -733,6 +898,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
         case noAdjustment
         case openLoop
         case preset(TemporaryScheduleOverride)
+        case prebolus(endDate: Date)
+        case prebolusComplete
         case enactingBolus
         case bolusing(dose: DoseEntry)
         case cancelingBolus
@@ -798,6 +965,18 @@ final class StatusTableViewController: LoopChartsTableViewController {
         } else if onboardingManager.isComplete,
                   (deviceManager.isGlucoseValueStale || deviceManager.isCGMInputPaused) {
             statusRowMode = .recommendManualGlucoseEntry
+        } else if let prebolusState = PrebolusTimerManager.shared.state,
+                  prebolusState.phase == .countingDown,
+                  let endDate = prebolusState.endDate,
+                  endDate > Date()
+        {
+            statusRowMode = .prebolus(endDate: endDate)
+        } else if let prebolusState = PrebolusTimerManager.shared.state,
+                  prebolusState.phase == .completed,
+                  let completedAt = prebolusState.completedAt,
+                  Date().timeIntervalSince(completedAt) < 10
+        {
+            statusRowMode = .prebolusComplete
         } else if case .tempBasal(let dose) = basalDeliveryState,
                   dose.automatic == false,
                   dose.endDate > Date()
@@ -1196,6 +1375,57 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     cell.selectionStyle = .default
 
                     return cell
+                case .prebolus(let endDate):
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        PrebolusBanner(
+                            endDate: endDate,
+                            isComplete: false
+                        ) { [weak self] in
+                            PrebolusTimerManager.shared.clear()
+
+                            guard let self else {
+                                return
+                            }
+
+                            Task {
+                                await self.alertManager.retractAlert(
+                                    identifier: self.prebolusCompleteAlertIdentifier
+                                )
+                            }
+
+                            self.prebolusTimer?.invalidate()
+                            self.prebolusTimer = nil
+
+                            self.updateBannerAndHUDandStatusRows(
+                                statusRowMode: self.determineStatusRowMode(),
+                                newSize: nil,
+                                animated: true
+                            )
+                        }
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .none
+                    return cell
+
+                case .prebolusComplete:
+                    let cell = UITableViewCell()
+
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        PrebolusBanner(
+                            endDate: nil,
+                            isComplete: true,
+                            onStop: {}
+                        )
+                    }
+                    .margins(.all, 0)
+
+                    cell.backgroundColor = .secondarySystemBackground
+                    cell.selectionStyle = .none
+                    return cell
                 case .manualTempBasal(let dose):
                     let cell = UITableViewCell()
 
@@ -1515,6 +1745,20 @@ final class StatusTableViewController: LoopChartsTableViewController {
                                 case .success(let canceledDose):
                                     let doseToReport = canceledDose ?? dose
                                     self.canceledDose = doseToReport
+                                    if let prebolusState = PrebolusTimerManager.shared.state,
+                                       prebolusState.phase == .pendingBolusCompletion,
+                                       prebolusState.decisionId == dose.decisionId
+                                    {
+                                        PrebolusTimerManager.shared.clear()
+
+                                        Task {
+                                            await self.alertManager.retractAlert(
+                                                identifier: self.prebolusCompleteAlertIdentifier
+                                            )
+                                        }
+                                    }
+
+                                    self.bolusProgressDecisionId = nil
                                     self.updateBannerAndHUDandStatusRows(statusRowMode: .canceledBolus(dose: doseToReport), newSize: nil, animated: true)
                                     self.bolusState = .noBolus
                                     let display = doseToReport.automatic == true ? Self.canceledAutomaticBolusDisplayDuration : Self.canceledBolusDisplayDuration
@@ -2394,6 +2638,26 @@ extension StatusTableViewController: DoseProgressObserver {
         updateBolusProgress()
 
         if doseProgressReporter.progress.isComplete {
+            // Start the prebolus countdown only after the matching bolus
+            // has finished delivering in full.
+            if let decisionId = bolusProgressDecisionId,
+               let prebolusState = PrebolusTimerManager.shared.state,
+               prebolusState.phase == .pendingBolusCompletion,
+               prebolusState.decisionId == decisionId
+            {
+                PrebolusTimerManager.shared.startCountdown()
+
+                if let endDate = PrebolusTimerManager.shared.state?.endDate {
+                    schedulePrebolusCompleteAlert(
+                        after: max(1, endDate.timeIntervalSinceNow)
+                    )
+                }
+
+                updatePrebolusTimer()
+            }
+
+            bolusProgressDecisionId = nil
+
             // Bolus ended
             self.bolusProgressReporter = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
