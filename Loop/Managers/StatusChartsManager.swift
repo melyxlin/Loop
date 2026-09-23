@@ -65,6 +65,7 @@ extension StatusChartsManager {
     func setPredictedGlucoseValues(_ glucoseValues: [GlucoseValue]) {
         displayedPredictedGlucoseValues = glucoseValues
         glucose.setPredictedGlucoseValues(glucoseValues)
+        invalidateChart(atIndex: ChartIndex.glucose.rawValue)
     }
 
     func setAlternatePredictedGlucoseValues(_ glucoseValues: [GlucoseValue]) {
