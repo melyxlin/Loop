@@ -812,6 +812,87 @@ final class LoopDataManager: ObservableObject {
             newState.input = input
             newState.output = await runAlgorithm(input: input)
             
+//            if let lastDose = input.doses.last {
+//                logger.debug(
+//                    "Trio UAM dose: start=%{public}@ end=%{public}@ modelDuration=%{public}@ doseCount=%{public}@",
+//                    String(describing: lastDose.startDate),
+//                    String(describing: lastDose.endDate),
+//                    String(describing: lastDose.insulinModel.effectDuration),
+//                    String(describing: input.doses.count)
+//                )
+//            }
+            logger.debug(
+                "Trio UAM doses: count=%{public}@",
+                String(describing: input.doses.count)
+            )
+            
+            
+            logger.debug(
+                "Trio UAM checkpoint: enabled=%{public}@ output=%{public}@",
+                String(describing: UserDefaults.standard.trioUAMEnabled),
+                String(describing: newState.output != nil)
+            )
+
+            logger.debug(
+                "Trio UAM effects: predictionStart=%{public}@ insulinFirst=%{public}@ insulinLast=%{public}@ carbFirst=%{public}@ carbLast=%{public}@",
+                String(describing: input.predictionStart),
+                String(describing: newState.output?.effects.insulin.first?.startDate),
+                String(describing: newState.output?.effects.insulin.last?.startDate),
+                String(describing: newState.output?.effects.carbs.first?.startDate),
+                String(describing: newState.output?.effects.carbs.last?.startDate)
+            )
+            
+            logger.debug(
+                "Trio UAM insulin values: first=%{public}@ last=%{public}@",
+                String(describing:
+                    newState.output?.effects.insulin.first?.quantity
+                        .doubleValue(for: .milligramsPerDeciliter)
+                ),
+                String(describing:
+                    newState.output?.effects.insulin.last?.quantity
+                        .doubleValue(for: .milligramsPerDeciliter)
+                )
+            )
+            
+            if UserDefaults.standard.trioUAMEnabled,
+               let output = newState.output,
+               let uamShadow = LoopAlgorithm.generateUAMShadowPrediction(
+                   glucoseHistory: input.glucoseHistory,
+                   insulinEffects: output.effects.insulin,
+                   carbEffects: output.effects.carbs,
+                   at: input.predictionStart
+               )
+            {
+                let loopPredictedGlucose = output.predictedGlucose.map {
+                    $0.quantity.doubleValue(for: .milligramsPerDeciliter)
+                }
+
+                logger.debug(
+                    "Trio UAM shadow: glucose=%{public}@ UGI=%{public}@ slopeMax=%{public}@ slopeMin=%{public}@",
+                    String(describing: uamShadow.currentGlucose),
+                    String(describing: uamShadow.unannouncedGlucoseImpact),
+                    String(describing: uamShadow.slopeFromMaxDeviation),
+                    String(describing: uamShadow.slopeFromMinDeviation)
+                )
+
+                logger.debug(
+                    "Trio UAM forecast: duration=%{public}@ LoopEnd=%{public}@ UAMEnd=%{public}@",
+                    String(describing: uamShadow.duration),
+                    String(describing: loopPredictedGlucose.last),
+                    String(describing: uamShadow.predictedGlucose.last)
+                )
+                
+                for (index, sample) in uamShadow.deviationSamples.enumerated() {
+                    logger.debug(
+                        "Trio UAM deviation[%{public}@]: avgDelta=%{public}@ insulinImpact=%{public}@ deviation=%{public}@",
+                        String(describing: index),
+                        String(describing: sample.averageDelta),
+                        String(describing: sample.insulinImpact),
+                        String(describing: sample.deviation)
+                    )
+                }
+            }
+            
             let lastStoredManualBolus = input.doses
                 .filter { $0.automatic != true && $0.deliveryType == .bolus }
                 .last
