@@ -842,6 +842,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
         case alertWarning
         case hud
         case status
+        case prebolus
         case charts
     }
 
@@ -898,8 +899,6 @@ final class StatusTableViewController: LoopChartsTableViewController {
         case noAdjustment
         case openLoop
         case preset(TemporaryScheduleOverride)
-        case prebolus(endDate: Date)
-        case prebolusComplete
         case enactingBolus
         case bolusing(dose: DoseEntry)
         case cancelingBolus
@@ -918,9 +917,25 @@ final class StatusTableViewController: LoopChartsTableViewController {
             }
         }
     }
+    
+    private enum PrebolusRowMode {
+        case hidden
+        case countingDown(endDate: Date)
+        case complete
+
+        var hasRow: Bool {
+            switch self {
+            case .hidden:
+                return false
+            default:
+                return true
+            }
+        }
+    }
 
     private var presetsRowMode = PresetsRowMode.hidden
     private var statusRowMode = StatusRowMode.hidden
+    private var prebolusRowMode = PrebolusRowMode.hidden
 
     private var canceledDose: DoseEntry? = nil
 
@@ -932,6 +947,31 @@ final class StatusTableViewController: LoopChartsTableViewController {
         if let preset = temporaryPresetsManager.scheduleOverride ?? temporaryPresetsManager.preMealOverride, !preset.hasFinished() {
             return .scheduleOverrideEnabled(preset)
         } else {
+            return .hidden
+        }
+    }
+
+    private func determinePrebolusRowMode() -> PrebolusRowMode {
+        guard let state = PrebolusTimerManager.shared.state else {
+            return .hidden
+        }
+
+        switch state.phase {
+        case .countingDown:
+            if let endDate = state.endDate, endDate > Date() {
+                return .countingDown(endDate: endDate)
+            }
+            return .hidden
+
+        case .completed:
+            if let completedAt = state.completedAt,
+               Date().timeIntervalSince(completedAt) < 10
+            {
+                return .complete
+            }
+            return .hidden
+
+        case .pendingBolusCompletion:
             return .hidden
         }
     }
@@ -965,18 +1005,6 @@ final class StatusTableViewController: LoopChartsTableViewController {
         } else if onboardingManager.isComplete,
                   (deviceManager.isGlucoseValueStale || deviceManager.isCGMInputPaused) {
             statusRowMode = .recommendManualGlucoseEntry
-        } else if let prebolusState = PrebolusTimerManager.shared.state,
-                  prebolusState.phase == .countingDown,
-                  let endDate = prebolusState.endDate,
-                  endDate > Date()
-        {
-            statusRowMode = .prebolus(endDate: endDate)
-        } else if let prebolusState = PrebolusTimerManager.shared.state,
-                  prebolusState.phase == .completed,
-                  let completedAt = prebolusState.completedAt,
-                  Date().timeIntervalSince(completedAt) < 10
-        {
-            statusRowMode = .prebolusComplete
         } else if case .tempBasal(let dose) = basalDeliveryState,
                   dose.automatic == false,
                   dose.endDate > Date()
@@ -1025,11 +1053,14 @@ final class StatusTableViewController: LoopChartsTableViewController {
         let presetsWasVisible = self.shouldShowPresets
         let hudWasVisible = self.shouldShowHUD
         let statusWasVisible = self.shouldShowStatus
+        let prebolusWasVisible = self.prebolusRowMode.hasRow
 
         let oldStatusRowMode = self.statusRowMode
+        let oldPrebolusRowMode = self.prebolusRowMode
 
         self.presetsRowMode = determinePresetsRowMode()
         self.statusRowMode = statusRowMode
+        self.prebolusRowMode = determinePrebolusRowMode()
 
         if let newSize = newSize {
             landscapeMode = newSize.width > newSize.height
@@ -1038,6 +1069,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
         let presetsIsVisible = self.shouldShowPresets
         let hudIsVisible = self.shouldShowHUD
         let statusIsVisible = self.shouldShowStatus
+        let prebolusIsVisible = self.prebolusRowMode.hasRow
         
         hudView?.cgmStatusHUD?.isVisible = hudIsVisible
         hudView?.cgmStatusHUD.isGlucoseValueStale = deviceManager.isGlucoseValueStale
@@ -1104,6 +1136,37 @@ final class StatusTableViewController: LoopChartsTableViewController {
             break
         }
 
+        let prebolusIndexPath = IndexPath(row: 0, section: Section.prebolus.rawValue)
+
+        switch (prebolusWasVisible, prebolusIsVisible) {
+        case (false, true):
+            tableView.insertRows(
+                at: [prebolusIndexPath],
+                with: animated ? .bottom : .none
+            )
+
+        case (true, false):
+            tableView.deleteRows(
+                at: [prebolusIndexPath],
+                with: animated ? .top : .none
+            )
+
+        case (true, true):
+            switch (oldPrebolusRowMode, self.prebolusRowMode) {
+                case (.countingDown, .complete), (.complete, .countingDown):
+                    tableView.reloadRows(
+                        at: [prebolusIndexPath],
+                        with: .none
+                    )
+
+                default:
+                    break
+                }
+
+        case (false, false):
+            break
+        }
+
         tableView.endUpdates()
     }
 
@@ -1144,6 +1207,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
             return ChartRow.allCases.count
         case .status:
             return shouldShowStatus ? StatusRow.allCases.count : 0
+        case .prebolus:
+            return prebolusRowMode.hasRow ? 1 : 0
         }
     }
     
@@ -1283,6 +1348,55 @@ final class StatusTableViewController: LoopChartsTableViewController {
             cell.setSubtitleTextColor(color: UIColor.secondaryLabel)
 
             return cell
+        case .prebolus:
+            let cell = UITableViewCell()
+
+            switch prebolusRowMode {
+            case .hidden:
+                break
+
+            case .countingDown(let endDate):
+                cell.contentConfiguration = UIHostingConfiguration {
+                    PrebolusBanner(
+                        endDate: endDate,
+                        isComplete: false
+                    ) { [weak self] in
+                        PrebolusTimerManager.shared.clear()
+                        guard let self else { return }
+
+                        Task {
+                            await self.alertManager.retractAlert(
+                                identifier: self.prebolusCompleteAlertIdentifier
+                            )
+                        }
+
+                        self.prebolusTimer?.invalidate()
+                        self.prebolusTimer = nil
+
+                        self.updateBannerAndHUDandStatusRows(
+                            statusRowMode: self.determineStatusRowMode(),
+                            newSize: nil,
+                            animated: true
+                        )
+                    }
+                }
+                .margins(.all, 0)
+
+            case .complete:
+                cell.contentConfiguration = UIHostingConfiguration {
+                    PrebolusBanner(
+                        endDate: nil,
+                        isComplete: true,
+                        onStop: {}
+                    )
+                }
+                .margins(.all, 0)
+            }
+
+            cell.backgroundColor = .secondarySystemBackground
+            cell.selectionStyle = .none
+            return cell
+
         case .status:
             func getTitleSubtitleCell() -> TitleSubtitleTableViewCell {
                 let cell = tableView.dequeueReusableCell(withIdentifier: TitleSubtitleTableViewCell.className, for: indexPath) as! TitleSubtitleTableViewCell
@@ -1374,57 +1488,6 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     cell.backgroundColor = .secondarySystemBackground
                     cell.selectionStyle = .default
 
-                    return cell
-                case .prebolus(let endDate):
-                    let cell = UITableViewCell()
-
-                    cell.contentConfiguration = UIHostingConfiguration {
-                        PrebolusBanner(
-                            endDate: endDate,
-                            isComplete: false
-                        ) { [weak self] in
-                            PrebolusTimerManager.shared.clear()
-
-                            guard let self else {
-                                return
-                            }
-
-                            Task {
-                                await self.alertManager.retractAlert(
-                                    identifier: self.prebolusCompleteAlertIdentifier
-                                )
-                            }
-
-                            self.prebolusTimer?.invalidate()
-                            self.prebolusTimer = nil
-
-                            self.updateBannerAndHUDandStatusRows(
-                                statusRowMode: self.determineStatusRowMode(),
-                                newSize: nil,
-                                animated: true
-                            )
-                        }
-                    }
-                    .margins(.all, 0)
-
-                    cell.backgroundColor = .secondarySystemBackground
-                    cell.selectionStyle = .none
-                    return cell
-
-                case .prebolusComplete:
-                    let cell = UITableViewCell()
-
-                    cell.contentConfiguration = UIHostingConfiguration {
-                        PrebolusBanner(
-                            endDate: nil,
-                            isComplete: true,
-                            onStop: {}
-                        )
-                    }
-                    .margins(.all, 0)
-
-                    cell.backgroundColor = .secondarySystemBackground
-                    cell.selectionStyle = .none
                     return cell
                 case .manualTempBasal(let dose):
                     let cell = UITableViewCell()
@@ -1609,7 +1672,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     cell.setSubtitleLabel(label: nil)
                 }
             }
-        case .presets, .hud, .status, .alertWarning:
+        case .presets, .hud, .status, .alertWarning, .prebolus:
             break
         }
     }
@@ -1634,7 +1697,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
             }
         case .alertWarning:
             return UITableView.automaticDimension
-        case .presets, .hud, .status:
+        case .presets, .hud, .status, .prebolus:
             return UITableView.automaticDimension
         }
     }
@@ -1787,6 +1850,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     break
                 }
             }
+        case .prebolus:
+            break
         case .charts:
             // Don't navigate away while the GraphDetailView popup is showing
             guard graphDetailHostingController == nil else { return }
