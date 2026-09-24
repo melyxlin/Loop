@@ -189,6 +189,19 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 }
             }
             .store(in: &cancellables)
+
+        // A CGM's session starting or ending changes its status highlight
+        // without a glucose reading to refresh the HUD.
+        deviceManager.$cgmHasValidSensorSession
+            .removeDuplicates()
+            .dropFirst()
+            .sink { _ in
+                Task { @MainActor in
+                    self.refreshContext.update(with: .status)
+                    await self.reloadData(animated: true)
+                }
+            }
+            .store(in: &cancellables)
         
         loopManager.$lastLoopCompleted
             .receive(on: DispatchQueue.main)
@@ -334,22 +347,35 @@ final class StatusTableViewController: LoopChartsTableViewController {
             if oldValue != bolusState {
                 switch bolusState {
                 case .inProgress(let doseNew):
-                    switch oldValue {
-                    case .inProgress(let doseOld):
-                        guard doseNew.syncIdentifier != doseOld.syncIdentifier else { break }
-                        // A different bolus is being delivered
-                        bolusProgressDecisionId = doseNew.decisionId
-                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(
+                    if case .inProgress(let doseOld) = oldValue,
+                        doseNew.syncIdentifier == doseOld.syncIdentifier
+                    {
+                        break
+                    }
+
+                    // A different bolus is being delivered. This includes starting one
+                    // straight out of .canceling.
+                    bolusProgressDecisionId = doseNew.decisionId
+
+                    bolusProgressReporter =
+                        deviceManager.pumpManager?.createBolusProgressReporter(
                             reportingOn: DispatchQueue.main
                         )
-                    case .canceling:
-                        break
-                    default:
-                        // Bolus starting
-                        // Bolus starting
-                        bolusProgressDecisionId = doseNew.decisionId
-                        bolusProgressReporter = deviceManager.pumpManager?.createBolusProgressReporter(
-                            reportingOn: DispatchQueue.main
+
+                    // A new bolus should replace any canceled-bolus row still being shown.
+                    canceledDose = nil
+
+                    // Seed a visible progress cell immediately rather than leaving values
+                    // from the previous bolus until the first progress callback.
+                    if let progressCell = tableView.cellForRow(
+                        at: IndexPath(
+                            row: StatusRow.status.rawValue,
+                            section: Section.status.rawValue
+                        )
+                    ) as? BolusProgressTableViewCell {
+                        progressCell.configuration = .bolusing(
+                            delivered: 0,
+                            ofTotalVolume: doseNew.programmedUnits
                         )
                     }
                 default:

@@ -592,13 +592,15 @@ final class DeviceDataManager {
     private func processCGMReadingResult(
         _ manager: CGMManager,
         readingResult: CGMReadingResult
-    ) async {
+    ) async -> Bool {
+        var storedNewGlucose = false
+
         switch readingResult {
         case .newData(let values):
             if !isCGMInputPaused {
                 do {
-                    let storedSamples =
-                        try await glucoseStore.addGlucoseSamples(values)
+                    let storedSamples = try await glucoseStore.addGlucoseSamples(values)
+                    storedNewGlucose = !storedSamples.isEmpty
 
                     if restoreClosedLoopAfterCGMResume == true,
                         let newestSample = storedSamples.max(by: {
@@ -643,6 +645,7 @@ final class DeviceDataManager {
             self.setLastError(error: error)
         }
         updatePumpManagerBLEHeartbeatPreference()
+        return storedNewGlucose
     }
 
     var availableCGMManagers: [CGMManagerDescriptor] {
@@ -830,14 +833,23 @@ final class DeviceDataManager {
             self.analyticsServicesManager.didFetchNewCGMData()
         }
 
-        await self.processCGMReadingResult(cgmManager, readingResult: result)
+        let storedNewGlucose = await self.processCGMReadingResult(cgmManager, readingResult: result)
 
+        // A heartbeat/refresh triggers a CGM check; only loop if that check produced a new value
+        // AND we haven't looped in the last 4.2 min. Both conditions matter:
+        //  - Requiring a new value stops the heartbeat dosing on a stale reading when it fires
+        //    between CGM readings (and, via the store's syncID dedup, stops the push path and this
+        //    path both firing on the same reading — whichever stores it first loops).
+        //  - Keeping the interval floor stops a fast CGM (or the irregular ~2 min heartbeat) from
+        //    looping more often than once per ~5 min, matching the push path's rate limit.
         let lastLoopCompleted = self.loopControl.lastLoopCompleted
-
-        if lastLoopCompleted == nil
-            || lastLoopCompleted!.timeIntervalSinceNow < -.minutes(4.2)
+        if storedNewGlucose,
+            lastLoopCompleted == nil
+                || lastLoopCompleted!.timeIntervalSinceNow < -.minutes(4.2)
         {
-            self.log.default("Triggering Loop from refreshCGM()")
+            self.log.default(
+                "Triggering Loop from refreshCGM() — new glucose stored"
+            )
             await self.checkPumpDataAndLoop()
         }
     }
@@ -1257,33 +1269,26 @@ extension DeviceDataManager: CGMManagerDelegate {
                 String(describing: type(of: manager)),
                 String(describing: readingResult)
             )
-            await processCGMReadingResult(manager, readingResult: readingResult)
+
+            let storedNewGlucose = await processCGMReadingResult(
+                manager,
+                readingResult: readingResult
+            )
+
             let now = Date()
-            #if targetEnvironment(simulator)
-                if case .newData = readingResult,
-                    !self.isCGMInputPaused
-                {
-                    self.log.default(
-                        "TESTING: Triggering loop from every new CGM value at %{public}@",
-                        String(describing: now)
-                    )
-                    self.lastCGMLoopTrigger = now
-                    await self.checkPumpDataAndLoop()
-                }
-            #else
-                if case .newData = readingResult,
-                    !self.isCGMInputPaused,
-                    now.timeIntervalSince(self.lastCGMLoopTrigger)
-                        > .minutes(4.2)
-                {
-                    self.log.default(
-                        "Triggering loop from new CGM data at %{public}@",
-                        String(describing: now)
-                    )
-                    self.lastCGMLoopTrigger = now
-                    await self.checkPumpDataAndLoop()
-                }
-            #endif
+
+            // A CGM can re-deliver readings the store already holds.
+            // Only a reading that was actually stored is a reason to run the loop.
+            if storedNewGlucose,
+                now.timeIntervalSince(self.lastCGMLoopTrigger) > .minutes(4.2)
+            {
+                self.log.default(
+                    "Triggering loop from new CGM data at %{public}@",
+                    String(describing: now)
+                )
+                self.lastCGMLoopTrigger = now
+                await self.checkPumpDataAndLoop()
+            }
         }
     }
 
