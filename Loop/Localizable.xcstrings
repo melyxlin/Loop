@@ -37006,6 +37006,9 @@
     "Stable Glucose" : {
 
     },
+    "Start Prebolus" : {
+      "comment" : "Button text to start a prebolus timer without delivering insulin"
+    },
     "Start Preset" : {
       "comment" : "The title of the notification action to start a preset"
     },

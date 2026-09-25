@@ -15,7 +15,7 @@ struct PrebolusTimerState: Codable, Equatable {
         case completed
     }
 
-    var decisionId: UUID
+    var decisionId: UUID?
     var durationMinutes: Int
     var phase: Phase
     var endDate: Date?
@@ -29,6 +29,18 @@ struct PrebolusTimerState: Codable, Equatable {
         self.durationMinutes = durationMinutes
         self.phase = .pendingBolusCompletion
         self.endDate = nil
+        self.completedAt = nil
+    }
+
+    init(
+        manualDurationMinutes durationMinutes: Int
+    ) {
+        self.decisionId = nil
+        self.durationMinutes = durationMinutes
+        self.phase = .countingDown
+        self.endDate = Date().addingTimeInterval(
+            TimeInterval(durationMinutes * 60)
+        )
         self.completedAt = nil
     }
 }

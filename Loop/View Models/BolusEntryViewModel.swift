@@ -622,6 +622,17 @@ final class BolusEntryViewModel: ObservableObject {
             }
         }
 
+        // A prebolus with no insulin starts the timer immediately.
+        if isPrebolus,
+            !isExternalInsulin,
+            amountToDeliver == 0
+        {
+            PrebolusTimerManager.shared.startManualCountdown(
+                durationMinutes: prebolusMinutes
+            )
+            return true
+        }
+
         let now = self.now()
 
         if !isExternalInsulin {
@@ -1368,10 +1379,18 @@ extension BolusEntryViewModel {
         case saveWithoutBolusing
         case saveAndDeliver
         case enterBolus
+        case startPrebolus
         case deliver
     }
 
     var actionButtonAction: ActionButtonAction {
+        if isPrebolus,
+            !isExternalInsulin,
+            !hasBolusEntryReadyToDeliver
+        {
+            return .startPrebolus
+        }
+
         switch (hasDataToSave, hasBolusEntryReadyToDeliver) {
         case (true, true): return .saveAndDeliver
         case (true, false): return .saveWithoutBolusing

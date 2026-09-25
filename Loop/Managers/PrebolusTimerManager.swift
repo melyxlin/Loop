@@ -54,6 +54,14 @@ final class PrebolusTimerManager {
         self.state = state
     }
 
+    func startManualCountdown(
+        durationMinutes: Int
+    ) {
+        state = PrebolusTimerState(
+            manualDurationMinutes: durationMinutes
+        )
+    }
+
     func markCompleted() {
         guard var state else {
             return

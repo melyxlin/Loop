@@ -536,6 +536,11 @@ struct BolusEntryView: View {
             },
             label: {
                 switch viewModel.actionButtonAction {
+                case .startPrebolus:
+                    return Text(
+                        "Start Prebolus",
+                        comment: "Button text to start a prebolus timer without delivering insulin"
+                    )
                 case .saveWithoutBolusing:
                     return Text(
                         "Save without Bolusing",

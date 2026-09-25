@@ -2126,10 +2126,33 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     func presentBolusEntryView(enableManualGlucoseEntry: Bool = false) {
         let hostingController = DismissibleHostingController(
-            rootView: bolusEntryView(
+            content: bolusEntryView(
                 enableManualGlucoseEntry: enableManualGlucoseEntry
             ),
-            isModalInPresentation: false
+            isModalInPresentation: false,
+            onDisappear: { [weak self] in
+                guard let self else {
+                    return
+                }
+
+                self.updatePrebolusTimer()
+
+                if let state = PrebolusTimerManager.shared.state,
+                    state.decisionId == nil,
+                    state.phase == .countingDown,
+                    let endDate = state.endDate
+                {
+                    self.schedulePrebolusCompleteAlert(
+                        after: max(1, endDate.timeIntervalSinceNow)
+                    )
+                }
+
+                self.updateBannerAndHUDandStatusRows(
+                    statusRowMode: self.determineStatusRowMode(),
+                    newSize: nil,
+                    animated: false
+                )
+            }
         )
         
         let navigationWrapper = UINavigationController(rootViewController: hostingController)
