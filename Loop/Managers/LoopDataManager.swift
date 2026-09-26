@@ -1109,24 +1109,38 @@ final class LoopDataManager: ObservableObject {
                     String(describing: algoRecommendation)
                 )
 
+                let scheduledBasalRate = input.basal.closestPrior(
+                    to: loopBaseTime
+                )!.value
+                let activeOverride = temporaryPresetsManager.presetHistory
+                    .activeOverride(at: loopBaseTime)
+                let shouldLimitAutomaticDosing =
+                    activeOverride?.settings.limitAutomaticDosing == true
+
                 var recommendationToEnact = algoRecommendation
+                if shouldLimitAutomaticDosing {
+                    recommendationToEnact.bolusUnits = nil
+                }
                 // Round bolus recommendation based on pump bolus precision
-                if let bolus = algoRecommendation.bolusUnits, bolus > 0 {
+                if let bolus = recommendationToEnact.bolusUnits, bolus > 0 {
                     recommendationToEnact.bolusUnits =
                         deliveryDelegate.roundBolusVolume(units: bolus)
                 }
 
                 var basal = algoRecommendation.basalAdjustment
 
+                if shouldLimitAutomaticDosing
+                    && basal.unitsPerHour > scheduledBasalRate
+                {
+                    basal = TempBasalRecommendation(
+                        unitsPerHour: scheduledBasalRate,
+                        duration: LoopAlgorithm.tempBasalDuration
+                    )
+                }
+
                 basal.unitsPerHour = deliveryDelegate.roundBasalRate(
                     unitsPerHour: basal.unitsPerHour
                 )
-
-                let scheduledBasalRate = input.basal.closestPrior(
-                    to: loopBaseTime
-                )!.value
-                let activeOverride = temporaryPresetsManager.presetHistory
-                    .activeOverride(at: loopBaseTime)
 
                 // Basal Lock: while glucose is above the threshold, don't let the temp basal
                 // drop below the scheduled rate.
@@ -1155,8 +1169,15 @@ final class LoopDataManager: ObservableObject {
                 if let basalAdjustment {
                     recommendationToEnact.basalAdjustment = basalAdjustment
                     if shouldApplyBasalLock {
-                        recommendationToEnact.direction = .neutral  // no longer a reduction
+                        recommendationToEnact.direction = .neutral
                     }
+                }
+
+                if shouldLimitAutomaticDosing
+                    && algoRecommendation.direction == .increase
+                    && basal.unitsPerHour >= scheduledBasalRate
+                {
+                    recommendationToEnact.direction = .neutral
                 }
 
                 output.recommendationResult = .success(

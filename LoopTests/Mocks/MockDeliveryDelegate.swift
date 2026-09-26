@@ -43,7 +43,7 @@ class MockDeliveryDelegate: DeliveryDelegate {
     }
     
     func roundBasalRate(unitsPerHour: Double) -> Double {
-        (unitsPerHour * 20).rounded() / 20.0
+        (unitsPerHour * 20).rounded(.down) / 20.0
     }
     
     func roundBolusVolume(units: Double) -> Double {
