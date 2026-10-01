@@ -356,6 +356,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     // A different bolus is being delivered. This includes starting one
                     // straight out of .canceling.
                     bolusProgressDecisionId = doseNew.decisionId
+                    bolusProgressEndDate = doseNew.endDate
 
                     bolusProgressReporter =
                         deviceManager.pumpManager?.createBolusProgressReporter(
@@ -398,6 +399,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
     private var bolusProgressReporter: DoseProgressReporter?
     private var bolusProgressDecisionId: UUID?
+    private var bolusProgressEndDate: Date?
     private var prebolusTimer: Timer?
     
     private var prebolusCompleteAlertIdentifier: LoopKit.Alert.Identifier {
@@ -442,6 +444,51 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 cell.configuration = .bolusing(delivered: bolusProgressReporter?.progress.deliveredUnits, ofTotalVolume: total)
             }
         }
+    }
+
+    private func reconcilePendingPrebolusTimer(
+        with doseEntries: [DoseEntry]
+    ) {
+        guard let state = PrebolusTimerManager.shared.state,
+              state.phase == .pendingBolusCompletion,
+              let decisionId = state.decisionId,
+              let dose = doseEntries.last(where: {
+                  $0.type == .bolus && $0.decisionId == decisionId
+              })
+        else {
+            return
+        }
+
+        // The matching bolus is still being delivered.
+        guard !dose.isMutable else {
+            return
+        }
+
+        // If the pump reported an actual delivered amount, make sure the
+        // programmed bolus was delivered in full. A partial/canceled bolus
+        // should not start the prebolus countdown.
+        if let deliveredUnits = dose.deliveredUnits,
+           deliveredUnits + Double.ulpOfOne < dose.programmedUnits
+        {
+            PrebolusTimerManager.shared.clear()
+            return
+        }
+
+        // The bolus completed while the live progress callback was unavailable.
+        // Start the countdown from the actual completion time rather than now.
+        PrebolusTimerManager.shared.startCountdown(
+            bolusCompletionDate: dose.endDate
+        )
+
+        if let endDate = PrebolusTimerManager.shared.state?.endDate,
+           endDate > Date()
+        {
+            schedulePrebolusCompleteAlert(
+                after: endDate.timeIntervalSinceNow
+            )
+        }
+
+        updatePrebolusTimer()
     }
 
     private func updatePrebolusTimer() {
@@ -545,6 +592,31 @@ final class StatusTableViewController: LoopChartsTableViewController {
     }
     
     @objc private func applicationDidBecomeActive() {
+        // If the bolus completed while Loop was inactive, the progress reporter
+        // can determine that immediately from elapsed time. Start the prebolus
+        // countdown from the bolus's expected completion time rather than waiting
+        // for pump history to synchronize.
+        if let bolusProgressReporter,
+           bolusProgressReporter.progress.isComplete,
+           let decisionId = bolusProgressDecisionId,
+           let bolusCompletionDate = bolusProgressEndDate,
+           let prebolusState = PrebolusTimerManager.shared.state,
+           prebolusState.phase == .pendingBolusCompletion,
+           prebolusState.decisionId == decisionId
+        {
+            PrebolusTimerManager.shared.startCountdown(
+                bolusCompletionDate: bolusCompletionDate
+            )
+
+            if let endDate = PrebolusTimerManager.shared.state?.endDate,
+               endDate > Date()
+            {
+                schedulePrebolusCompleteAlert(
+                    after: endDate.timeIntervalSinceNow
+                )
+            }
+        }
+
         updatePrebolusTimer()
 
         updateBannerAndHUDandStatusRows(
@@ -552,6 +624,16 @@ final class StatusTableViewController: LoopChartsTableViewController {
             newSize: nil,
             animated: false
         )
+
+        // If the progress reporter could not establish completion, fall back to
+        // the authoritative dose history once it has synchronized.
+        if PrebolusTimerManager.shared.state?.phase == .pendingBolusCompletion {
+            refreshContext.update(with: .insulin)
+
+            Task {
+                await reloadData(animated: false)
+            }
+        }
     }
 
     private func updateHUDActive() {
@@ -791,6 +873,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
         // Insulin Delivery
         if let doseEntries = doseEntries {
+            reconcilePendingPrebolusTimer(with: doseEntries)
             charts.setDoseEntries(doseEntries)
         }
         if let totalDelivery = totalDelivery {
@@ -1848,6 +1931,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
                                     }
 
                                     self.bolusProgressDecisionId = nil
+                                    self.bolusProgressEndDate = nil
                                     self.updateBannerAndHUDandStatusRows(statusRowMode: .canceledBolus(dose: doseToReport), newSize: nil, animated: true)
                                     self.bolusState = .noBolus
                                     let display = doseToReport.automatic == true ? Self.canceledAutomaticBolusDisplayDuration : Self.canceledBolusDisplayDuration
@@ -2771,6 +2855,7 @@ extension StatusTableViewController: DoseProgressObserver {
             }
 
             bolusProgressDecisionId = nil
+            self.bolusProgressEndDate = nil
 
             // Bolus ended
             self.bolusProgressReporter = nil

@@ -39,7 +39,9 @@ final class PrebolusTimerManager {
         )
     }
 
-    func startCountdown() {
+    func startCountdown(
+        bolusCompletionDate: Date = Date()
+    ) {
         guard var state,
               state.phase == .pendingBolusCompletion
         else {
@@ -47,10 +49,8 @@ final class PrebolusTimerManager {
         }
 
         state.phase = .countingDown
-
         let duration = TimeInterval(state.durationMinutes * 60)
-        state.endDate = Date().addingTimeInterval(duration)
-
+        state.endDate = bolusCompletionDate.addingTimeInterval(duration)
         self.state = state
     }
 
