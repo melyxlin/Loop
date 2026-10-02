@@ -767,6 +767,8 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
         var glucoseSamples: [StoredGlucoseSample]?
         var predictedGlucoseValues: [GlucoseValue]?
+        var timeInRangeGlucoseSamples: [StoredGlucoseSample]?
+        var mostRecentBolus: DoseEntry?
         var iobValues: [InsulinValue]?
         var doseEntries: [DoseEntry]?
         var totalDelivery: Double?
@@ -802,17 +804,76 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
         if currentContext.contains(.glucose) {
             do {
-                glucoseSamples = try await loopManager.glucoseStore.getGlucoseSamples(start: startDate, end: nil)
+                glucoseSamples = try await loopManager.glucoseStore.getGlucoseSamples(
+                    start: startDate,
+                    end: nil
+                )
             } catch {
-                self.log.error("Failure getting glucose samples: %{public}@", String(describing: error))
+                self.log.error(
+                    "Failure getting glucose samples: %{public}@",
+                    String(describing: error)
+                )
                 glucoseSamples = nil
+            }
+
+            do {
+                let timeInRangeStartDate = Date().addingTimeInterval(-24 * 60 * 60)
+
+                timeInRangeGlucoseSamples = try await loopManager.glucoseStore.getGlucoseSamples(
+                    start: timeInRangeStartDate,
+                    end: nil
+                )
+            } catch {
+                self.log.error(
+                    "Failure getting 24-hour glucose samples for time in range: %{public}@",
+                    String(describing: error)
+                )
+                timeInRangeGlucoseSamples = nil
             }
         }
 
         if currentContext.contains(.insulin) {
-            doseEntries = try? await loopManager.doseStore.getNormalizedDoseEntries(start: startDate, end: nil)
+            doseEntries = try? await loopManager.doseStore.getNormalizedDoseEntries(
+                start: startDate,
+                end: nil
+            )
+
             iobValues = loopManager.iobValues.filterDateRange(startDate, nil)
             totalDelivery = await loopManager.totalDeliveredToday()?.value
+
+            do {
+                mostRecentBolus = try await doseStore.insulinDeliveryStore
+                    .getBoluses(limit: 1)
+                    .first
+            } catch {
+                self.log.error(
+                    "Failure getting most recent bolus: %{public}@",
+                    String(describing: error)
+                )
+                mostRecentBolus = nil
+            }
+        }
+
+        if let bolus = mostRecentBolus {
+            let timeFormatter = DateFormatter()
+            timeFormatter.timeStyle = .short
+            timeFormatter.dateStyle = .none
+
+            self.lastBolusTimeDescription = timeFormatter.string(
+                from: bolus.startDate
+            )
+
+            let bolusQuantity = LoopQuantity(
+                unit: .internationalUnit,
+                doubleValue: bolus.deliveredUnits ?? bolus.programmedUnits
+            )
+
+            self.lastBolusAmountDescription = insulinFormatter.string(
+                from: bolusQuantity
+            )
+        } else if currentContext.contains(.insulin) {
+            self.lastBolusTimeDescription = nil
+            self.lastBolusAmountDescription = nil
         }
 
         /// Update the chart data
@@ -820,6 +881,63 @@ final class StatusTableViewController: LoopChartsTableViewController {
         // Glucose
         if let glucoseSamples = glucoseSamples {
             self.statusCharts.setGlucoseValues(glucoseSamples)
+        }
+        if let samples = timeInRangeGlucoseSamples,
+           !samples.isEmpty
+        {
+            let now = Date()
+            let startDate = now.addingTimeInterval(-24 * 60 * 60)
+
+            let sorted = samples
+                .filter { $0.startDate >= startDate && $0.startDate <= now }
+                .sorted { $0.startDate < $1.startDate }
+
+            var totalDuration: TimeInterval = 0
+            var inRangeDuration: TimeInterval = 0
+
+            for (index, sample) in sorted.enumerated() {
+                let nextDate = index + 1 < sorted.count
+                    ? min(sorted[index + 1].startDate, now)
+                    : now
+
+                let duration = max(
+                    0,
+                    nextDate.timeIntervalSince(sample.startDate)
+                )
+
+                let glucose = sample.quantity.doubleValue(
+                    for: .milligramsPerDeciliter
+                )
+
+                totalDuration += duration
+
+                if glucose >= StatisticsRangeSettings.targetLow &&
+                    glucose <= StatisticsRangeSettings.targetHigh
+                {
+                    inRangeDuration += duration
+                }
+            }
+
+            if totalDuration > 0 {
+                let percentage = 100 * inRangeDuration / totalDuration
+
+                self.timeInRangeDescription = String(
+                    format: "%.0f%%",
+                    percentage
+                )
+
+                self.timeInRangeRangeDescription = String(
+                    format: "%.0f–%.0f mg/dL",
+                    StatisticsRangeSettings.targetLow,
+                    StatisticsRangeSettings.targetHigh
+                )
+            } else {
+                self.timeInRangeDescription = nil
+                self.timeInRangeRangeDescription = nil
+            }
+        } else if currentContext.contains(.glucose) {
+            self.timeInRangeDescription = nil
+            self.timeInRangeRangeDescription = nil
         }
         if (automaticDosingEnabled || !FeatureFlags.simpleBolusCalculatorEnabled), let predictedGlucoseValues = predictedGlucoseValues {
             self.statusCharts.setPredictedGlucoseValues(predictedGlucoseValues)
@@ -933,6 +1051,30 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
         updateBannerAndHUDandStatusRows(statusRowMode: statusRowMode, newSize: currentContext.newSize, animated: animated)
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: ActionTabBarMetrics.tableContentInset, right: 0)
+
+        if let glucoseCell = tableView.cellForRow(
+            at: IndexPath(
+                row: ChartRow.glucose.rawValue,
+                section: Section.charts.rawValue
+            )
+        ) as? ChartTableViewCell {
+            glucoseCell.setDetailRow(
+                title: timeInRangeTitle,
+                value: timeInRangeDescription
+            )
+        }
+
+        if let iobCell = tableView.cellForRow(
+            at: IndexPath(
+                row: ChartRow.iob.rawValue,
+                section: Section.charts.rawValue
+            )
+        ) as? ChartTableViewCell {
+            iobCell.setDetailRow(
+                title: lastBolusTitle,
+                value: lastBolusAmountDescription
+            )
+        }
         
         redrawCharts()
 
@@ -966,6 +1108,27 @@ final class StatusTableViewController: LoopChartsTableViewController {
     // MARK: Glucose
 
     private var eventualGlucoseDescription: NSAttributedString?
+    private var timeInRangeDescription: String?
+    private var timeInRangeRangeDescription: String?
+
+    private var timeInRangeTitle: String? {
+        guard let range = timeInRangeRangeDescription else {
+            return nil
+        }
+
+        return "Time in Range · Past 24 hr (\(range))"
+    }
+
+    private var lastBolusTitle: String? {
+        guard let time = lastBolusTimeDescription else {
+            return nil
+        }
+
+        return "Last Bolus · \(time)"
+    }
+
+    private var lastBolusTimeDescription: String?
+    private var lastBolusAmountDescription: String?
 
     // MARK: IOB
 
@@ -1417,6 +1580,11 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 cell.setTitleLabelText(label: NSLocalizedString("Glucose", comment: "The title of the glucose and prediction graph"))
                 cell.setTitleTextColor(color: ChartColorPalette.primary.glucoseTint)
                 cell.doesNavigate = settingsManager.dosingEnabled || !FeatureFlags.simpleBolusCalculatorEnabled
+
+                cell.setDetailRow(
+                    title: timeInRangeTitle,
+                    value: timeInRangeDescription
+                )
                 clearChartFooter(cell)
             case .iob:
                 cell.setSupplementalChartGenerator(generator: { [weak self] (frame) in
@@ -1439,6 +1607,11 @@ final class StatusTableViewController: LoopChartsTableViewController {
 
                 cell.setTitleTextColor(color: ChartColorPalette.primary.insulinTint)
 
+                cell.setDetailRow(
+                    title: lastBolusTitle,
+                    value: lastBolusAmountDescription
+                )
+
                 clearChartFooter(cell)
             case .cob:
                 cell.setChartGenerator(generator: { [weak self] (frame) in
@@ -1446,6 +1619,10 @@ final class StatusTableViewController: LoopChartsTableViewController {
                 })
                 cell.setTitleLabelText(label: NSLocalizedString("Active Carbohydrates", comment: "The title of the Carbs On-Board graph"))
                 cell.setTitleTextColor(color: ChartColorPalette.primary.carbTint)
+                cell.setDetailRow(
+                       title: nil,
+                       value: nil
+                   )
                 clearChartFooter(cell)
             }
 
