@@ -34,3 +34,8 @@ enum StatisticsRangeSettings {
                ?? defaultVeryHigh
        }
 }
+
+extension Notification.Name {
+    static let statisticsRangeDidChange =
+        Notification.Name("StatisticsRangeDidChange")
+}

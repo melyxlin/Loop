@@ -173,6 +173,20 @@ final class StatusTableViewController: LoopChartsTableViewController {
                     await self?.reloadData(animated: true)
                 }
             },
+            notificationCenter.addObserver(
+                forName: .statisticsRangeDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self else {
+                        return
+                    }
+
+                    self.refreshContext.update(with: .glucose)
+                    await self.reloadData(animated: false)
+                }
+            },
         ]
 
         withObservationTracking(of: self.settingsManager.dosingEnabled) { [weak self] enabled in

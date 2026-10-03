@@ -118,6 +118,11 @@ struct StatisticsView: View {
                 targetHigh: $targetHigh,
                 veryHigh: $veryHigh
             ) {
+                NotificationCenter.default.post(
+                    name: .statisticsRangeDidChange,
+                    object: nil
+                )
+
                 Task {
                     await viewModel.load()
                 }
