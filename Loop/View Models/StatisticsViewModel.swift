@@ -14,6 +14,7 @@ final class StatisticsViewModel: ObservableObject {
 
     /// Selectable look-back windows. Bounded by the on-device glucose cache.
     enum DateRange: Int, CaseIterable, Identifiable {
+        case day = 1
         case week = 7
         case twoWeeks = 14
         case month = 30

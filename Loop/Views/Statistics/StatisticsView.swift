@@ -79,7 +79,7 @@ struct StatisticsView: View {
                     selection: $viewModel.selectedRange
                 ) {
                     ForEach(StatisticsViewModel.DateRange.allCases) { range in
-                        Text("\(range.days)d").tag(range)
+                        Text(range == .day ? "24h" : "\(range.days)d").tag(range)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -259,8 +259,11 @@ struct StatisticsView: View {
            stats.sampleCount > 0 {
             metricsSection(stats)
             timeInRangeSection(stats)
-            agpSection(stats)
-            glucoseDistributionSection(stats)
+
+            if viewModel.selectedRange != .day {
+                agpSection(stats)
+                glucoseDistributionSection(stats)
+            }
 
         } else if viewModel.isLoading {
             Section {
