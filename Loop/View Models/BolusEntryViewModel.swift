@@ -201,7 +201,7 @@ final class BolusEntryViewModel: ObservableObject {
         predictedGlucoseChart.glucoseDisplayRange =
             LoopConstants.glucoseChartDefaultDisplayRangeWide
         return ChartsManager(
-            colors: ChartColorPalette.primary,
+            colors: .primary(background: .secondarySystemGroupedBackground),
             settings: ChartSettings.default,
             charts: [predictedGlucoseChart],
             traitCollection: UITraitCollection.current

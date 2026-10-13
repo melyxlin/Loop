@@ -293,7 +293,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
         let doseChart = LegacyDoseChart()
         let carbEffectChart = CarbEffectChart()
         carbEffectChart.glucoseDisplayRange = LoopConstants.glucoseChartDefaultDisplayBound
-        return ChartsManager(colors: .primary, settings: .default, charts: [glucoseChart, iobChart, doseChart, carbEffectChart], traitCollection: .current)
+        return ChartsManager(colors: .primary(background: .secondarySystemGroupedBackground), settings: .default, charts: [glucoseChart, iobChart, doseChart, carbEffectChart], traitCollection: .current)
     }()
     
     private weak var delegate: FavoriteFoodInsightsViewModelDelegate?
@@ -336,7 +336,7 @@ class FavoriteFoodInsightsViewModel: ObservableObject {
             do {
                 if let historicalChartsData = try await delegate?.getHistoricalChartsData(start: dateInterval.start, end: dateInterval.end) {
                     self.originalHistoricalCarbEntries = historicalChartsData.carbEntries
-                    var carbEntriesWithCorrectedFavoriteFoods = historicalChartsData.carbEntries.map({ historicalCarbEntry in
+                    let carbEntriesWithCorrectedFavoriteFoods = historicalChartsData.carbEntries.map({ historicalCarbEntry in
                         // only show a favorite food icon in the glcuose-carb chart if carb entry is currently viewed favorite food
                         StoredCarbEntry(
                             startDate: historicalCarbEntry.startDate,

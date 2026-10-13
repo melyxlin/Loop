@@ -2248,7 +2248,8 @@ extension LoopDataManager: BolusEntryViewModelDelegate {
     }
 
     var mostRecentPumpDataDate: Date? {
-        return doseStore.lastAddedPumpData
+        let date = doseStore.lastAddedPumpData
+        return date == .distantPast ? nil : date
     }
 
     func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool)

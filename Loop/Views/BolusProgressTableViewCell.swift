@@ -130,8 +130,12 @@ public class BolusProgressTableViewCell: UITableViewCell {
         backgroundColor = .secondarySystemBackground
         contentView.backgroundColor = .secondarySystemBackground
 
-        paddedView.translatesAutoresizingMaskIntoConstraints = false
+  paddedView.translatesAutoresizingMaskIntoConstraints = false
         paddedView.layer.cornerRadius = 14
+
+        registerForTraitChanges(UITraitCollection.systemTraitsAffectingColorAppearance) { (cell: Self, _: UITraitCollection) in
+            cell.updateColors()
+        }
         paddedView.layer.masksToBounds = true
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false

@@ -652,10 +652,15 @@ final class DeviceDataManager {
         var availableCGMManagers =
             pluginManager.availableCGMManagers + availableStaticCGMManagers
         if let pumpManagerAsCGMManager = pumpManager as? CGMManager {
+            let identifier = pumpManagerAsCGMManager.pluginIdentifier
+            let manufacturer = pluginManager.pluginBundle(forIdentifier: identifier)?.object(forInfoDictionaryKey: LoopPluginBundleKey.deviceManufacturer.rawValue) as? String
+
             availableCGMManagers.append(
                 CGMManagerDescriptor(
-                    identifier: pumpManagerAsCGMManager.pluginIdentifier,
-                    localizedTitle: pumpManagerAsCGMManager.localizedTitle
+                    identifier: identifier,
+                    localizedTitle: pumpManagerAsCGMManager.localizedTitle,
+                    manufacturer: manufacturer,
+                    image: (type(of: pumpManagerAsCGMManager) as? CGMManagerUI.Type)?.pickerImage
                 )
             )
         }
@@ -1761,8 +1766,8 @@ extension DeviceDataManager {
     }
 
     func deleteTestingCarbData(before: Date = Date()) async throws {
-        guard let testingCGMManager = cgmManager as? TestingCGMManager,
-            let testingPumpManager = pumpManager as? TestingPumpManager
+guard cgmManager is TestingCGMManager,
+              pumpManager is TestingPumpManager
         else {
             return
         }
@@ -1771,8 +1776,8 @@ extension DeviceDataManager {
     }
 
     func deleteTestingAlertData() async throws {
-        guard let testingCGMManager = cgmManager as? TestingCGMManager,
-            let testingPumpManager = pumpManager as? TestingPumpManager
+        guard cgmManager is TestingCGMManager,
+              pumpManager is TestingPumpManager
         else {
             return
         }

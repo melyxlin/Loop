@@ -870,6 +870,9 @@
         }
       }
     },
+    "For testing; delivers no insulin" : {
+      "comment" : "Picker subtitle for the pump simulator"
+    },
     "g" : {
       "comment" : "The short unit display string for grams",
       "extractionState" : "stale",

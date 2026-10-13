@@ -236,15 +236,14 @@ struct AlertManagementView: View {
                 ConfirmationSheet(resumeDate: resumeDate)
             }
         }
-        .onChange(of: durationWasSelection) { _ in
-            if durationWasSelection, let durationSelection,
-                let durationSelectionString = formatter.string(
-                    from: durationSelection
-                )
-            {
-                sheet = .confirmation(
-                    resumeDate: Date().addingTimeInterval(durationSelection)
-                )
+.onChange(of: durationWasSelection) {
+    if durationWasSelection,
+       let durationSelection,
+       let durationSelectionString = formatter.string(from: durationSelection)
+    {
+        sheet = .confirmation(
+            resumeDate: Date().addingTimeInterval(durationSelection)
+        )
                 formattedSelectedDuration.wrappedValue = durationSelectionString
                 self.durationSelection = nil
                 self.durationWasSelection = false

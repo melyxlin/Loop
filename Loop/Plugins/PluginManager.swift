@@ -28,7 +28,7 @@ class PluginManager {
                             log.debug("Found loop plugin: %{public}@", pluginURL.absoluteString)
                             bundles.append(bundle)
                         }
-                        
+
                         // extensions are always instantiated
                         if bundle.isLoopExtension {
                             log.debug("Found loop extension: %{public}@", pluginURL.absoluteString)
@@ -71,28 +71,36 @@ class PluginManager {
     var availablePumpManagers: [PumpManagerDescriptor] {
         pluginBundles.compactMap({ (bundle) -> PumpManagerDescriptor? in
             guard let title = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pumpManagerDisplayName.rawValue) as? String,
-                let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pumpManagerIdentifier.rawValue) as? String else {
-                    return nil
+                  let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pumpManagerIdentifier.rawValue) as? String else {
+                return nil
             }
 
-            return PumpManagerDescriptor(identifier: identifier, localizedTitle: title)
+            return PumpManagerDescriptor(
+                identifier: identifier,
+                localizedTitle: title,
+                subtitle: bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pluginSubtitle.rawValue) as? String,
+                manufacturer: bundle.object(
+                    forInfoDictionaryKey: LoopPluginBundleKey.deviceManufacturer.rawValue
+                ) as? String,
+                image: getPumpManagerTypeByIdentifier(identifier)?.pickerImage
+            )
         })
     }
-    
+
     func getCGMManagerTypeByIdentifier(_ identifier: String) -> CGMManagerUI.Type? {
         for bundle in pluginBundles {
             if let name = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.cgmManagerIdentifier.rawValue) as? String, name == identifier {
                 do {
                     try bundle.loadAndReturnError()
-                    
+
                     if let principalClass = bundle.principalClass as? NSObject.Type {
-                        
+
                         if let plugin = principalClass.init() as? CGMManagerUIPlugin {
                             return plugin.cgmManagerType
                         } else {
                             fatalError("PrincipalClass does not conform to CGMManagerUIPlugin")
                         }
-                        
+
                     } else {
                         fatalError("PrincipalClass not found")
                     }
@@ -103,15 +111,21 @@ class PluginManager {
         }
         return nil
     }
-    
+
     var availableCGMManagers: [CGMManagerDescriptor] {
         pluginBundles.compactMap({ (bundle) -> CGMManagerDescriptor? in
             guard let title = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.cgmManagerDisplayName.rawValue) as? String,
-                let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.cgmManagerIdentifier.rawValue) as? String else {
-                    return nil
+                  let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.cgmManagerIdentifier.rawValue) as? String else {
+                return nil
             }
 
-            return CGMManagerDescriptor(identifier: identifier, localizedTitle: title)
+            return CGMManagerDescriptor(
+                identifier: identifier,
+                localizedTitle: title,
+                subtitle: bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pluginSubtitle.rawValue) as? String,
+                manufacturer: bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.deviceManufacturer.rawValue) as? String,
+                image: getCGMManagerTypeByIdentifier(identifier)?.pickerImage
+            )
         })
     }
 
@@ -141,16 +155,31 @@ class PluginManager {
     }
 
     var availableServices: [ServiceDescriptor] {
-        return pluginBundles.compactMap({ (bundle) -> ServiceDescriptor? in
+        pluginBundles.compactMap({ (bundle) -> ServiceDescriptor? in
             guard let title = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.serviceDisplayName.rawValue) as? String,
-                let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.serviceIdentifier.rawValue) as? String else {
-                    return nil
+                  let identifier = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.serviceIdentifier.rawValue) as? String else {
+                return nil
             }
 
-            return ServiceDescriptor(identifier: identifier, localizedTitle: title)
+            return ServiceDescriptor(
+                identifier: identifier,
+                localizedTitle: title,
+                subtitle: bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.pluginSubtitle.rawValue) as? String,
+                category: bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.serviceCategory.rawValue) as? String,
+                image: getServiceTypeByIdentifier(identifier)?.image
+            )
         })
     }
-    
+
+    func pluginBundle(forIdentifier identifier: String) -> Bundle? {
+        let identifierKeys: [LoopPluginBundleKey] = [.pumpManagerIdentifier, .cgmManagerIdentifier, .serviceIdentifier]
+        return pluginBundles.first { bundle in
+            identifierKeys.contains { key in
+                (bundle.object(forInfoDictionaryKey: key.rawValue) as? String) == identifier
+            }
+        }
+    }
+
     func getStatefulPluginTypeByIdentifier(_ identifier: String) -> StatefulPluggable.Type? {
         for bundle in pluginBundles {
             if let name = bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.statefulPluginIdentifier.rawValue) as? String, name == identifier {
@@ -175,7 +204,7 @@ class PluginManager {
         }
         return nil
     }
-    
+
     var availableStatefulPluginIdentifiers: [String] {
         return pluginBundles.compactMap({ (bundle) -> String? in
             return bundle.object(forInfoDictionaryKey: LoopPluginBundleKey.statefulPluginIdentifier.rawValue) as? String
@@ -253,7 +282,7 @@ extension Bundle {
     var isLoopExtension: Bool { object(forInfoDictionaryKey: LoopPluginBundleKey.extensionIdentifier.rawValue) as? String != nil }
 
     var isSimulator: Bool { object(forInfoDictionaryKey: LoopPluginBundleKey.pluginIsSimulator.rawValue) as? Bool == true }
-    
+
     fileprivate func loadAndInstantiateExtension() throws -> NSObject? {
         try loadAndReturnError()
 
