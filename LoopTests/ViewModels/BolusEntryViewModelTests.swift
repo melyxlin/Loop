@@ -72,7 +72,7 @@ class BolusEntryViewModelTests: XCTestCase {
         createdByCurrentApp: true,
         userCreatedDate: BolusEntryViewModelTests.now,
         userUpdatedDate: BolusEntryViewModelTests.now)
-    let mockPotentialCarbEntry = NewCarbEntry(quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: BolusEntryViewModelTests.exampleStartDate, foodType: "foodType", absorptionTime: 1)
+    let mockPotentialCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: BolusEntryViewModelTests.exampleStartDate, foodType: "foodType", absorptionTime: 1)
     let mockFinalCarbEntry = StoredCarbEntry(
         startDate: BolusEntryViewModelTests.exampleStartDate,
         quantity: BolusEntryViewModelTests.exampleCarbQuantity,
@@ -696,14 +696,14 @@ class BolusEntryViewModelTests: XCTestCase {
     }
     
     func testCarbEntryAmountAndEmojiStringNoFoodType() async throws {
-        let potentialCarbEntry = NewCarbEntry(quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: 1)
+        let potentialCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: 1)
         await setUpViewModel(originalCarbEntry: mockOriginalCarbEntry, potentialCarbEntry: potentialCarbEntry)
 
         XCTAssertEqual("234 g", bolusEntryViewModel.carbEntryAmountAndEmojiString)
     }
     
     func testCarbEntryAmountAndEmojiStringWithEmoji() async throws {
-        let potentialCarbEntry = NewCarbEntry(quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: 1)
+        let potentialCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: 1)
         await setUpViewModel(originalCarbEntry: mockOriginalCarbEntry, potentialCarbEntry: potentialCarbEntry, selectedCarbAbsorptionTimeEmoji: "😀")
 
         XCTAssertEqual("234 g 😀", bolusEntryViewModel.carbEntryAmountAndEmojiString)
@@ -720,7 +720,7 @@ class BolusEntryViewModelTests: XCTestCase {
     }
     
     func testCarbEntryDateAndAbsorptionTimeString2() async throws {
-        let potentialCarbEntry = NewCarbEntry(quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: nil)
+        let potentialCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: BolusEntryViewModelTests.exampleCarbQuantity, startDate: Self.exampleStartDate, foodType: nil, absorptionTime: nil)
         await setUpViewModel(originalCarbEntry: mockOriginalCarbEntry, potentialCarbEntry: potentialCarbEntry)
 
         XCTAssertEqual("12:00 PM", bolusEntryViewModel.carbEntryDateAndAbsorptionTimeString)
@@ -1031,7 +1031,7 @@ extension LoopAlgorithmEffects {
 extension NewCarbEntry {
     static func mock(_ grams: Double, at date: Date) -> NewCarbEntry {
         NewCarbEntry(
-            quantity: .init(unit: .gram, doubleValue: grams),
+            syncIdentifier: UUID().uuidString, quantity: .init(unit: .gram, doubleValue: grams),
             startDate: date,
             foodType: nil,
             absorptionTime: nil

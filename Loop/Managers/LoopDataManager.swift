@@ -1066,6 +1066,7 @@ final class LoopDataManager: ObservableObject {
                     settingsProvider.settings.automaticDosingStrategy
             }
             input.recommendationType = dosingStrategy.recommendationType
+            dosingDecision.algorithmExperiments = algorithmExperiments(for: dosingStrategy)
 
             guard let latestGlucose = input.glucoseHistory.last else {
                 throw LoopError.missingDataError(.glucose)
@@ -1421,6 +1422,7 @@ final class LoopDataManager: ObservableObject {
                 date: now,
                 reason: "updateRemoteRecommendation"
             )
+            dosingDecision.algorithmExperiments = algorithmExperiments(for: currentDosingStrategy)
             dosingDecision.predictedGlucose = output.predictedGlucose
             dosingDecision.insulinOnBoard = displayState.activeInsulin
             dosingDecision.carbsOnBoard = displayState.activeCarbs
@@ -1565,7 +1567,14 @@ extension LoopDataManager {
         if let replacingEntry = replacingEntry {
             storedCarbEntry = try await carbStore.replaceCarbEntry(
                 replacingEntry,
-                withEntry: carbEntry
+                withEntry: CarbEntryUpdate(
+                    date: carbEntry.date,
+                    quantity: carbEntry.quantity,
+                    startDate: carbEntry.startDate,
+                    foodType: carbEntry.foodType,
+                    absorptionTime: carbEntry.absorptionTime,
+                    favoriteFoodID: carbEntry.favoriteFoodID
+                )
             )
         } else {
             storedCarbEntry = try await carbStore.addCarbEntry(carbEntry)
@@ -1673,6 +1682,18 @@ extension LoopDataManager {
         dosingStrategySelectionEnabled ? settingsProvider.settings.automaticDosingStrategy : .automaticBolus
     }
 
+    /// Glucose-based partial application only affects automatic boluses.
+    private func algorithmExperiments(for dosingStrategy: AutomaticDosingStrategy) -> [AlgorithmExperiment] {
+        var experiments: [AlgorithmExperiment] = []
+        if UserDefaults.standard.integralRetrospectiveCorrectionEnabled {
+            experiments.append(AlgorithmExperiment(identifier: "integralRetrospectiveCorrection"))
+        }
+        if UserDefaults.standard.glucoseBasedApplicationFactorEnabled && dosingStrategy == .automaticBolus {
+            experiments.append(AlgorithmExperiment(identifier: "glucoseBasedApplicationFactor"))
+        }
+        return experiments
+    }
+
     func storeManualBolusDosingDecision(
         _ bolusDosingDecision: BolusDosingDecision,
         withDate date: Date
@@ -1702,6 +1723,7 @@ extension LoopDataManager {
                 .manualBolusRecommendation,
             manualBolusRequested: bolusDosingDecision.manualBolusRequested
         )
+        dosingDecision.algorithmExperiments = algorithmExperiments(for: currentDosingStrategy)
         Task { await dosingDecisionStore.storeDosingDecision(dosingDecision) }
     }
 
@@ -2120,6 +2142,7 @@ extension LoopDataManager: ServicesManagerDelegate {
 
         let quantity = LoopQuantity(unit: .gram, doubleValue: amountInGrams)
         let candidateCarbEntry = NewCarbEntry(
+            syncIdentifier: UUID().uuidString,
             quantity: quantity,
             startDate: startDate ?? now,
             foodType: foodType,

@@ -201,7 +201,16 @@ final class AnalyticsServicesManager {
         updateDailySummary { summary in
             for sample in samples where !sample.wasUserEntered {
                 summary.glucoseCount += 1
-
+                guard sample.isBackfill else {
+                    continue
+                }
+                summary.backfillCount += 1
+                if let receivedDate = sample.receivedDate {
+                    summary.maxBackfillAge = max(
+                        summary.maxBackfillAge,
+                        receivedDate.timeIntervalSince(sample.startDate)
+                    )
+                }
             }
         }
     }

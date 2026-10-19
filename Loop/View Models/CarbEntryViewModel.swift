@@ -64,6 +64,8 @@ final class CarbEntryViewModel: ObservableObject {
     
     @Published var time = Date()
     private var date = Date()
+    private let newCarbSyncIdentifier = UUID().uuidString
+    private let bolusProSecondarySyncIdentifier = UUID().uuidString
     var minimumDate: Date {
         get { date.addingTimeInterval(LoopConstants.maxCarbEntryPastTime) }
     }
@@ -173,6 +175,7 @@ final class CarbEntryViewModel: ObservableObject {
             
             return NewCarbEntry(
                 date: date,
+                syncIdentifier: originalCarbEntry?.syncIdentifier ?? newCarbSyncIdentifier,
                 quantity: LoopQuantity(unit: preferredCarbUnit, doubleValue: quantity),
                 startDate: time,
                 foodType: usesCustomFoodType ? foodType : selectedDefaultAbsorptionTimeEmoji,
@@ -243,7 +246,8 @@ final class CarbEntryViewModel: ObservableObject {
            let primary = updatedCarbEntry,
            let secondary = BolusPro_FPUCalculator.makeSecondaryEntry(
                primaryStartDate: primary.startDate,
-               state: bolusProState
+               state: bolusProState,
+                syncIdentifier: bolusProSecondarySyncIdentifier
            )
         {
             viewModel.bolusProSecondaryEntry = secondary

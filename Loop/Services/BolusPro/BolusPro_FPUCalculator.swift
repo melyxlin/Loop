@@ -100,6 +100,7 @@ enum BolusPro_FPUCalculator {
     static func makeSecondaryEntry(
         primaryStartDate: Date,
         state: BolusProEntryState,
+        syncIdentifier: String,
         delayMinutes: Int = BolusPro_FeatureFlags.fpuDelayMinutes,
         absorptionHours: Int = BolusPro_FeatureFlags.fpuAbsorptionHours,
         coverageFactorPercent: Int = BolusPro_FeatureFlags.coverageFactorPercent
@@ -117,6 +118,7 @@ enum BolusPro_FPUCalculator {
 
         return NewCarbEntry(
             date: Date(),
+            syncIdentifier: syncIdentifier,
             quantity: LoopQuantity(unit: .gram, doubleValue: result.bonusGrams),
             startDate: secondaryStart,
             foodType: BolusPro_FeatureFlags.fpuEntryEmoji,

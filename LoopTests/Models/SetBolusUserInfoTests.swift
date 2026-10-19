@@ -16,7 +16,7 @@ class SetBolusUserInfoTests: XCTestCase {
     private var value = 4.56
     private var startDate = dateFormatter.date(from: "2020-05-14T22:45:00Z")!
     private var contextDate = dateFormatter.date(from: "2020-05-14T22:38:14Z")!
-    private var carbEntry = NewCarbEntry(date: dateFormatter.date(from: "2020-05-14T22:39:34Z")!,
+    private var carbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, date: dateFormatter.date(from: "2020-05-14T22:39:34Z")!,
                                          quantity: LoopQuantity(unit: .gram, doubleValue: 17),
                                          startDate: dateFormatter.date(from: "2020-05-14T22:00:00Z")!,
                                          foodType: "Pizza",

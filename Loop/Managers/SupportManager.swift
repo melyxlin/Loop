@@ -42,17 +42,20 @@ public final class SupportManager {
     private let alertIssuer: AlertIssuer
     private let deviceSupportDelegate: DeviceSupportDelegate
     private let pluginManager: PluginManager
+    private let criticalEventLogExportManager: CriticalEventLogExportManager?
 
     lazy private var cancellables = Set<AnyCancellable>()
 
     init(pluginManager: PluginManager,
          deviceSupportDelegate: DeviceSupportDelegate,
          servicesManager: ServicesManager? = nil,
+         criticalEventLogExportManager: CriticalEventLogExportManager? = nil,
          alertIssuer: AlertIssuer) {
         
         self.alertIssuer = alertIssuer
         self.deviceSupportDelegate = deviceSupportDelegate
         self.pluginManager = pluginManager
+        self.criticalEventLogExportManager = criticalEventLogExportManager
 
         restoreState()
 
@@ -215,6 +218,20 @@ extension SupportManager {
 extension SupportManager: SupportUIDelegate {
     public func openURL(url: URL) {
         UIApplication.shared.open(url)
+    }
+
+    public func criticalEventLogExportView() -> AnyView {
+        guard let criticalEventLogExportManager else {
+            return AnyView(Text("Critical event log export is unavailable."))
+        }
+
+        return AnyView(
+            CriticalEventLogExportView(
+                viewModel: CriticalEventLogExportViewModel(
+                    exporterFactory: criticalEventLogExportManager
+                )
+            )
+        )
     }
     
     public var pumpStatus: LoopKit.PumpManagerStatus? {
