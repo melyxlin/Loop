@@ -70,6 +70,7 @@ struct AlertManagementView: View {
         )
     }
 
+
     public init(
         checker: AlertPermissionsChecker,
         alertMuter: AlertMuter = AlertMuter(),
@@ -84,7 +85,6 @@ struct AlertManagementView: View {
 
     var body: some View {
         List {
-            historySection
             alertPermissionsSection
             muteAlertsSection
 
@@ -96,6 +96,9 @@ struct AlertManagementView: View {
                 missedMealAlertSection
             }
 
+            if let alertStore {
+                historySection(alertStore: alertStore)
+            }
             supportSection
         }
         .navigationTitle(
@@ -105,6 +108,21 @@ struct AlertManagementView: View {
             )
         )
     }
+
+
+    private func historySection(alertStore: AlertStore) -> some View {
+        Section(header: Text("History").textCase(nil)) {
+            NavigationLink(destination: AlertHistoryView(alertStore: alertStore)) {
+                HStack {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundStyle(.tint)
+                    Text("Alert History", comment: "Alert history navigation link label")
+                }
+                .accessibilityIdentifier("alertManagementAlertHistory")
+            }
+        }
+    }
+
 
     private func glucoseAlertsSection(manager: GlucoseAlertManager) -> some View
     {
@@ -122,28 +140,6 @@ struct AlertManagementView: View {
                 }
                 .accessibilityIdentifier("alertManagementGlucoseAlerts")
             }
-        }
-    }
-
-    private var historySection: some View {
-        Section(header: Text("History").textCase(nil)) {
-            NavigationLink {
-                AlertHistoryView(alertStore: alertStore)
-            } label: {
-                HStack {
-                    Image(systemName: "bell.badge.fill")
-                        .foregroundStyle(.tint)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Alert History")
-
-                        Text("Active and past Loop alerts")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .accessibilityIdentifier("alertManagementAlertHistory")
         }
     }
 

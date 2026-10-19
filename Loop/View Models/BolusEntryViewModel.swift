@@ -533,9 +533,9 @@ final class BolusEntryViewModel: ObservableObject {
                 replacingEntry: originalCarbEntry
             ) {
                 self.dosingDecision.carbEntry = storedCarbEntry
+
                 self.analyticsServicesManager?.didAddCarbs(
                     source: "Phone",
-                    amount: storedCarbEntry.quantity.doubleValue(for: .gram),
                     isFavoriteFood: storedCarbEntry.favoriteFoodID != nil
                 )
 
@@ -587,9 +587,6 @@ final class BolusEntryViewModel: ObservableObject {
 
                             self.analyticsServicesManager?.didAddCarbs(
                                 source: "BolusPro",
-                                amount: storedSecondary.quantity.doubleValue(
-                                    for: .gram
-                                ),
                                 isFavoriteFood: false
                             )
                         } else {
@@ -666,6 +663,7 @@ final class BolusEntryViewModel: ObservableObject {
                         decisionId: dosingDecision.id,
                         activationType: activationType
                     )
+                    self.analyticsServicesManager?.didBolus(source: "Phone")
                 } catch {
                     if isPrebolus {
                         PrebolusTimerManager.shared.clear()
@@ -677,11 +675,8 @@ final class BolusEntryViewModel: ObservableObject {
                     )
                 }
 
-                self.analyticsServicesManager?.didBolus(
-                    source: "Phone",
-                    units: amountToDeliver
-                )
             }
+
         }
         return true
     }

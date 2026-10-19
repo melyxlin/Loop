@@ -69,6 +69,8 @@ final class DeviceDataManager {
 
     @Published var cgmHasValidSensorSession: Bool
 
+    private var cgmDeviceModel: String?
+
     @Published var pumpIsAllowingAutomation: Bool
 
     private var lastCGMLoopTrigger: Date = .distantPast
@@ -327,13 +329,13 @@ final class DeviceDataManager {
         self.pluginManager = pluginManager
         self.deviceLog = deviceLog
         self.alertManager = alertManager
-        self.glucoseAlertManager = GlucoseAlertManager(
-            alertIssuer: alertManager
-        )
-        alertManager.addAlertSoundVendor(
-            managerIdentifier: GlucoseAlertManager.managerIdentifier,
-            soundVendor: self.glucoseAlertManager
-        )
+        self.glucoseAlertManager = GlucoseAlertManager(alertIssuer: alertManager)
+        alertManager.addAlertSoundVendor(managerIdentifier: GlucoseAlertManager.managerIdentifier,
+                                         soundVendor: self.glucoseAlertManager)
+        alertManager.playsThroughSilent = { [weak glucoseAlertManager = self.glucoseAlertManager] alert in
+            alert.identifier.managerIdentifier == GlucoseAlertManager.managerIdentifier &&
+                glucoseAlertManager?.playsThroughSilent(for: alert.identifier.alertIdentifier) == true
+        }
         self.settingsManager = settingsManager
         self.healthStore = healthStore
         self.carbStore = carbStore
@@ -601,6 +603,7 @@ final class DeviceDataManager {
                 do {
                     let storedSamples = try await glucoseStore.addGlucoseSamples(values)
                     storedNewGlucose = !storedSamples.isEmpty
+                    analyticsServicesManager.didStoreGlucose(storedSamples)
 
                     if restoreClosedLoopAfterCGMResume == true,
                         let newestSample = storedSamples.max(by: {
@@ -834,10 +837,6 @@ final class DeviceDataManager {
 
         let result = await cgmManager.fetchNewDataIfNeeded()
 
-        if case .newData = result {
-            self.analyticsServicesManager.didFetchNewCGMData()
-        }
-
         let storedNewGlucose = await self.processCGMReadingResult(cgmManager, readingResult: result)
 
         // A heartbeat/refresh triggers a CGM check; only loop if that check produced a new value
@@ -901,9 +900,9 @@ extension DeviceDataManager {
             cgmHasValidSensorSession =
                 cgmManager.cgmManagerStatus.hasValidSensorSession
 
-            analyticsServicesManager.identifyCGMType(
-                cgmManager.pluginIdentifier
-            )
+            analyticsServicesManager.identifyCGMType(cgmManager.pluginIdentifier)
+            cgmDeviceModel = cgmManager.cgmManagerStatus.device?.model
+            analyticsServicesManager.identifyCGMModel(cgmDeviceModel)
         }
         // Refresh the GlucoseAlertManager's view of whether the active
         // CGM does its own alerting. No active CGM ⇒ treat as "no
@@ -948,14 +947,14 @@ extension DeviceDataManager {
                 soundVendor: pumpManager
             )
 
+
             deliveryUncertaintyAlertManager = DeliveryUncertaintyAlertManager(
                 pumpManager: pumpManager,
                 alertPresenter: alertPresenter
             )
 
-            analyticsServicesManager.identifyPumpType(
-                pumpManager.pluginIdentifier
-            )
+            analyticsServicesManager.identifyPumpType(pumpManager.pluginIdentifier)
+            analyticsServicesManager.identifyPumpModel(pumpManager.status.device.model)
 
             updatePumpManagerBLEHeartbeatPreference()
         }
@@ -1344,6 +1343,11 @@ extension DeviceDataManager: CGMManagerDelegate {
             if self.cgmHasValidSensorSession != status.hasValidSensorSession {
                 self.cgmHasValidSensorSession = status.hasValidSensorSession
             }
+            if self.cgmDeviceModel != status.device?.model {
+                self.cgmDeviceModel = status.device?.model
+                self.analyticsServicesManager.identifyCGMModel(self.cgmDeviceModel)
+            }
+            self.glucoseStore.managedDataInterval = manager.managedDataInterval
         }
     }
 }
@@ -1453,6 +1457,10 @@ extension DeviceDataManager: PumpManagerDelegate {
             )
 
             doseStore.device = status.device
+
+            if status.device.model != oldStatus.device.model {
+                analyticsServicesManager.identifyPumpModel(status.device.model)
+            }
 
             if let newBatteryValue = status.pumpBatteryChargeRemaining,
                 let oldBatteryValue = oldStatus.pumpBatteryChargeRemaining,

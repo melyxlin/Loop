@@ -1416,6 +1416,7 @@ final class LoopDataManager: ObservableObject {
             displayState.output?.recommendation?.manual
 
         if let output = displayState.output {
+
             var dosingDecision = StoredDosingDecision(
                 date: now,
                 reason: "updateRemoteRecommendation"
@@ -1667,11 +1668,16 @@ extension LoopDataManager {
         }
     }
 
+
+    private var currentDosingStrategy: AutomaticDosingStrategy {
+        dosingStrategySelectionEnabled ? settingsProvider.settings.automaticDosingStrategy : .automaticBolus
+    }
+
     func storeManualBolusDosingDecision(
         _ bolusDosingDecision: BolusDosingDecision,
         withDate date: Date
     ) async {
-        let dosingDecision = StoredDosingDecision(
+        var dosingDecision = StoredDosingDecision(
             id: bolusDosingDecision.id,
             date: date,
             reason: bolusDosingDecision.reason.rawValue,

@@ -2,289 +2,271 @@
 //  AlertHistoryView.swift
 //  Loop
 //
-//  Created by Melissa Lin on 9/9/26.
 //  Copyright © 2026 LoopKit Authors. All rights reserved.
 //
 
 import SwiftUI
+import LoopKit
+import LoopKitUI
+import LoopUI
+
+@MainActor
+final class AlertHistoryViewModel: ObservableObject {
+    @Published private(set) var entries: [AlertHistoryEntry] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var loadFailed = false
+    @Published private(set) var canLoadMore = true
+
+    private let alertStore: AlertStore
+    private let pageSize: Int
+    private var seenIDs = Set<String>()
+
+    init(alertStore: AlertStore, pageSize: Int = 50) {
+        self.alertStore = alertStore
+        self.pageSize = pageSize
+    }
+
+    func loadInitialIfNeeded() async {
+        guard entries.isEmpty, !isLoading else { return }
+        await load(before: .distantFuture, reset: true)
+    }
+
+    func loadMore() async {
+        guard canLoadMore, !isLoading, let oldest = entries.last else { return }
+        await load(before: oldest.issuedDate, reset: false)
+    }
+
+    private func load(before: Date, reset: Bool) async {
+        isLoading = true
+        loadFailed = false
+        defer { isLoading = false }
+        do {
+            let page = try await alertStore.lookupRecent(before: before, limit: pageSize)
+            if reset {
+                entries.removeAll()
+                seenIDs.removeAll()
+            }
+            // De-dupe across pages: alerts sharing an issuedDate can straddle a page boundary.
+            entries.append(contentsOf: page.filter { seenIDs.insert($0.id).inserted })
+            canLoadMore = page.count == pageSize
+        } catch {
+            loadFailed = true
+            canLoadMore = false
+        }
+    }
+}
 
 struct AlertHistoryView: View {
-    private enum AlertDateSection: String, CaseIterable, Identifiable {
-        case today = "Today"
-        case yesterday = "Yesterday"
-        case earlier = "Earlier"
+    @StateObject private var viewModel: AlertHistoryViewModel
 
-        var id: String { rawValue }
+    init(alertStore: AlertStore) {
+        _viewModel = StateObject(wrappedValue: AlertHistoryViewModel(alertStore: alertStore))
     }
-    
-    @State private var selectedDate: Date?
-    @State private var showingDatePicker = false
-    @State private var selectedCategory: AlertCategory = .all
-    @StateObject private var viewModel: AlertsViewModel
 
-    init(alertStore: AlertStore?) {
-        _viewModel = StateObject(
-            wrappedValue: AlertsViewModel(alertStore: alertStore)
-        )
-    }
-    
-    private var displayedAlerts: [AlertHistoryItem] {
-        viewModel.alerts.filter { alert in
-
-            let matchesDate: Bool
-
-            if let selectedDate {
-                matchesDate = Calendar.current.isDate(
-                    alert.issuedDate,
-                    inSameDayAs: selectedDate
-                )
-            } else {
-                matchesDate = true
-            }
-
-            let matchesCategory =
-                selectedCategory == .all ||
-                alert.category == selectedCategory
-
-            return matchesDate && matchesCategory
-        }
+    private var groupedByDay: [(day: Date, entries: [AlertHistoryEntry])] {
+        Dictionary(grouping: viewModel.entries) { Calendar.current.startOfDay(for: $0.issuedDate) }
+            .map { (day: $0.key, entries: $0.value.sorted { $0.issuedDate > $1.issuedDate }) }
+            .sorted { $0.day > $1.day }
     }
 
     var body: some View {
         List {
-            if viewModel.isLoading && displayedAlerts.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-            }
-
-            if let errorMessage = viewModel.errorMessage {
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label(
-                            "Unable to Load Alerts",
-                            systemImage: "exclamationmark.triangle.fill"
-                        )
-
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            Section(
-                header: Text("History").textCase(nil)
-            ) {
-                if viewModel.alerts.isEmpty && !viewModel.isLoading {
-                    Section {
-                        Text("No alert history")
-                            .foregroundStyle(.secondary)
+            if viewModel.entries.isEmpty {
+                if viewModel.isLoading {
+                    centeredRow { ProgressView() }
+                } else if viewModel.loadFailed {
+                    centeredRow {
+                        Text("Unable to load alert history.", comment: "Alert history load failure message")
+                            .foregroundColor(.secondary)
                     }
                 } else {
-                    ForEach(AlertDateSection.allCases) { section in
-                        let sectionAlerts = alerts(in: section)
+                    centeredRow {
+                        Text("No alerts recorded.", comment: "Alert history empty state message")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
 
-                        if !sectionAlerts.isEmpty {
-                            Section(
-                                header: Text(section.rawValue).textCase(nil)
-                            ) {
-                                ForEach(sectionAlerts) { alert in
-                                    alertRow(alert)
-                                }
-                            }
+            ForEach(groupedByDay, id: \.day) { group in
+                Section(header: Text(group.day.formatted(date: .complete, time: .omitted))) {
+                    ForEach(group.entries) { entry in
+                        NavigationLink(destination: AlertHistoryDetailView(entry: entry)) {
+                            AlertHistoryRow(entry: entry)
                         }
                     }
                 }
             }
+
+            if viewModel.canLoadMore && !viewModel.entries.isEmpty {
+                centeredRow { ProgressView() }
+                    .onAppear {
+                        Task { await viewModel.loadMore() }
+                    }
+            }
         }
-        .navigationTitle("Alert History")
+        .navigationTitle(Text("Alert History", comment: "Title of the alert history screen"))
+        .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.load()
-        }
-        .refreshable {
-            await viewModel.load()
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showingDatePicker = true
-                } label: {
-                    Image(systemName: "calendar")
-                }
-                .accessibilityLabel("Filter by date")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    ForEach(AlertCategory.allCases) { category in
-                        Button {
-                            selectedCategory = category
-                        } label: {
-                            if selectedCategory == category {
-                                Label(
-                                    category.rawValue,
-                                    systemImage: "checkmark"
-                                )
-                            } else {
-                                Text(category.rawValue)
-                            }
-                        }
-                    }
-                } label: {
-                    Image(
-                        systemName:
-                            selectedCategory == .all
-                                ? "line.3.horizontal.decrease.circle"
-                                : "line.3.horizontal.decrease.circle.fill"
-                    )
-                }
-                .accessibilityLabel("Filter alerts")
-            }
-
-            if selectedDate != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Clear") {
-                        selectedDate = nil
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingDatePicker) {
-            NavigationStack {
-                VStack {
-                    DatePicker(
-                        "Select Date",
-                        selection: Binding(
-                            get: {
-                                selectedDate ?? Date()
-                            },
-                            set: {
-                                selectedDate = $0
-                            }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.graphical)
-                    .padding()
-
-                    Spacer()
-                }
-                .navigationTitle("Filter by Date")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") {
-                            showingDatePicker = false
-                        }
-                    }
-
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            showingDatePicker = false
-                        }
-                    }
-                }
-            }
+            await viewModel.loadInitialIfNeeded()
         }
     }
 
-    @ViewBuilder
-    private func alertRow(
-        _ alert: AlertHistoryItem
-    ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+    private func centeredRow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack {
+            Spacer()
+            content()
+            Spacer()
+        }
+        .listRowBackground(Color.clear)
+    }
+}
 
-            Image(systemName: iconName(for: alert))
-                .foregroundStyle(
-                    iconColor(for: alert)
-                )
-                .frame(width: 24)
+struct AlertHistoryRow: View {
+    let entry: AlertHistoryEntry
 
-            VStack(alignment: .leading, spacing: 4) {
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: entry.interruptionLevel.symbolName)
+                .foregroundColor(entry.interruptionLevel.tintColor)
+                .frame(width: 22)
 
-                Text(alert.title)
-                    .font(.body)
-
-                if let body = alert.body,
-                   !body.isEmpty
-                {
-                    Text(body)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                Text(
-                    Calendar.current.isDateInToday(alert.issuedDate) ||
-                    Calendar.current.isDateInYesterday(alert.issuedDate)
-                        ? alert.issuedDate.formatted(
-                            date: .omitted,
-                            time: .shortened
-                        )
-                        : alert.issuedDate.formatted(
-                            date: .abbreviated,
-                            time: .shortened
-                        )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-                #if DEBUG
-                Text(
-                    "\(alert.managerIdentifier) / \(alert.alertIdentifier)"
-                )
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                #endif
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(entry.status.label)
+                    .font(.subheadline)
+                    .foregroundColor(entry.status.tintColor)
             }
+
+            Spacer()
+
+            Text(entry.issuedDate.formatted(date: .omitted, time: .shortened))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
         .padding(.vertical, 2)
     }
+}
 
-    private func iconName(
-        for alert: AlertHistoryItem
-    ) -> String {
-        switch alert.interruptionLevel {
-        case .critical:
-            return "exclamationmark.octagon.fill"
+struct AlertHistoryDetailView: View {
+    let entry: AlertHistoryEntry
 
-        case .timeSensitive:
-            return "exclamationmark.triangle.fill"
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(entry.title)
+                        .font(.headline)
+                    if !entry.body.isEmpty {
+                        Text(entry.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
 
-        case .active:
-            return "bell.fill"
-        }
-    }
+            Section {
+                LabeledContent(NSLocalizedString("Status", comment: "Alert history field label")) {
+                    Text(entry.status.label).foregroundColor(entry.status.tintColor)
+                }
+                LabeledContent(NSLocalizedString("Priority", comment: "Alert history field label")) {
+                    Text(entry.interruptionLevel.label)
+                }
+                LabeledContent(NSLocalizedString("Issued", comment: "Alert history field label")) {
+                    Text(entry.issuedDate.formatted(date: .abbreviated, time: .shortened))
+                }
+                if let acknowledgedDate = entry.acknowledgedDate {
+                    LabeledContent(NSLocalizedString("Acknowledged", comment: "Alert history field label")) {
+                        Text(acknowledgedDate.formatted(date: .abbreviated, time: .shortened))
+                    }
+                }
+                if let retractedDate = entry.retractedDate {
+                    LabeledContent(NSLocalizedString("Retracted", comment: "Alert history field label")) {
+                        Text(retractedDate.formatted(date: .abbreviated, time: .shortened))
+                    }
+                }
+            }
 
-    private func iconColor(
-        for alert: AlertHistoryItem
-    ) -> Color {
-        switch alert.interruptionLevel {
-        case .critical:
-            return .red
-
-        case .timeSensitive:
-            return .orange
-
-        case .active:
-            return .secondary
-        }
-    }
-    private func alerts(
-        in section: AlertDateSection
-    ) -> [AlertHistoryItem] {
-        let calendar = Calendar.current
-
-        return displayedAlerts.filter { alert in
-            switch section {
-            case .today:
-                return calendar.isDateInToday(alert.issuedDate)
-
-            case .yesterday:
-                return calendar.isDateInYesterday(alert.issuedDate)
-
-            case .earlier:
-                return !calendar.isDateInToday(alert.issuedDate) &&
-                       !calendar.isDateInYesterday(alert.issuedDate)
+            Section(header: Text("Details", comment: "Alert history details section header")) {
+                LabeledContent(NSLocalizedString("Source", comment: "Alert history field label")) {
+                    Text(entry.managerIdentifier)
+                }
+                LabeledContent(NSLocalizedString("Identifier", comment: "Alert history field label")) {
+                    Text(entry.identifier.alertIdentifier)
+                }
+                LabeledContent(NSLocalizedString("Trigger", comment: "Alert history field label")) {
+                    Text(entry.trigger.label)
+                }
             }
         }
+        .navigationTitle(Text("Alert", comment: "Title of the alert history detail screen"))
+        .navigationBarTitleDisplayMode(.inline)
     }
+}
+
+private extension AlertHistoryEntry.Status {
+    var label: String {
+        switch self {
+        case .active: return NSLocalizedString("Active", comment: "Alert history status: alert still active")
+        case .acknowledged: return NSLocalizedString("Acknowledged", comment: "Alert history status: alert acknowledged")
+        case .retracted: return NSLocalizedString("Retracted", comment: "Alert history status: alert retracted before acknowledgement")
+        }
+    }
+
+    var tintColor: Color {
+        switch self {
+        case .active: return .critical
+        case .acknowledged: return .secondary
+        case .retracted: return .secondary
+        }
+    }
+}
+
+private extension LoopKit.Alert.InterruptionLevel {
+    var label: String {
+        switch self {
+        case .active: return NSLocalizedString("Normal", comment: "Alert priority: active/normal")
+        case .timeSensitive: return NSLocalizedString("Time Sensitive", comment: "Alert priority: time sensitive")
+        case .critical: return NSLocalizedString("Critical", comment: "Alert priority: critical")
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .active: return "bell.fill"
+        case .timeSensitive: return "bell.badge.fill"
+        case .critical: return "exclamationmark.triangle.fill"
+        }
+    }
+
+    var tintColor: Color {
+        switch self {
+        case .active: return .secondary
+        case .timeSensitive: return .orange
+        case .critical: return .critical
+        }
+    }
+}
+
+private extension LoopKit.Alert.Trigger {
+    var label: String {
+        switch self {
+        case .immediate:
+            return NSLocalizedString("Immediate", comment: "Alert trigger type: immediate")
+        case .delayed(let interval):
+            let formatted = Self.durationFormatter.string(from: interval) ?? ""
+            return String(format: NSLocalizedString("Delayed (%1$@)", comment: "Alert trigger type: delayed by a duration (1: duration)"), formatted)
+        case .repeating(let interval):
+            let formatted = Self.durationFormatter.string(from: interval) ?? ""
+            return String(format: NSLocalizedString("Repeating (%1$@)", comment: "Alert trigger type: repeating on an interval (1: interval)"), formatted)
+        }
+    }
+
+    private static let durationFormatter: DateComponentsFormatter = {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.day, .hour, .minute, .second]
+        return formatter
+    }()
 }

@@ -2469,6 +2469,7 @@ final class StatusTableViewController: LoopChartsTableViewController {
     }
 
     func presentSettings() {
+        analyticsServicesManager?.didDisplaySettingsScreen()
         let hostingController = DismissibleHostingController(
             rootView: SettingsView(viewModel: statusTableViewModel.settingsViewModel, localizedAppNameAndVersion: supportManager.localizedAppNameAndVersion)
                 .environmentObject(deviceManager.displayGlucosePreference)
@@ -3188,6 +3189,10 @@ extension StatusTableViewController: SettingsViewModelDelegate {
         dismiss(animated: true) {
             self.presentIssueReport()
         }
+    }
+
+    func generateDiagnosticReport() async -> String {
+        await diagnosticReportGenerator.generateDiagnosticReport()
     }
 }
 
