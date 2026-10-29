@@ -18275,9 +18275,6 @@
     "Enable this to show FoodFinder in the carb entry screen. Requires Internet connection. When disabled, the feature is hidden but settings are preserved." : {
 
     },
-    "Enable Trio UAM" : {
-      "comment" : "Toggle to enable the Trio UAM algorithm experiment"
-    },
     "Enabled" : {
       "comment" : "Title for enable live activity toggle",
       "localizations" : {
@@ -39755,9 +39752,6 @@
     "This dose still has active insulin. Deleting it may cause Loop to make up for the reduced active insulin by dosing more." : {
       "comment" : "Warning when deleting a Loop-recorded dose that still has active insulin"
     },
-    "This experiment is currently shadow-only. Enabling it does not change Loop's glucose prediction or insulin delivery." : {
-      "comment" : "Shadow-only warning for the Trio UAM algorithm experiment"
-    },
     "This is the development version of Loop. Any updates on this branch may contain new, untested features, and may be unsafe. If you are not a tester, please switch to main." : {
       "comment" : "Body of the warning shown at launch on development builds"
     },
@@ -40143,12 +40137,6 @@
     },
     "Trigger Threshold" : {
 
-    },
-    "Trio UAM" : {
-      "comment" : "Navigation title for the Trio UAM algorithm experiment\nTitle of Trio UAM algorithm experiment"
-    },
-    "Trio UAM uses unannounced meal prediction to recognize glucose behavior that is not adequately explained by known carbohydrates and expected insulin effects." : {
-      "comment" : "Description of the Trio UAM algorithm experiment"
     },
     "Try Again" : {
       "comment" : "Button to retry sending an issue report\nCritical event log export error alert try again button",

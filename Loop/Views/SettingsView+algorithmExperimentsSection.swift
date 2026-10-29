@@ -42,7 +42,6 @@ public struct ExperimentsSettingsView: View {
     @AppStorage(UserDefaults.Key.GlucoseBasedApplicationFactorEnabled.rawValue) private var isGlucoseBasedApplicationFactorEnabled = false
     @AppStorage(UserDefaults.Key.IntegralRetrospectiveCorrectionEnabled.rawValue) private var isIntegralRetrospectiveCorrectionEnabled = false
     @AppStorage(UserDefaults.Key.NegativeInsulinDamperEnabled.rawValue) private var isNegativeInsulinDamperEnabled = false
-    @AppStorage(UserDefaults.Key.TrioUAMEnabled.rawValue) private var isTrioUAMEnabled = false
     var automaticDosingStrategy: AutomaticDosingStrategy
 
     public var body: some View {
@@ -77,15 +76,6 @@ public struct ExperimentsSettingsView: View {
                         name: NSLocalizedString("Negative Insulin Damper", comment: "Title of negative insulin damper experiment"),
                         enabled: isNegativeInsulinDamperEnabled)
                 }
-                NavigationLink(destination: TrioUAMSelectionView(isTrioUAMEnabled: $isTrioUAMEnabled)) {
-                    ExperimentRow(
-                        name: NSLocalizedString(
-                            "Trio UAM",
-                            comment: "Title of Trio UAM algorithm experiment"
-                        ),
-                        enabled: isTrioUAMEnabled
-                    )
-                }
                 Spacer()
             }
             .padding()
@@ -100,7 +90,6 @@ extension UserDefaults {
         case GlucoseBasedApplicationFactorEnabled = "com.loopkit.algorithmExperiments.glucoseBasedApplicationFactorEnabled"
         case IntegralRetrospectiveCorrectionEnabled = "com.loopkit.algorithmExperiments.integralRetrospectiveCorrectionEnabled"
         case NegativeInsulinDamperEnabled = "com.loopkit.algorithmExperiments.negativeInsulinDamperEnabled"
-        case TrioUAMEnabled = "com.loopkit.algorithmExperiments.trioUAMEnabled"
     }
 
     var glucoseBasedApplicationFactorEnabled: Bool {
@@ -130,13 +119,5 @@ extension UserDefaults {
         }
     }
 
-    var trioUAMEnabled: Bool {
-        get {
-            bool(forKey: Key.TrioUAMEnabled.rawValue) as Bool
-        }
-        set {
-            set(newValue, forKey: Key.TrioUAMEnabled.rawValue)
-        }
-    }
 
 }

@@ -255,7 +255,6 @@
 		5067FCCB3051DEC200FBD2C2 /* AlertHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */; };
 		5067FCCD3051DEE400FBD2C2 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */; };
 		5067FCCF30520C8B00FBD2C2 /* InsulinStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */; };
-		506BA372305CE6FB00A7F01B /* TrioUAMSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506BA371305CE6F400A7F01B /* TrioUAMSelectionView.swift */; };
 		506CD3C6304F7A3B007514D5 /* CGMInputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */; };
 		5076E27F30508FC300A76E43 /* GlucoseDistributionChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */; };
 		5089E54A303CA3C800E2A92C /* StatisticsRangeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */; };
@@ -1153,7 +1152,6 @@
 		5067FCCA3051DEBE00FBD2C2 /* AlertHistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryItem.swift; sourceTree = "<group>"; };
 		5067FCCC3051DEE000FBD2C2 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
 		5067FCCE30520C8800FBD2C2 /* InsulinStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStatistics.swift; sourceTree = "<group>"; };
-		506BA371305CE6F400A7F01B /* TrioUAMSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioUAMSelectionView.swift; sourceTree = "<group>"; };
 		506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMInputControlsView.swift; sourceTree = "<group>"; };
 		5076E27E30508FB700A76E43 /* GlucoseDistributionChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseDistributionChartView.swift; sourceTree = "<group>"; };
 		5089E549303CA3BA00E2A92C /* StatisticsRangeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsRangeSettings.swift; sourceTree = "<group>"; };
@@ -2234,7 +2232,6 @@
 			isa = PBXGroup;
 			children = (
 				50B3769C305E38B900982D70 /* PrebolusBanner.swift */,
-				506BA371305CE6F400A7F01B /* TrioUAMSelectionView.swift */,
 				50A4CDE130523A4500EAC618 /* InsulinUsageChartView.swift */,
 				5067FCC83051DCA200FBD2C2 /* AlertHistoryView.swift */,
 				506CD3C5304F7A33007514D5 /* CGMInputControlsView.swift */,
@@ -4057,7 +4054,6 @@
 				4345E3FC21F04911009E00E5 /* UIColor+HIG.swift in Sources */,
 				1D4A3E2E2478628500FD601B /* StoredAlert+CoreDataProperties.swift in Sources */,
 				84DF48B72F6A0AD700BEDB40 /* CaptionsView.swift in Sources */,
-				506BA372305CE6FB00A7F01B /* TrioUAMSelectionView.swift in Sources */,
 				B4C6D2442EAA2AC2006F5755 /* TimeInterval.swift in Sources */,
 				84DF48BD2F6A0AE200BEDB40 /* TranscriptView.swift in Sources */,
 				B43B5C562EAFBF230096A6AE /* RecentGlucoseTableViewCell.swift in Sources */,
