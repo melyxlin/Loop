@@ -14856,6 +14856,9 @@
     "Critical Alerts will still sound, but all others will be silenced." : {
       "comment" : "Additional description text for temporarily silencing non-critical alerts"
     },
+    "Critical event log export is unavailable." : {
+
+    },
     "Critical Event Log Ready" : {
       "comment" : "Critical event log ready text",
       "localizations" : {
