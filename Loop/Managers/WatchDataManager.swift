@@ -154,7 +154,8 @@ final class WatchDataManager: NSObject {
     private func sendSettingsIfNeeded() {
         let userInfo = LoopSettingsUserInfo(
             loopSettings: settingsManager.loopSettings,
-            scheduleOverride: temporaryPresetsManager.scheduleOverride)
+            scheduleOverride: temporaryPresetsManager.scheduleOverride,
+            showsActivityPresets: temporaryPresetsManager.showsActivityPresets)
 
         guard let session = watchSession, session.isPaired, session.isWatchAppInstalled else {
             return
@@ -296,6 +297,9 @@ final class WatchDataManager: NSObject {
         dosingDecision.carbsOnBoard = carbsOnBoard
 
         context.cgmManagerState = self.deviceManager.cgmManager?.rawValue
+        if let sharing = self.deviceManager.cgmManager as? DeviceConfigurationSharing, sharing.isConfigurationSharingEnabled {
+            context.cgmConfiguration = sharing.exportConfiguration().rawValue
+        }
 
         let settings = self.settingsManager.loopSettings
 
@@ -307,8 +311,7 @@ final class WatchDataManager: NSObject {
 
         if let recommendedBolus = try? await loopDataManager.recommendManualBolus(
             manualGlucoseSample: nil,
-            potentialCarbEntry: potentialCarbEntry,
-            originalCarbEntry: nil
+            carbEntryChange: potentialCarbEntry.map { .add($0) }
         ) {
             context.recommendedBolusDose = recommendedBolus.amount
             dosingDecision.manualBolusRecommendation = ManualBolusRecommendationWithDate(
@@ -493,7 +496,8 @@ final class WatchDataManager: NSObject {
         case SettingsRequestUserInfo.name?:
             let userInfo = LoopSettingsUserInfo(
                 loopSettings: settingsManager.loopSettings,
-                scheduleOverride: temporaryPresetsManager.scheduleOverride)
+                scheduleOverride: temporaryPresetsManager.scheduleOverride,
+                showsActivityPresets: temporaryPresetsManager.showsActivityPresets)
             return userInfo.rawValue
         case GetBolusRecommendationUserInfo.name?:
             if let request = GetBolusRecommendationUserInfo(rawValue: message) {

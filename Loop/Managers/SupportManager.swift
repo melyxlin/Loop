@@ -42,20 +42,23 @@ public final class SupportManager {
     private let alertIssuer: AlertIssuer
     private let deviceSupportDelegate: DeviceSupportDelegate
     private let pluginManager: PluginManager
-    private let criticalEventLogExportManager: CriticalEventLogExportManager?
+    private let criticalEventLogExporterFactory: CriticalEventLogExporterFactory?
+    private weak var diagnosticReportGenerator: DiagnosticReportGenerator?
 
     lazy private var cancellables = Set<AnyCancellable>()
 
     init(pluginManager: PluginManager,
          deviceSupportDelegate: DeviceSupportDelegate,
          servicesManager: ServicesManager? = nil,
-         criticalEventLogExportManager: CriticalEventLogExportManager? = nil,
-         alertIssuer: AlertIssuer) {
-        
+         alertIssuer: AlertIssuer,
+         criticalEventLogExporterFactory: CriticalEventLogExporterFactory? = nil,
+         diagnosticReportGenerator: DiagnosticReportGenerator? = nil) {
+
         self.alertIssuer = alertIssuer
         self.deviceSupportDelegate = deviceSupportDelegate
         self.pluginManager = pluginManager
-        self.criticalEventLogExportManager = criticalEventLogExportManager
+        self.criticalEventLogExporterFactory = criticalEventLogExporterFactory
+        self.diagnosticReportGenerator = diagnosticReportGenerator
 
         restoreState()
 
@@ -221,19 +224,19 @@ extension SupportManager: SupportUIDelegate {
     }
 
     public func criticalEventLogExportView() -> AnyView {
-        guard let criticalEventLogExportManager else {
+        guard let criticalEventLogExporterFactory else {
             return AnyView(Text("Critical event log export is unavailable."))
         }
 
         return AnyView(
             CriticalEventLogExportView(
                 viewModel: CriticalEventLogExportViewModel(
-                    exporterFactory: criticalEventLogExportManager
+                    exporterFactory: criticalEventLogExporterFactory
                 )
             )
         )
     }
-    
+
     public var pumpStatus: LoopKit.PumpManagerStatus? {
         deviceSupportDelegate.pumpManagerStatus
     }
@@ -259,7 +262,10 @@ extension SupportManager: SupportUIDelegate {
     }
 
     public func generateIssueReport() async -> String {
-        await deviceSupportDelegate.generateDiagnosticReport()
+        if let diagnosticReportGenerator {
+            return await diagnosticReportGenerator.generateDiagnosticReport()
+        }
+        return await deviceSupportDelegate.generateDiagnosticReport()
     }
     
     public func issueAlert(_ alert: LoopKit.Alert) async {

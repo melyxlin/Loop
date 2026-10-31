@@ -95,7 +95,7 @@ struct BolusEntryView: View {
     }
 
     private var title: Text {
-        if viewModel.potentialCarbEntry == nil {
+        if viewModel.carbEntryChange == nil {
             return Text("Bolus", comment: "Title for bolus entry screen")
         }
         return Text("Meal Bolus", comment: "Title for bolus entry screen when also entering carbs")
@@ -227,7 +227,7 @@ struct BolusEntryView: View {
 
                 if viewModel.isManualGlucoseEntryEnabled {
                     ManualGlucoseEntryRow(quantity: $viewModel.manualGlucoseQuantity)
-                } else if viewModel.potentialCarbEntry != nil {
+                } else if viewModel.carbEntryChange != nil {
                     potentialCarbEntryRow
                 } else {
                     recommendedBolusRow
@@ -235,11 +235,11 @@ struct BolusEntryView: View {
             }
             .padding(.top, 8)
 
-            if viewModel.isManualGlucoseEntryEnabled && viewModel.potentialCarbEntry != nil {
+            if viewModel.isManualGlucoseEntryEnabled && viewModel.carbEntryChange != nil {
                 potentialCarbEntryRow
             }
 
-            if viewModel.isManualGlucoseEntryEnabled || viewModel.potentialCarbEntry != nil {
+            if viewModel.isManualGlucoseEntryEnabled || viewModel.carbEntryChange != nil {
                 recommendedBolusRow
             }
 

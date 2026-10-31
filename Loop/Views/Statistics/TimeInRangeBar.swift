@@ -6,7 +6,23 @@
 //
 
 import SwiftUI
+import LoopAlgorithm
+import LoopKitUI
 import LoopUI
+
+/// Writes one band edge in the unit the user reads glucose in.
+///
+/// The consensus thresholds are defined in mg/dL, but the AGP report publishes
+/// its own rounded mmol/L edges rather than conversions of them: converting
+/// 181 mg/dL yields 10.046, which prints as "10.0" and collides with the top of
+/// the target band. So each edge carries both spellings, and only the number
+/// formatting — decimal separator included — is left to the preference.
+private func bandEdge(mgdl: Double, mmol: Double, _ preference: DisplayGlucosePreference) -> String {
+    let quantity = preference.unit == .millimolesPerLiter
+        ? LoopQuantity(unit: .millimolesPerLiter, doubleValue: mmol)
+        : LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: mgdl)
+    return preference.format(quantity, includeUnit: false)
+}
 
 /// captūrAGP / IDC report palette for the glucose bands, matched to the standard
 /// Ambulatory Glucose Profile report colors.
@@ -31,18 +47,33 @@ extension GlucoseBand {
         }
     }
 
-    /// mg/dL range description shown next to each band.
-    var rangeDescription: String {
-        let low = Int(StatisticsRangeSettings.targetLow)
-        let high = Int(StatisticsRangeSettings.targetHigh)
-        let veryHigh = Int(StatisticsRangeSettings.veryHigh)
-        
+    /// The band's range in the user's preferred glucose unit.
+    /// Thresholds are defined by the customizable Statistics settings.
+    func rangeDescription(_ preference: DisplayGlucosePreference) -> String {
+        let low = StatisticsRangeSettings.targetLow
+        let high = StatisticsRangeSettings.targetHigh
+        let veryHigh = StatisticsRangeSettings.veryHigh
+
+        func edge(_ mgdl: Double) -> String {
+            // Match the published AGP boundary at the standard 181 mg/dL edge.
+            let usesStandardRanges = low == StatisticsRangeSettings.defaultTargetLow
+                && high == StatisticsRangeSettings.defaultTargetHigh
+                && veryHigh == StatisticsRangeSettings.defaultVeryHigh
+            let mmol = usesStandardRanges && mgdl == 181 ? 10.1 : mgdl / 18.01559
+            return bandEdge(mgdl: mgdl, mmol: mmol, preference)
+        }
+
         switch self {
-        case .veryLow:  return "<54"
-        case .low:      return "54–\(low - 1)"
-        case .target:   return "\(low)–\(high)"
-        case .high:     return "\(high + 1)–\(veryHigh)"
-        case .veryHigh: return ">\(veryHigh)"
+        case .veryLow:
+            return "<\(edge(54))"
+        case .low:
+            return "\(edge(54))–\(edge(low - 1))"
+        case .target:
+            return "\(edge(low))–\(edge(high))"
+        case .high:
+            return "\(edge(high + 1))–\(edge(veryHigh))"
+        case .veryHigh:
+            return ">\(edge(veryHigh))"
         }
     }
 
@@ -63,6 +94,8 @@ extension GlucoseBand {
 struct TimeInRangeBar: View {
     let timeInRange: [GlucoseBand: Double]
 
+    @EnvironmentObject private var displayGlucosePreference: DisplayGlucosePreference
+
     // Top-to-bottom display order.
     private static let order: [GlucoseBand] = [.veryHigh, .high, .target, .low, .veryLow]
 
@@ -70,6 +103,12 @@ struct TimeInRangeBar: View {
     private func percent(_ band: GlucoseBand) -> Int { Int(fraction(band) * 100 + 0.5) }
     private var aboveRange: Int { Int((fraction(.veryHigh) + fraction(.high)) * 100 + 0.5) }
     private var belowRange: Int { Int((fraction(.low) + fraction(.veryLow)) * 100 + 0.5) }
+
+    /// A target-range edge, written in the user's unit.
+    private func edge(_ mgdl: Double) -> String {
+        let mmol = mgdl / 18.01559
+        return bandEdge(mgdl: mgdl, mmol: mmol, displayGlucosePreference)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -98,7 +137,7 @@ struct TimeInRangeBar: View {
                                 .padding(.top, 3)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(band.localizedTitle).font(.subheadline.weight(.medium))
-                                Text(band.rangeDescription).font(.caption2).foregroundColor(.secondary)
+                                Text(band.rangeDescription(displayGlucosePreference)).font(.caption2).foregroundColor(.secondary)
                             }
                             Spacer()
                             VStack(alignment: .trailing, spacing: 1) {
@@ -117,14 +156,20 @@ struct TimeInRangeBar: View {
             // Clinical helper / suggestion text, as on the standard report.
             VStack(alignment: .leading, spacing: 4) {
                 Text(String(
-                    format: NSLocalizedString("Above range (>%d): %d%% · goal <25%%", comment: "TIR above-range summary"),
-                    Int(StatisticsRangeSettings.targetHigh),
+                    format: NSLocalizedString(
+                        "Above range (>%1$@): %2$d%% · goal <25%%",
+                        comment: "TIR above-range summary (1: upper target edge, 2: percent of time)"
+                    ),
+                    edge(StatisticsRangeSettings.targetHigh),
                     aboveRange
                 ))
 
                 Text(String(
-                    format: NSLocalizedString("Below range (<%d): %d%% · goal <4%%", comment: "TIR below-range summary"),
-                    Int(StatisticsRangeSettings.targetLow),
+                    format: NSLocalizedString(
+                        "Below range (<%1$@): %2$d%% · goal <4%%",
+                        comment: "TIR below-range summary (1: lower target edge, 2: percent of time)"
+                    ),
+                    edge(StatisticsRangeSettings.targetLow),
                     belowRange
                 ))
                 Text(NSLocalizedString("Each 5% increase in range is clinically beneficial.", comment: "TIR suggestion"))
@@ -141,5 +186,6 @@ struct TimeInRangeBar: View {
 #Preview {
     TimeInRangeBar(timeInRange: [.veryLow: 0.04, .low: 0.04, .target: 0.36, .high: 0.25, .veryHigh: 0.31])
         .padding()
+        .environmentObject(DisplayGlucosePreference(displayGlucoseUnit: .milligramsPerDeciliter))
 }
 #endif

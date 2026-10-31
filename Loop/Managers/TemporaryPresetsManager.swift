@@ -39,9 +39,31 @@ class TemporaryPresetsManager {
 
     private var now: Date { TestingDate.currentTestingDate() }
 
-    init(settingsProvider: SettingsProvider, alertIssuer: AlertIssuer? = nil, presetHistory: TemporaryScheduleOverrideHistory? = nil) {
+    @ObservationIgnored private let userDefaults: UserDefaults
+
+    var showsActivityPresets: Bool {
+        didSet {
+            guard oldValue != showsActivityPresets else {
+                return
+            }
+            userDefaults.showsActivityPresets = showsActivityPresets
+            Task { @MainActor in
+                if !showsActivityPresets {
+                    for activityType in ActivityPreset.ActivityType.allCases {
+                        await alertIssuer?.retractAlert(identifier: Alert.Identifier(managerIdentifier: managerIdentifier, alertIdentifier: activityType.id))
+                    }
+                }
+                await scheduleNextPresetReminder()
+            }
+            notify(forChange: .preferences)
+        }
+    }
+
+    init(settingsProvider: SettingsProvider, alertIssuer: AlertIssuer? = nil, presetHistory: TemporaryScheduleOverrideHistory? = nil, userDefaults: UserDefaults = .standard) {
         self.settingsProvider = settingsProvider
         self.alertIssuer = alertIssuer
+        self.userDefaults = userDefaults
+        self.showsActivityPresets = userDefaults.showsActivityPresets
 
         self.presetHistory = presetHistory ?? TemporaryScheduleOverrideHistoryContainer.shared.fetch()
         TemporaryScheduleOverrideHistory.relevantTimeWindow = Bundle.main.localCacheDuration
@@ -165,6 +187,17 @@ class TemporaryPresetsManager {
         }
 
         return presets
+    }
+
+    /// The presets offered for selection; `selectablePresets` still resolves
+    /// hidden ones, so history and an already running preset keep their name.
+    var listedPresets: [SelectablePreset] {
+        selectablePresets.filter { preset in
+            if case .activity = preset {
+                return showsActivityPresets
+            }
+            return true
+        }
     }
 
     var clearOverrideTimer: Timer?
@@ -541,7 +574,7 @@ class TemporaryPresetsManager {
         // Only manually-started scheduled presets should receive the
         // "Start Scheduled Preset?" notification.
         let preset = settings.overridePresets
-            .filter { !$0.autoStartScheduledPreset }
+            .filter { !$0.autoStartScheduledPreset && (showsActivityPresets || ActivityPreset(preset: $0) == nil) }
             .reduce(into: nil as TemporaryPreset?) { result, preset in
 
                 if let nextScheduledTime = preset.nextScheduledStartAfter(now) {
