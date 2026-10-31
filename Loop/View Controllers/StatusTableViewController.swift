@@ -2031,7 +2031,10 @@ final class StatusTableViewController: LoopChartsTableViewController {
             case .glucose:
                 return max(106, 0.30 * availableSize)
             case .iob:
-                return max(106, 0.45 * availableSize)
+                let detailRowHeight: CGFloat =
+                    lastBolusTitle != nil || lastBolusAmountDescription != nil ? 25 : 0
+
+                return max(106, 0.45 * availableSize) + detailRowHeight
             case .cob:
                 return max(106, 0.25 * availableSize)
             }
