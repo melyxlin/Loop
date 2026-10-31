@@ -542,6 +542,7 @@ final class WatchDataManager: NSObject {
             if let userInfo = SetPresetUserInfo(rawValue: message) {
                 if let presetIdentifier = userInfo.presetIdentifier {
                     temporaryPresetsManager.startPreset(withIdentifier: presetIdentifier)
+                    analyticsServicesManager?.didStartPresetOnWatch()
                 } else {
                     temporaryPresetsManager.clearOverride()
                 }
@@ -562,6 +563,7 @@ final class WatchDataManager: NSObject {
             log.default("Acknowledge alert from watch: %{public}@", String(describing: message))
             if let userInfo = AcknowledgeAlertUserInfo(rawValue: message) {
                 let id = Alert.Identifier(managerIdentifier: userInfo.managerIdentifier, alertIdentifier: userInfo.alertIdentifier)
+                analyticsServicesManager?.didAcknowledgeAlertOnWatch()
                 try? await alertManager.acknowledgeAlert(identifier: id)
             }
             return [:]
@@ -590,6 +592,7 @@ final class WatchDataManager: NSObject {
                 return [:]
             }
         case WatchContextRequestUserInfo.name?:
+            analyticsServicesManager?.didRequestWatchContext()
             return await createWatchContext(reason: "contextRequest").rawValue
         case NotificationActionSelection.name?:
             if let selection = NotificationActionSelection(rawValue: message) {
@@ -621,7 +624,16 @@ extension WatchDataManager: WCSessionDelegate {
     }
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
-        assertionFailure("We currently don't expect any userInfo messages transferred from the watch side")
+        guard let summary = WatchUsageSummaryUserInfo(rawValue: userInfo)?.summary else {
+            let name = String(describing: userInfo["name"])
+            Task { @MainActor in
+                self.log.error("Unexpected userInfo from watch: %{public}@", name)
+            }
+            return
+        }
+        Task { @MainActor in
+            self.analyticsServicesManager?.didReceiveWatchUsage(summary)
+        }
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
