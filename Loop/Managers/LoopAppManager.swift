@@ -435,10 +435,12 @@ class LoopAppManager: NSObject {
 
         loopDataManager.deliveryDelegate = deviceDataManager
 
-        deviceDataManager.instantiateDeviceManagers()
-
         settingsManager.deviceStatusProvider = deviceDataManager
         settingsManager.displayGlucosePreference = displayGlucosePreference
+
+        deviceDataManager.instantiateDeviceManagers()
+        // Publish the restored devices and insulin type, replacing any snapshot made before they were ready.
+        settingsManager.storeSettings()
 
         SharedLogging.instance = loggingServicesManager
 

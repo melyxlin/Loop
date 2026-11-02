@@ -70,6 +70,7 @@ final class RemoteDataServicesManager {
         lock.withLock {
             unlockedRemoteDataServices.append(remoteDataService)
         }
+        uploadExistingData(to: remoteDataService)
     }
 
     func removeService(_ remoteDataService: RemoteDataService) {
@@ -344,7 +345,8 @@ extension RemoteDataServicesManager {
             let previousQueryAnchor = UserDefaults.appGroup?.getQueryAnchor(for: remoteDataService, withRemoteDataType: .dose) ?? InsulinDeliveryStore.QueryAnchor()
             var continueUpload = false
 
-            self.insulinDeliveryStore.executeDoseQuery(fromQueryAnchor: previousQueryAnchor, limit: remoteDataService.doseDataLimit ?? Int.max) { result in
+            self.insulinDeliveryStore.executeDoseQuery(fromQueryAnchor: previousQueryAnchor, limit: remoteDataService.doseDataLimit ?? Int.max,
+                                                       includeOtherApps: remoteDataService.doseDataIncludesOtherApps) { result in
                 switch result {
                 case .failure(let error):
                     self.log.error("Error querying dose data: %{public}@", String(describing: error))
