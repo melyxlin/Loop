@@ -10,7 +10,7 @@ import Foundation
 import LoopKit
 import LoopUI
 import LoopAlgorithm
-//import MKRingProgressView
+import MKRingProgressView
 
 
 public class BolusProgressTableViewCell: UITableViewCell {

@@ -9,7 +9,6 @@
 import Foundation
 import LoopKit
 import LoopCore
-import LoopAlgorithm
 
 final class AnalyticsServicesManager {
 
@@ -315,6 +314,7 @@ final class AnalyticsServicesManager {
         identify("Integral Retrospective Correction", value: state.integralRetrospectiveCorrection ? "On" : "Off")
         identify("Glucose Based Partial Application", value: state.glucoseBasedPartialApplication ? "On" : "Off")
         identify("Guard + Runway", value: state.guardAndRunway ? "On" : "Off")
+        identify("Slow Retrospective Correction", value: state.slowRetrospectiveCorrection ? "On" : "Off")
         lastState = state
     }
 
@@ -356,6 +356,9 @@ final class AnalyticsServicesManager {
         }
         if newState.guardAndRunway != oldState.guardAndRunway {
             logEvent("Algorithm experiment change", withProperties: ["experiment": "Guard + Runway", "enabled": newState.guardAndRunway])
+        }
+        if newState.slowRetrospectiveCorrection != oldState.slowRetrospectiveCorrection {
+            logEvent("Algorithm experiment change", withProperties: ["experiment": "Slow Retrospective Correction", "enabled": newState.slowRetrospectiveCorrection])
         }
     }
 
@@ -419,16 +422,18 @@ struct AnalyticsState: Codable, Equatable {
     var integralRetrospectiveCorrection: Bool
     var glucoseBasedPartialApplication: Bool
     var guardAndRunway: Bool
+    var slowRetrospectiveCorrection: Bool
 
-    init(closedLoop: Bool, dosingStrategy: String, integralRetrospectiveCorrection: Bool, glucoseBasedPartialApplication: Bool, guardAndRunway: Bool) {
+    init(closedLoop: Bool, dosingStrategy: String, integralRetrospectiveCorrection: Bool, glucoseBasedPartialApplication: Bool, guardAndRunway: Bool, slowRetrospectiveCorrection: Bool) {
         self.closedLoop = closedLoop
         self.dosingStrategy = dosingStrategy
         self.integralRetrospectiveCorrection = integralRetrospectiveCorrection
         self.glucoseBasedPartialApplication = glucoseBasedPartialApplication
         self.guardAndRunway = guardAndRunway
+        self.slowRetrospectiveCorrection = slowRetrospectiveCorrection
     }
 
-    // Summaries stored before guardAndRunway was added lack it
+    // Summaries stored before guardAndRunway or slowRetrospectiveCorrection was added lack them
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         closedLoop = try container.decode(Bool.self, forKey: .closedLoop)
@@ -436,6 +441,7 @@ struct AnalyticsState: Codable, Equatable {
         integralRetrospectiveCorrection = try container.decode(Bool.self, forKey: .integralRetrospectiveCorrection)
         glucoseBasedPartialApplication = try container.decode(Bool.self, forKey: .glucoseBasedPartialApplication)
         guardAndRunway = try container.decodeIfPresent(Bool.self, forKey: .guardAndRunway) ?? false
+        slowRetrospectiveCorrection = try container.decodeIfPresent(Bool.self, forKey: .slowRetrospectiveCorrection) ?? false
     }
 }
 
@@ -485,6 +491,7 @@ struct AnalyticsDailySummary: Codable, Equatable {
             properties["integralRetrospectiveCorrection"] = state.integralRetrospectiveCorrection
             properties["glucoseBasedPartialApplication"] = state.glucoseBasedPartialApplication
             properties["guardAndRunway"] = state.guardAndRunway
+            properties["slowRetrospectiveCorrection"] = state.slowRetrospectiveCorrection
         }
         properties.merge(usage.properties) { current, _ in current }
         return properties

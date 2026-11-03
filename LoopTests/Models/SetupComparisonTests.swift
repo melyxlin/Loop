@@ -6,8 +6,9 @@
 //
 
 import XCTest
-import LoopKit
 import LoopAlgorithm
+import LoopCore
+import LoopKit
 @testable import Loop
 
 final class SetupComparisonTests: XCTestCase {
@@ -88,7 +89,7 @@ final class SetupComparisonTests: XCTestCase {
         let now = changeDate.addingTimeInterval(.days(2))
         let start = changeDate - .days(21)
         let glucose = samples(from: start, to: now) { _ in 120 }
-        let bolus = SimpleInsulinDose(deliveryType: .bolus, automatic: false, startDate: changeDate + .hours(1), endDate: changeDate + .hours(1), volume: 4, insulinModel: ExponentialInsulinModelPreset.rapidActingAdult)
+        let bolus = SimpleInsulinDose(deliveryType: .bolus, automatic: false, startDate: changeDate + .hours(1), endDate: changeDate + .hours(1), volume: 4, insulinModel: LoopAlgorithm.ExponentialInsulinModelPreset.rapidActingAdult)
         let history = InsulinDeliveryHistory(
             doses: [bolus],
             scheduledBasal: [AbsoluteScheduleValue(startDate: start, endDate: now, value: 1.0)],

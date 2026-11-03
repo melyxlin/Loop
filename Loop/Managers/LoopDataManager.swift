@@ -6,90 +6,14 @@
 //  Copyright © 2016 Nathan Racklyeft. All rights reserved.
 //
 
-import Combine
 import Foundation
-import LoopAlgorithm
-import LoopCore
+import Combine
 import LoopKit
+import LoopAlgorithm
 import LoopKitUI
-import OSLog
+import LoopCore
 import WidgetKit
 
-struct AlgorithmDisplayState {
-    var input: StoredDataAlgorithmInput?
-    var output: AlgorithmOutput<StoredCarbEntry>?
-
-    var activeInsulin: InsulinValue? {
-        guard let input, let value = output?.activeInsulin else {
-            return nil
-        }
-        return InsulinValue(startDate: input.predictionStart, value: value)
-    }
-
-    var activeCarbs: CarbValue? {
-        guard let input, let value = output?.activeCarbs else {
-            return nil
-        }
-        return CarbValue(startDate: input.predictionStart, value: value)
-    }
-
-    var asTuple:
-        (
-            algoInput: StoredDataAlgorithmInput?,
-            algoOutput: AlgorithmOutput<StoredCarbEntry>?
-        )
-    {
-        return (algoInput: input, algoOutput: output)
-    }
-}
-
-protocol DeliveryDelegate: AnyObject {
-    var isSuspended: Bool { get }
-    var isManualTempBasalRunning: Bool { get }
-    var pumpInsulinType: InsulinType? { get }
-    var basalDeliveryState: PumpManagerStatus.BasalDeliveryState? { get }
-    var isPumpConfigured: Bool { get }
-    var pumpManagerStatus: PumpManagerStatus? { get }
-    var pumpStatusHighlight: DeviceStatusHighlight? { get }
-    var cgmManagerStatus: CGMManagerStatus? { get }
-
-    func enact(
-        bolus: Double?,
-        tempBasal: TempBasalRecommendation?,
-        decisionId: UUID?
-    ) async throws
-    func enactBolus(
-        units: Double,
-        decisionId: UUID?,
-        activationType: BolusActivationType
-    ) async throws
-    func roundBasalRate(unitsPerHour: Double) -> Double
-    func roundBolusVolume(units: Double) -> Double
-}
-
-extension PumpManagerStatus.BasalDeliveryState {
-    var currentTempBasal: DoseEntry? {
-        switch self {
-        case .tempBasal(let dose):
-            return dose
-        default:
-            return nil
-        }
-    }
-
-    func currentBasalRate(currentScheduledBasalRate: Double) -> Double? {
-        switch self {
-        case .tempBasal(let dose):
-            return dose.unitsPerHour
-        case .suspended:
-            return 0
-        case .pumpInoperable:
-            return nil
-        default:
-            return currentScheduledBasalRate
-        }
-    }
-}
 
 protocol DosingManagerDelegate {
     func didMakeDosingDecision(_ decision: StoredDosingDecision)
@@ -105,19 +29,18 @@ enum LoopUpdateContext: Int {
 
 @MainActor
 final class LoopDataManager: ObservableObject {
-    nonisolated static let LoopUpdateContextKey =
-        "com.loudnate.Loop.LoopDataManager.LoopUpdateContext"
+    nonisolated static let LoopUpdateContextKey = "com.loudnate.Loop.LoopDataManager.LoopUpdateContext"
 
     // Represents the current state of the loop algorithm for display
     var displayState = AlgorithmDisplayState()
 
     // Display state convenience accessors
     var predictedGlucose: [PredictedGlucoseValue]? {
-        displayState.output?.predictedGlucose
+        displayState.output?.predictedGlucose.map(\.loopKit)
     }
 
     var tempBasalRecommendation: TempBasalRecommendation? {
-        displayState.output?.recommendation?.automatic?.basalAdjustment
+        displayState.output?.recommendation?.automatic?.basalAdjustment.loopKit
     }
 
     var automaticBolusRecommendation: Double? {
@@ -125,13 +48,21 @@ final class LoopDataManager: ObservableObject {
     }
 
     var automaticRecommendation: AutomaticDoseRecommendation? {
-        displayState.output?.recommendation?.automatic
+        displayState.output?.recommendation?.automatic?.loopKit
     }
 
     @Published private(set) var lastLoopCompleted: Date?
+
+    /// Display only: at reclaim the watch's last cycle seeds the phone's loop-recency clock.
+    /// Forward-only; dosing never reads it.
+    func seedLastLoopCompleted(fromWatch date: Date) {
+        guard (lastLoopCompleted ?? .distantPast) < date else { return }
+        lastLoopCompleted = date
+    }
     @Published private(set) var publishedMostRecentGlucoseDataDate: Date?
     @Published private(set) var publishedMostRecentPumpDataDate: Date?
     @Published private(set) var lastManualBolus: LastManualBolus?
+
 
     var deliveryDelegate: DeliveryDelegate?
 
@@ -151,6 +82,11 @@ final class LoopDataManager: ObservableObject {
     private let trustedTimeOffset: () async -> TimeInterval
 
     private var now: Date { TestingDate.currentTestingDate() }
+
+    /// The dosing loop both apps run (`LoopCycle.swift`); this manager is its host on the phone.
+    private(set) lazy var cycle = LoopCycle(doseStore: doseStore, carbStore: carbStore, glucoseStore: glucoseStore,
+                                            dosingDecisionStore: dosingDecisionStore, settingsProvider: settingsProvider,
+                                            host: self, now: { TestingDate.currentTestingDate() })
 
     // References to registered notification center observers
     private var notificationObservers: [Any] = []
@@ -174,11 +110,11 @@ final class LoopDataManager: ObservableObject {
         doseStore.lastReservoirValue
     }
 
+
     var carbAbsorptionModel: CarbAbsorptionModel
 
-    private var lastManualBolusRecommendation: ManualBolusRecommendation?
 
-    private var volatilityBaseline: (value: Double?, date: Date)?
+    private(set) var volatilityBaseline: (value: Double?, date: Date)?
 
     private(set) var dosingStrategySelectionEnabled: Bool
 
@@ -219,11 +155,9 @@ final class LoopDataManager: ObservableObject {
         self.trustedTimeOffset = trustedTimeOffset
         self.analyticsServicesManager = analyticsServicesManager
         self.carbAbsorptionModel = carbAbsorptionModel
-        self.usePositiveMomentumAndRCForManualBoluses =
-            usePositiveMomentumAndRCForManualBoluses
+        self.usePositiveMomentumAndRCForManualBoluses = usePositiveMomentumAndRCForManualBoluses
         self.automationHistory = UserDefaults.standard.automationHistory
-        self.publishedMostRecentGlucoseDataDate =
-            glucoseStore.latestGlucose?.startDate
+        self.publishedMostRecentGlucoseDataDate = glucoseStore.latestGlucose?.startDate
         self.dosingStrategySelectionEnabled = dosingStrategySelectionEnabled
         self.publishedMostRecentPumpDataDate = mostRecentPumpDataDate
 
@@ -234,42 +168,26 @@ final class LoopDataManager: ObservableObject {
             )
         }
 
-        overrideIntentObserver = UserDefaults.appGroup?.observe(
-            \.intentExtensionOverrideToSet,
-            options: [.new],
-            changeHandler: { [weak self] (defaults, change) in
-                guard let name = change.newValue??.lowercased(),
-                    let appGroup = UserDefaults.appGroup
-                else {
-                    return
-                }
-
-                guard
-                    let preset = self?.settings.overridePresets.first(where: {
-                        $0.name.lowercased() == name
-                    })
-                else {
-                    self?.logger.error(
-                        "Override Intent: Unable to find override named '%s'",
-                        String(describing: name)
-                    )
-                    return
-                }
-
-                self?.logger.default(
-                    "Override Intent: setting override named '%s'",
-                    String(describing: name)
-                )
-                // TemporaryPresetsManager handles presetActivated/Deactivated observers automatically
-                self?.temporaryPresetsManager.scheduleOverride =
-                    preset.createOverride(enactTrigger: .remote("Siri"))
-                Task { @MainActor in
-                    await self?.updateDisplayState()
-                }
-                // Remove the override from UserDefaults so we don't set it multiple times
-                appGroup.intentExtensionOverrideToSet = nil
+        overrideIntentObserver = UserDefaults.appGroup?.observe(\.intentExtensionOverrideToSet, options: [.new], changeHandler: {[weak self] (defaults, change) in
+            guard let name = change.newValue??.lowercased(), let appGroup = UserDefaults.appGroup else {
+                return
             }
-        )
+
+            guard let preset = self?.settings.overridePresets.first(where: {$0.name.lowercased() == name}) else {
+                self?.logger.error("Override Intent: Unable to find override named '%s'", String(describing: name))
+                return
+            }
+
+            self?.logger.default("Override Intent: setting override named '%s'", String(describing: name))
+            // TemporaryPresetsManager handles presetActivated/Deactivated observers automatically
+            self?.temporaryPresetsManager.scheduleOverride = preset.createOverride(enactTrigger: .remote("Siri"))
+            Task { @MainActor in
+                await self?.updateDisplayState()
+            }
+            // Remove the override from UserDefaults so we don't set it multiple times
+            appGroup.intentExtensionOverrideToSet = nil
+        })
+
 
         // Required for device settings in stored dosing decisions
         UIDevice.current.isBatteryMonitoringEnabled = true
@@ -293,7 +211,6 @@ final class LoopDataManager: ObservableObject {
             ) { (note) in
                 Task { @MainActor in
                     self.restartGlucoseValueStalenessTimer()
-                    self.temporaryPresetsManager.startScheduledPresetsIfNeeded()
                     await self.updateDisplayState()
                     self.notify(forChange: .glucose)
                 }
@@ -313,36 +230,27 @@ final class LoopDataManager: ObservableObject {
                 object: nil,
                 queue: nil
             ) { (note) in
-                let context =
-                    note.userInfo?[LoopDataManager.LoopUpdateContextKey]
-                    as! LoopUpdateContext.RawValue
+                let context = note.userInfo?[LoopDataManager.LoopUpdateContextKey] as! LoopUpdateContext.RawValue
                 if case .preferences = LoopUpdateContext(rawValue: context) {
                     Task { @MainActor in
                         await self.updateDisplayState()
                         self.notify(forChange: .forecast)
                     }
                 }
-            },
+            }
         ]
 
         // Turn off preMeal when going into closed loop off mode
         // Cancel any active temp basal when going into closed loop off mode
         // The dispatch is necessary in case this is coming from a didSet already on the settings struct.
 
-        withObservationTracking(of: settingsProvider.dosingEnabled) {
-            [weak self] enabled in
+        withObservationTracking(of: settingsProvider.dosingEnabled) { [weak self] enabled in
             if let self, self.automationHistory.last?.enabled != enabled {
-                self.automationHistory.append(
-                    AutomationHistoryEntry(
-                        startDate: self.now,
-                        enabled: enabled
-                    )
-                )
+                self.automationHistory.append(AutomationHistoryEntry(startDate: self.now, enabled: enabled))
 
                 // Clean up entries older than 36 hours; we should not be interpolating basal data before then.
                 let now = now
-                self.automationHistory = self.automationHistory.filter({
-                    entry in
+                self.automationHistory = self.automationHistory.filter({ entry in
                     now.timeIntervalSince(entry.startDate) < .hours(36)
                 })
 
@@ -354,9 +262,7 @@ final class LoopDataManager: ObservableObject {
             if !enabled {
                 temporaryPresetsManager.endPreMealOverride()
                 Task {
-                    try? await self?.cancelActiveTempBasal(
-                        for: .automaticDosingDisabled
-                    )
+                    try? await self?.cancelActiveTempBasal(for: .automaticDosingDisabled)
                 }
             }
         }
@@ -367,10 +273,8 @@ final class LoopDataManager: ObservableObject {
     // and overrides via temporaryPresetsManager. DIY's lockedSettings/mutateSettings
     // were removed as part of the Swift Concurrency migration.
 
-    fileprivate let dataAccessQueue: DispatchQueue = DispatchQueue(
-        label: "com.loudnate.Naterade.LoopDataManager.dataAccessQueue",
-        qos: .utility
-    )
+    fileprivate let dataAccessQueue: DispatchQueue = DispatchQueue(label: "com.loudnate.Naterade.LoopDataManager.dataAccessQueue", qos: .utility)
+
 
     // MARK: - Background task management
 
@@ -378,9 +282,7 @@ final class LoopDataManager: ObservableObject {
 
     private func startBackgroundTask() {
         endBackgroundTask()
-        backgroundTask = UIApplication.shared.beginBackgroundTask(
-            withName: "PersistenceController save"
-        ) {
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "PersistenceController save") {
             self.endBackgroundTask()
         }
     }
@@ -401,382 +303,23 @@ final class LoopDataManager: ObservableObject {
         case .afrezza:
             return ExponentialInsulinModelPreset.afrezza
         default:
-            return settings.defaultRapidActingModel?
-                .presetForRapidActingInsulin?.model
-                ?? ExponentialInsulinModelPreset.rapidActingAdult
+            return settings.defaultRapidActingModel?.presetForRapidActingInsulin?.model ?? ExponentialInsulinModelPreset.rapidActingAdult
         }
-    }
-
-    // MARK: Negative Insulin Damper (algorithm experiment)
-
-    static func calculateNegativeInsulinDamperAlpha(
-        _ anchorAlpha: Double,
-        _ anchorPoint: Double,
-        _ marginalSlope: Double,
-        _ posDeltaSum: Double
-    ) -> Double {
-        let linearScaleSlope = (1.0 - anchorAlpha) / anchorPoint  // how alpha scales down in the linear scale region
-
-        // the slope in the linear scale region of alpha * posDeltaSum is 1 - 2*linearScaleSlope*posDeltaSum.
-        // the transitionPoint is where we transition from linear scale region to marginalSlope. The slope is continuous at this point
-        let transitionPoint = (1 - marginalSlope) / (2 * linearScaleSlope)
-
-        if posDeltaSum < transitionPoint {  // linear scaling region
-            return 1 - linearScaleSlope * posDeltaSum
-        } else {  // marginal slope region
-            let transitionValue =
-                (1 - linearScaleSlope * transitionPoint) * transitionPoint
-            return
-                (transitionValue + marginalSlope
-                * (posDeltaSum - transitionPoint)) / posDeltaSum
-        }
-    }
-
-    /// Computes the Negative Insulin Damper coefficient in [0,1] for the given algorithm input, or nil.
-    /// Mirrors the dev/main computation: the predicted future rise attributable to negative insulin
-    /// (delivery below scheduled basal, up to 15 minutes ago) sets the damper strength.
-    private func computeNegativeInsulinDamper(
-        for input: StoredDataAlgorithmInput
-    ) -> Double? {
-        guard let latestGlucose = input.glucoseHistory.last else { return nil }
-        let anchorDate = latestGlucose.startDate
-        let lastDoseStartDate = anchorDate.addingTimeInterval(.minutes(-15))
-
-        // Predicted insulin glucose-effect of everything delivered up to 15 minutes ago
-        // (doses starting later are dropped, basal-type doses trimmed at t-15, boluses kept whole).
-        let annotatedDoses = input.doses
-            .trimmed(to: lastDoseStartDate)
-            .annotated(with: input.basal)
-
-        // Fail safe (disable the damper) rather than trip glucoseEffects' ISF-coverage
-        // preconditionFailure, which would crash automated dosing.
-        for dose in annotatedDoses {
-            guard let isf = input.sensitivity.closestPrior(to: dose.startDate),
-                isf.endDate >= dose.startDate
-            else {
-                return nil
-            }
-        }
-
-        let effects = annotatedDoses.glucoseEffects(
-            insulinSensitivityHistory: input.sensitivity,
-            from: anchorDate.addingTimeInterval(.minutes(-5))
-        )
-
-        // Sum of positive 5-min deltas — the predicted future rise from negative insulin.
-        var posDeltaSum = 0.0
-        for (offset, effect) in effects.enumerated() where offset > 0 {
-            let delta =
-                effect.quantity.doubleValue(for: .milligramsPerDeciliter)
-                - effects[offset - 1].quantity.doubleValue(
-                    for: .milligramsPerDeciliter
-                )
-            posDeltaSum += max(0, delta)
-        }
-
-        guard let isf = input.sensitivity.closestPrior(to: anchorDate)?.value,
-            let basalRate = input.basal.closestPrior(to: anchorDate)?.value
-        else {
-            return nil
-        }
-
-        // anchorScale is ~1 hour for rapid-acting adult, ~44 min for ultra-rapid insulins.
-        let anchorScale: Double
-        if let expModel = input.recommendationInsulinModel
-            as? ExponentialInsulinModel
-        {
-            anchorScale = 0.8 * expModel.peakActivityTime.hours
-        } else if let preset = input.recommendationInsulinModel
-            as? ExponentialInsulinModelPreset
-        {
-            anchorScale = 0.8 * preset.peakActivity.hours
-        } else {
-            anchorScale = 1.0
-        }
-
-        let marginalSlope = 0.05
-        let anchorAlpha = 0.75
-        // anchorPoint is unaffected by overrides (the basal and ISF multipliers cancel out).
-        let anchorPoint =
-            anchorScale * basalRate
-            * isf.doubleValue(for: .milligramsPerDeciliter)
-
-        // A 0 U/hr basal segment would make anchorPoint 0 → NaN → constant 95% damping; disable instead.
-        guard anchorPoint > 0 else { return nil }
-
-        let alpha = LoopDataManager.calculateNegativeInsulinDamperAlpha(
-            anchorAlpha,
-            anchorPoint,
-            marginalSlope,
-            posDeltaSum
-        )
-        // alpha should never be less than marginalSlope
-        return max(0, 1 - max(marginalSlope, alpha))
     }
 
     func fetchData(
         for baseTime: Date? = nil,
         presumePresetEndingNow: Bool = false,
         ensureDosingCoverageStart: Date? = nil,
+        ensureCarbCoverageStart: Date? = nil,
         projectOngoingDoses: Bool = false
     ) async throws -> StoredDataAlgorithmInput {
-        // Need to fetch doses back as far as t - (DIA + DCA) for Dynamic carbs
-        let dosesInputHistory =
-            CarbMath.maximumAbsorptionTimeInterval
-            + InsulinMath.defaultInsulinActivityDuration
-
-        let baseTime = baseTime ?? now
-
-        var dosesStart = baseTime.addingTimeInterval(-dosesInputHistory)
-
-        // Ensure dosing data goes back before ensureDosingCoverageStart, if specified
-        if let ensureDosingCoverageStart {
-            dosesStart = min(ensureDosingCoverageStart, dosesStart)
-        }
-
-        // When projectOngoingDoses is true (display path), pass end:nil so DoseStore
-        // extends a mutable suspend to its insulin-activity-duration fallback. Doses
-        // already in flight (e.g. a manual temp basal) keep their actual endDate
-        // either way; only the suspend extension is gated on this flag.
-        let doses = try await doseStore.getNormalizedDoseEntries(
-            start: dosesStart,
-            end: projectOngoingDoses ? nil : baseTime
-        )
-
-        // Doses that were included because they cover dosesStart might have a start time earlier than dosesStart
-        // This moves the start time back to ensure basal covers
-        dosesStart = min(
-            dosesStart,
-            doses.map { $0.startDate }.min() ?? dosesStart
-        )
-
-        // Doses with a start time before baseTime might still end after baseTime
-        let dosesEnd = max(baseTime, doses.map { $0.endDate }.max() ?? baseTime)
-
-        let rawBasal = try await settingsProvider.getBasalHistory(
-            startDate: dosesStart,
-            endDate: dosesEnd
-        )
-
-        guard !rawBasal.isEmpty else {
-            throw LoopError.configurationError(.basalRateSchedule)
-        }
-
-        // Collapse contiguous same-rate basal entries. getBasalHistory projects the
-        // daily BasalRateSchedule onto absolute time and splits at every local
-        // midnight even when the rate doesn't change; InsulinDose.annotated(with:)
-        // then splits the suspend (or any long basal-typed dose) at each of those
-        // boundaries, and the continuous-delivery IOB integrator doesn't join the
-        // resulting sub-doses perfectly across the boundary -- visible as a small
-        // bump in Active Insulin at midnight even with a single-rate schedule.
-        let basal: [AbsoluteScheduleValue<Double>] = rawBasal.reduce(into: []) {
-            acc,
-            entry in
-            if let last = acc.last, last.value == entry.value,
-                last.endDate == entry.startDate
-            {
-                acc[acc.count - 1] = AbsoluteScheduleValue(
-                    startDate: last.startDate,
-                    endDate: entry.endDate,
-                    value: last.value
-                )
-            } else {
-                acc.append(entry)
-            }
-        }
-
-        let forecastEndTime = baseTime.addingTimeInterval(
-            InsulinMath.defaultInsulinActivityDuration
-        ).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
-
-        let carbsStart = baseTime.addingTimeInterval(
-            LoopConstants.maxCarbEntryPastTime + .minutes(-1)
-        )  // additional minute to handle difference in seconds between carb entry and carb ratio
-
-        // Include future carbs in query, but filter out ones entered after basetime. The filtering is only applicable when running in a retrospective situation.
-        let carbEntries = try await carbStore.getCarbEntries(
-            start: carbsStart,
-            end: forecastEndTime
-        ).filter {
-            $0.userCreatedDate ?? $0.startDate < baseTime
-        }
-
-        let carbRatio = try await settingsProvider.getCarbRatioHistory(
-            startDate: carbsStart,
-            endDate: forecastEndTime
-        )
-
-        guard !carbRatio.isEmpty else {
-            throw LoopError.configurationError(.carbRatioSchedule)
-        }
-
-        let glucose = try await glucoseStore.getGlucoseSamples(
-            start: carbsStart,
-            end: baseTime
-        )
-
-        let dosesWithModel = doses.map {
-            $0.simpleDose(with: insulinModel(for: $0.insulinType))
-        }
-
-        let recommendationInsulinModel = insulinModel(
-            for: deliveryDelegate?.pumpInsulinType ?? .novolog
-        )
-
-        let recommendationEffectInterval = DateInterval(
-            start: baseTime,
-            duration: recommendationInsulinModel.effectDuration
-        )
-        let neededSensitivityTimeline =
-            LoopAlgorithm.timelineIntervalForSensitivity(
-                doses: dosesWithModel,
-                glucoseHistoryStart: glucose.first?.startDate ?? baseTime,
-                recommendationEffectInterval: recommendationEffectInterval
-            )
-
-        // Carb entries (and a backdated manual-bolus entry) can extend back to carbsStart, and
-        // CarbMath.map(to:) preconditionFailures if the ISF/carb-ratio timelines don't cover every
-        // carb entry's start date. timelineIntervalForSensitivity derives its window from dose and
-        // glucose history only — which can be more recent than carbsStart (e.g. after a CGM gap) —
-        // so extend the ISF (and override) window back to cover the carb window, matching carbRatio.
-        let sensitivityStart = min(neededSensitivityTimeline.start, carbsStart)
-
-        let sensitivity =
-            try await settingsProvider.getInsulinSensitivityHistory(
-                startDate: sensitivityStart,
-                endDate: neededSensitivityTimeline.end
-            )
-
-        let dosingLimits = try await settingsProvider.getDosingLimits(
-            at: baseTime
-        )
-
-        guard let maxBolus = dosingLimits.maxBolus else {
-            throw LoopError.configurationError(.maximumBolus)
-        }
-
-        guard let maxBasalRate = dosingLimits.maxBasalRate else {
-            throw LoopError.configurationError(.maximumBasalRatePerHour)
-        }
-
-        var overrides = temporaryPresetsManager.presetHistory
-            .getOverrideHistory(
-                startDate: sensitivityStart,
-                endDate: forecastEndTime
-            )
-
-        // For recommendation, we should consider preMeal override to be ending at time of dose
-        if presumePresetEndingNow,
-            let activeOverride = temporaryPresetsManager.activeOverride,
-            let index = overrides.lastIndex(of: activeOverride)
-        {
-            overrides[index].scheduledEndDate = baseTime
-        }
-
-        guard !sensitivity.isEmpty else {
-            throw LoopError.configurationError(.insulinSensitivitySchedule)
-        }
-
-        let sensitivityWithOverrides = overrides.applySensitivity(
-            over: sensitivity
-        )
-
-        guard !basal.isEmpty else {
-            throw LoopError.configurationError(.basalRateSchedule)
-        }
-        let basalWithOverrides = overrides.applyBasal(over: basal)
-
-        guard !carbRatio.isEmpty else {
-            throw LoopError.configurationError(.carbRatioSchedule)
-        }
-        let carbRatioWithOverrides = overrides.applyCarbRatio(over: carbRatio)
-
-        var target: [AbsoluteScheduleValue<ClosedRange<LoopQuantity>>]
-
-        guard var suspendThreshold = dosingLimits.suspendThreshold else {
-            throw LoopError.configurationError(.suspendThreshold)
-        }
-
-        // If we have an active override, and it's not a preMeal override that should be disabled,
-        // or ended for other reasons (like comparing effects without preset), then override the
-        // target for the entire forecast.
-        if let activeOverride = temporaryPresetsManager.activeOverride,
-            !presumePresetEndingNow
-        {
-            guard
-                let schedule = settingsProvider.settings
-                    .glucoseTargetRangeSchedule
-            else {
-                throw LoopError.configurationError(.glucoseTargetRangeSchedule)
-            }
-            let scheduledRange = schedule.quantityRange(at: baseTime)
-            let overriddenTargetRange =
-                activeOverride.effectiveCorrectionRangeDuring(
-                    scheduledRange: scheduledRange
-                )
-            target = [
-                AbsoluteScheduleValue(
-                    startDate: baseTime,
-                    endDate: forecastEndTime,
-                    value: overriddenTargetRange
-                )
-            ]
-
-            if activeOverride.veryHighInsulinNeeds {
-                suspendThreshold = max(
-                    TemporaryScheduleOverride
-                        .highInsulinNeedsMitigationCorrectionRangeLimit,
-                    suspendThreshold
-                )
-            }
-
-        } else {
-            target = try await settingsProvider.getTargetRangeHistory(
-                startDate: baseTime,
-                endDate: forecastEndTime
-            )
-        }
-
-        guard !target.isEmpty else {
-            throw LoopError.configurationError(.glucoseTargetRangeSchedule)
-        }
-
-
-        let experiments = enabledAlgorithmExperiments
-        let volatilityBaseline = experiments.contains(.guardAndRunway) ? await currentVolatilityBaseline(at: baseTime) : nil
-
-        var input = StoredDataAlgorithmInput(
-            glucoseHistory: glucose,
-            doses: dosesWithModel,
-            carbEntries: carbEntries,
-            predictionStart: baseTime,
-            basal: basalWithOverrides,
-            sensitivity: sensitivityWithOverrides,
-            carbRatio: carbRatioWithOverrides,
-            target: target,
-            suspendThreshold: suspendThreshold,
-            maxBolus: maxBolus,
-            maxBasalRate: maxBasalRate,
-            useIntegralRetrospectiveCorrection: false,
-            includePositiveVelocityAndRC: true,
-            carbAbsorptionModel: carbAbsorptionModel,
-            recommendationInsulinModel: recommendationInsulinModel,
-            recommendationType: .manualBolus,
-            automaticBolusApplicationFactor: nil,
-            experiments: experiments,
-            volatilityBaseline: volatilityBaseline
-        )
-
-        if UserDefaults.standard.negativeInsulinDamperEnabled {
-            input.negativeInsulinDamper = computeNegativeInsulinDamper(
-                for: input
-            )
-        }
-
-        return input
+        try await cycle.fetchData(for: baseTime, presumePresetEndingNow: presumePresetEndingNow,
+                                  ensureDosingCoverageStart: ensureDosingCoverageStart, ensureCarbCoverageStart: ensureCarbCoverageStart,
+                                  projectOngoingDoses: projectOngoingDoses)
     }
 
-    private var enabledAlgorithmExperiments: Set<ExperimentOption> {
+    var enabledAlgorithmExperiments: Set<ExperimentOption> {
         var experiments: Set<ExperimentOption> = []
         if UserDefaults.standard.integralRetrospectiveCorrectionEnabled {
             experiments.insert(.integralRetrospectiveCorrection)
@@ -787,6 +330,9 @@ final class LoopDataManager: ObservableObject {
         if UserDefaults.standard.guardAndRunwayEnabled {
             experiments.insert(.guardAndRunway)
         }
+        if UserDefaults.standard.slowRetrospectiveCorrectionEnabled {
+            experiments.insert(.slowRetrospectiveCorrection)
+        }
         return experiments
     }
 
@@ -795,28 +341,16 @@ final class LoopDataManager: ObservableObject {
         self.notify(forChange: .forecast)
     }
 
-    func updateDisplayState(forceStoreRemoteRecommendation: Bool = false) async
-    {
+    func updateDisplayState(forceStoreRemoteRecommendation: Bool = false) async {
 
-        var newState = AlgorithmDisplayState()
-        do {
-            let lastManualBolusVisibilityWindowStartDate =
-                now.addingTimeInterval(.days(-1))
+        let newState = await cycle.displayState()
+        if let input = newState.input {
+            let lastManualBolusVisibilityWindowStartDate = now.addingTimeInterval(.days(-1))
 
-            var input = try await fetchData(
-                for: now,
-                ensureDosingCoverageStart:
-                    lastManualBolusVisibilityWindowStartDate,
-                projectOngoingDoses: true
-            )
-            input.recommendationType = .manualBolus
-            newState.input = input
-            newState.output = await runAlgorithm(input: input)
-            
-            let lastStoredManualBolus = input.doses
-                .filter { $0.automatic != true && $0.deliveryType == .bolus }
-                .last
-
+            let lastStoredManualBolus = input.doses.last(
+                where: {
+                    $0.startDate >= lastManualBolusVisibilityWindowStartDate && $0.deliveryType == .bolus && $0.automatic == false
+                })
 
             // Reflect the most recent user-entered bolus still present in the store. This
             // both updates to a newer bolus and clears/downgrades the value when the shown
@@ -825,128 +359,46 @@ final class LoopDataManager: ObservableObject {
             // A just-enacted bolus that the store may not have persisted yet is preserved.
             let recentlyEnactedCutoff = now.addingTimeInterval(-.minutes(1))
             if let lastStoredManualBolus {
-                let shownIsNewerThanStored =
-                    (self.lastManualBolus?.startDate).map {
-                        $0 > lastStoredManualBolus.startDate
-                    } ?? false
-                let shownWasJustEnacted =
-                    (self.lastManualBolus?.startDate).map {
-                        $0 >= recentlyEnactedCutoff
-                    } ?? false
+                let shownIsNewerThanStored = (self.lastManualBolus?.startDate).map { $0 > lastStoredManualBolus.startDate } ?? false
+                let shownWasJustEnacted = (self.lastManualBolus?.startDate).map { $0 >= recentlyEnactedCutoff } ?? false
                 if !(shownIsNewerThanStored && shownWasJustEnacted) {
-                    self.lastManualBolus = LastManualBolus(
-                        amount: lastStoredManualBolus.volume,
-                        startDate: lastStoredManualBolus.startDate
-                    )
+                    self.lastManualBolus = LastManualBolus(amount: lastStoredManualBolus.volume, startDate: lastStoredManualBolus.startDate)
                 }
-            } else if let lastManualBolus = self.lastManualBolus,
-                lastManualBolus.startDate < recentlyEnactedCutoff
-            {
+            } else if let lastManualBolus = self.lastManualBolus, lastManualBolus.startDate < recentlyEnactedCutoff {
                 self.lastManualBolus = nil
             }
-        } catch {
-            let loopError = error as? LoopError ?? .unknownError(error)
-            logger.error(
-                "Error updating Loop state: %{public}@",
-                String(describing: loopError)
-            )
         }
         displayState = newState
-        publishedMostRecentGlucoseDataDate =
-            glucoseStore.latestGlucose?.startDate
+        publishedMostRecentGlucoseDataDate = glucoseStore.latestGlucose?.startDate
         publishedMostRecentPumpDataDate = mostRecentPumpDataDate
 
         // DIY: Update Live Activity with current override and target range state
         liveActivityManager?.update(
             scheduleOverride: temporaryPresetsManager.scheduleOverride,
             preMealOverride: temporaryPresetsManager.preMealOverride,
-            glucoseTargetRangeSchedule: settingsProvider.settings
-                .glucoseTargetRangeSchedule,
+            glucoseTargetRangeSchedule: settingsProvider.settings.glucoseTargetRangeSchedule,
             activeInsulin: displayState.activeInsulin
         )
 
         await updateRemoteRecommendation(force: forceStoreRemoteRecommendation)
     }
 
-    private func effectChange(
-        _ effects: [GlucoseEffect],
-        from start: Date,
-        to end: Date,
-        unit: LoopUnit
-    ) -> Double? {
-        guard !effects.isEmpty else {
-            return nil
-        }
-
-        let startEffect =
-            effects.last(where: { $0.startDate <= start }) ?? effects.first
-
-        let endEffect =
-            effects.last(where: { $0.startDate <= end }) ?? effects.first
-
-        guard
-            let startEffect,
-            let endEffect
-        else {
-            return nil
-        }
-
-        return endEffect.quantity.doubleValue(for: unit)
-            - startEffect.quantity.doubleValue(for: unit)
-    }
-
-    private nonisolated func runAlgorithm(input: StoredDataAlgorithmInput) async
-        -> AlgorithmOutput<StoredCarbEntry>
-    {
-        LoopAlgorithm.run(input: input)
-    }
-
     /// Cancel the active temp basal if it was automatically issued
-    func cancelActiveTempBasal(for reason: CancelActiveTempBasalReason)
-        async throws
-    {
-        guard case .tempBasal(let dose) = deliveryDelegate?.basalDeliveryState,
-            dose.automatic ?? true
-        else { return }
-
-        logger.default(
-            "Cancelling active temp basal for reason: %{public}@",
-            String(describing: reason)
-        )
-
-        let recommendation = AutomaticDoseRecommendation(
-            basalAdjustment: .cancel,
-            direction: .decrease
-        )
-
-        var dosingDecision = StoredDosingDecision(reason: reason.rawValue)
-        dosingDecision.settings = StoredDosingDecision.Settings(
-            settingsProvider.settings
-        )
-        dosingDecision.automaticDoseRecommendation = recommendation
-
+    func cancelActiveTempBasal(for reason: CancelActiveTempBasalReason) async throws {
+        let cancelled: Bool
         do {
-            crashRecoveryManager.dosingStarted(dose: recommendation)
-            try await deliveryDelegate?.enact(
-                bolus: recommendation.bolusUnits,
-                tempBasal: recommendation.basalAdjustment,
-                decisionId: dosingDecision.id
-            )
-            self.crashRecoveryManager.dosingFinished()
+            cancelled = try await cycle.cancelActiveTempBasal(
+                for: reason,
+                dosingStarted: { self.crashRecoveryManager.dosingStarted(dose: $0) },
+                dosingFinished: { self.crashRecoveryManager.dosingFinished() })
         } catch {
-            dosingDecision.appendError(
-                error as? LoopError ?? .unknownError(error)
-            )
             if reason == .maximumBasalRateChanged {
-                throw CancelTempBasalFailedMaximumBasalRateChangedError(
-                    reason: error
-                )
+                throw CancelTempBasalFailedMaximumBasalRateChangedError(reason: error)
             } else {
                 throw error
             }
         }
-
-        await dosingDecisionStore.storeDosingDecision(dosingDecision)
+        guard cancelled else { return }
 
         // DIY: refresh post-dose forecast and persist an "updateRemoteRecommendation"
         // decision so Nightscout sees the post-cancel state.
@@ -954,231 +406,23 @@ final class LoopDataManager: ObservableObject {
     }
 
     func loop() async {
-        temporaryPresetsManager.startScheduledPresetsIfNeeded()
         let loopBaseTime = now
 
-        var dosingDecision = StoredDosingDecision(
-            date: loopBaseTime,
-            reason: "loop",
-            settings: StoredDosingDecision.Settings(settingsProvider.settings)
-        )
+        logger.debug("Running Loop at %{public}@", String(describing: loopBaseTime))
+        NotificationCenter.default.post(name: .LoopRunning, object: self)
 
-        do {
-            guard let deliveryDelegate else {
-                preconditionFailure("Unable to dose without dosing delegate.")
-            }
+        let outcome = await cycle.run(at: loopBaseTime)
 
-            logger.debug(
-                "Running Loop at %{public}@",
-                String(describing: loopBaseTime)
-            )
-            NotificationCenter.default.post(name: .LoopRunning, object: self)
-
-            var input = try await fetchData(for: loopBaseTime)
-
-            // Trim future basal
-            input.doses = input.doses.trimmed(to: loopBaseTime)
-
-            var dosingStrategy: AutomaticDosingStrategy = .automaticBolus
-
-            if dosingStrategySelectionEnabled {
-                dosingStrategy =
-                    settingsProvider.settings.automaticDosingStrategy
-            }
-            input.recommendationType = dosingStrategy.recommendationType
-            dosingDecision.algorithmExperiments = algorithmExperiments(for: dosingStrategy)
-
-            guard let latestGlucose = input.glucoseHistory.last else {
-                throw LoopError.missingDataError(.glucose)
-            }
-
-            guard
-                loopBaseTime.timeIntervalSince(latestGlucose.startDate)
-                    <= LoopAlgorithm.inputDataRecencyInterval
-            else {
-                throw LoopError.glucoseTooOld(date: latestGlucose.startDate)
-            }
-
-            guard
-                latestGlucose.startDate.timeIntervalSince(loopBaseTime)
-                    <= LoopAlgorithm.inputDataRecencyInterval
-            else {
-                throw LoopError.invalidFutureGlucose(
-                    date: latestGlucose.startDate
-                )
-            }
-
-            guard
-                loopBaseTime.timeIntervalSince(doseStore.lastAddedPumpData)
-                    <= LoopAlgorithm.inputDataRecencyInterval
-            else {
-                throw LoopError.pumpDataTooOld(
-                    date: doseStore.lastAddedPumpData
-                )
-            }
-
-            var output = LoopAlgorithm.run(input: input)
-            dosingDecision.algorithmExperiments = algorithmExperiments(for: dosingStrategy, guardAndRunway: output.guardAndRunway)
-
-            switch output.recommendationResult {
-            case .success(let recommendation):
-                // Round delivery amounts to pump supported amounts,
-                // And determine if a change in dosing should be made.
-
-                let algoRecommendation = recommendation.automatic!
-                logger.default(
-                    "Algorithm recommendation: %{public}@",
-                    String(describing: algoRecommendation)
-                )
-
-                let scheduledBasalRate = input.basal.closestPrior(
-                    to: loopBaseTime
-                )!.value
-                let activeOverride = temporaryPresetsManager.presetHistory
-                    .activeOverride(at: loopBaseTime)
-                let shouldLimitAutomaticDosing =
-                    activeOverride?.settings.limitAutomaticDosing == true
-
-                var recommendationToEnact = algoRecommendation
-                if shouldLimitAutomaticDosing {
-                    recommendationToEnact.bolusUnits = nil
-                }
-                // Round bolus recommendation based on pump bolus precision
-                if let bolus = recommendationToEnact.bolusUnits, bolus > 0 {
-                    recommendationToEnact.bolusUnits =
-                        deliveryDelegate.roundBolusVolume(units: bolus)
-                }
-
-                var basal = algoRecommendation.basalAdjustment
-
-                if shouldLimitAutomaticDosing
-                    && basal.unitsPerHour > scheduledBasalRate
-                {
-                    basal = TempBasalRecommendation(
-                        unitsPerHour: scheduledBasalRate,
-                        duration: LoopAlgorithm.tempBasalDuration
-                    )
-                }
-
-                basal.unitsPerHour = deliveryDelegate.roundBasalRate(
-                    unitsPerHour: basal.unitsPerHour
-                )
-
-                // Basal Lock: while glucose is above the threshold, don't let the temp basal
-                // drop below the scheduled rate.
-                let shouldApplyBasalLock =
-                    Preferences.shared.isBasalLockEnabled
-                    && latestGlucose.quantity
-                        > Preferences.shared.basalLockThreshold
-                    && basal.unitsPerHour < scheduledBasalRate
-                if shouldApplyBasalLock {
-                    // unrounded on purpose: must equal the neutralBasalRate passed below
-                    basal = TempBasalRecommendation(
-                        unitsPerHour: scheduledBasalRate,
-                        duration: LoopAlgorithm.tempBasalDuration
-                    )
-                }
-
-                let basalAdjustment = basal.adjustForCurrentDelivery(
-                    at: loopBaseTime,
-                    neutralBasalRate: scheduledBasalRate,
-                    currentTempBasal: deliveryDelegate.basalDeliveryState?
-                        .currentTempBasal,
-                    continuationInterval: .minutes(11),
-                    neutralBasalRateMatchesPump: activeOverride == nil
-                )
-
-                if let basalAdjustment {
-                    recommendationToEnact.basalAdjustment = basalAdjustment
-                    if shouldApplyBasalLock {
-                        recommendationToEnact.direction = .neutral
-                    }
-                }
-
-                if shouldLimitAutomaticDosing
-                    && algoRecommendation.direction == .increase
-                    && basal.unitsPerHour >= scheduledBasalRate
-                {
-                    recommendationToEnact.direction = .neutral
-                }
-
-                output.recommendationResult = .success(
-                    .init(automatic: recommendationToEnact)
-                )
-
-                if recommendationToEnact != algoRecommendation {
-                    logger.default(
-                        "Recommendation changed to: %{public}@",
-                        String(describing: recommendationToEnact)
-                    )
-                }
-
-                dosingDecision.updateFrom(input: input, output: output)
-
-                if self.settingsProvider.dosingEnabled {
-                    if deliveryDelegate.basalDeliveryState == .pumpInoperable {
-                        throw LoopError.pumpInoperable
-                    }
-
-                    if deliveryDelegate.isSuspended {
-                        throw LoopError.pumpSuspended
-                    }
-
-                    if deliveryDelegate.isManualTempBasalRunning {
-                        throw LoopError.manualTempBasalRunning
-                    }
-
-                    logger.default(
-                        "Enacting: %{public}@",
-                        String(describing: recommendationToEnact)
-                    )
-
-                    try await deliveryDelegate.enact(
-                        bolus: recommendationToEnact.bolusUnits,
-                        tempBasal: basalAdjustment,
-                        decisionId: dosingDecision.id
-                    )
-
-                    logger.default("loop() completed successfully.")
-                    lastLoopCompleted = now
-                    let duration = lastLoopCompleted!.timeIntervalSince(
-                        loopBaseTime
-                    )
-
-                    dosingDecision.enactedTempBasal = basalAdjustment
-                    dosingDecision.enactedBolusAmount =
-                        recommendationToEnact.bolusUnits
-
-                    analyticsServicesManager?.loopDidSucceed(duration)
-                } else {
-                    self.logger.default(
-                        "Not adjusting dosing during open loop."
-                    )
-                }
-
-                await dosingDecisionStore.storeDosingDecision(dosingDecision)
-                NotificationCenter.default.post(
-                    name: .LoopCycleCompleted,
-                    object: self
-                )
-
-            case .failure(let error):
-                throw error
-            }
-        } catch {
-            logger.error(
-                "loop() did error: %{public}@",
-                String(describing: error)
-            )
-            let loopError = error as? LoopError ?? .unknownError(error)
-            dosingDecision.appendError(loopError)
-            await dosingDecisionStore.storeDosingDecision(dosingDecision)
-            analyticsServicesManager?.loopDidError(error: loopError)
-            NotificationCenter.default.post(
-                name: .LoopCycleCompleted,
-                object: self
-            )
+        if outcome.enacted {
+            logger.default("loop() completed successfully.")
+            lastLoopCompleted = now
+            let duration = lastLoopCompleted!.timeIntervalSince(loopBaseTime)
+            analyticsServicesManager?.loopDidSucceed(duration)
         }
+        if let loopError = outcome.error {
+            analyticsServicesManager?.loopDidError(error: loopError)
+        }
+        NotificationCenter.default.post(name: .LoopCycleCompleted, object: self)
 
         // DIY: refresh post-dose forecast and persist an "updateRemoteRecommendation"
         // decision (Nightscout's Loop pill + forecast source — paired with the just-stored
@@ -1193,111 +437,19 @@ final class LoopDataManager: ObservableObject {
         carbEntryChange: CarbEntryChange? = nil,
         truncatingActiveOverride: Bool = false
     ) async throws -> ManualBolusRecommendation? {
-        let result = try await recommendManualBolusWithDetails(
-            manualGlucoseSample: manualGlucoseSample,
-            carbEntryChange: carbEntryChange,
-            truncatingActiveOverride: truncatingActiveOverride
-        )
-
-        return result.recommendation
+        try await cycle.recommendManualBolus(manualGlucoseSample: manualGlucoseSample, carbEntryChange: carbEntryChange,
+                                             truncatingActiveOverride: truncatingActiveOverride)
     }
 
-    func recommendManualBolusWithDetails(
-        manualGlucoseSample: NewGlucoseSample?,
-        carbEntryChange: CarbEntryChange?,
-        truncatingActiveOverride: Bool
-    ) async throws -> ManualBolusRecommendationResult {
-
-        let now = self.now
-
-        var endingPremealOverride = false
-
-        if carbEntryChange != nil,
-            let activeOverride = temporaryPresetsManager.activeOverride,
-            activeOverride.context == .preMeal
-        {
-            endingPremealOverride = true
-        }
-
-        var input = try await self.fetchData(
-            for: now,
-            presumePresetEndingNow:
-                truncatingActiveOverride || endingPremealOverride
-        )
-        .addingGlucoseSample(
-            sample: manualGlucoseSample?.asStoredGlucoseSample
-        )
-        .removingCarbEntry(
-            carbEntry: carbEntryChange?.originalEntry
-        )
-        .addingCarbEntry(
-            carbEntry: carbEntryChange?.asStoredCarbEntry
-        )
-
-        input.includePositiveVelocityAndRC =
-            usePositiveMomentumAndRCForManualBoluses
-
-        input.recommendationType = .manualBolus
-
-        let output = LoopAlgorithm.run(input: input)
-
-        let momentumEffect =
-            output.effects.momentum.last?.quantity.doubleValue(
-                for: .milligramsPerDeciliter
-            )
-
-        let retrospectiveCorrectionEffect =
-            output.effects.totalRetrospectiveCorrectionEffect?.doubleValue(
-                for: .milligramsPerDeciliter
-            )
-
-        switch output.recommendationResult {
-
-        case .success(let prediction):
-            guard var manualBolusRecommendation = prediction.manual else {
-                return ManualBolusRecommendationResult(
-                    recommendation: nil,
-                    calculatedBolus: nil,
-                    momentumEffect: momentumEffect,
-                    retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
-                )
-            }
-            let calculatedBolus = manualBolusRecommendation.amount
-
-            if let roundedAmount =
-                deliveryDelegate?.roundBolusVolume(
-                    units: manualBolusRecommendation.amount
-                )
-            {
-                manualBolusRecommendation.amount = roundedAmount
-            }
-
-            return ManualBolusRecommendationResult(
-                recommendation: manualBolusRecommendation,
-                calculatedBolus: calculatedBolus,
-                momentumEffect: momentumEffect,
-                retrospectiveCorrectionEffect:
-                    retrospectiveCorrectionEffect
-            )
-
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    public func totalDeliveredToday() async -> InsulinValue? {
+    public func totalDeliveredToday() async -> InsulinValue?
+    {
         guard let data = displayState.input else {
             return nil
         }
 
         let now = data.predictionStart
         let midnight = Calendar.current.startOfDay(for: now)
-        let history = InsulinDeliveryHistory(
-            doses: data.doses,
-            scheduledBasal: data.basal,
-            coverageStart: midnight,
-            end: now
-        )
+        let history = InsulinDeliveryHistory(doses: data.doses, scheduledBasal: data.basal.loopKitSchedule(), coverageStart: midnight, end: now)
 
         return InsulinValue(
             startDate: midnight,
@@ -1330,7 +482,7 @@ final class LoopDataManager: ObservableObject {
     }
 
     var iobValues: [InsulinValue] {
-        dosesRelativeToBasal.insulinOnBoardTimeline()
+        dosesRelativeToBasal.insulinOnBoardTimeline().map(\.loopKit)
     }
 
     var dosesRelativeToBasal: [BasalRelativeDose] {
@@ -1338,89 +490,7 @@ final class LoopDataManager: ObservableObject {
     }
 
     func updateRemoteRecommendation(force: Bool = false) async {
-        if lastManualBolusRecommendation == nil {
-            lastManualBolusRecommendation =
-                displayState.output?.recommendation?.manual
-        }
-
-        let recommendationChanged =
-            lastManualBolusRecommendation
-            != displayState.output?.recommendation?.manual
-
-        // DIY: post-dose "updateRemoteRecommendation" decisions are also Nightscout's
-        // Loop pill + forecast source (NightscoutService pairs them with the cached "loop"
-        // decision). Force-store after every Loop cycle and temp basal cancel so NS stays
-        // current even when the manual bolus recommendation hasn't changed.
-        guard force || recommendationChanged else {
-            return
-        }
-
-        lastManualBolusRecommendation =
-            displayState.output?.recommendation?.manual
-
-        if let output = displayState.output {
-            var dosingDecision = StoredDosingDecision(
-                date: now,
-                reason: "updateRemoteRecommendation"
-            )
-            dosingDecision.algorithmExperiments = algorithmExperiments(
-                for: currentDosingStrategy,
-                guardAndRunway: output.guardAndRunway
-            )
-            dosingDecision.predictedGlucose = output.predictedGlucose
-            dosingDecision.insulinOnBoard = displayState.activeInsulin
-            dosingDecision.carbsOnBoard = displayState.activeCarbs
-            switch output.recommendationResult {
-            case .success(let recommendation):
-                dosingDecision.automaticDoseRecommendation =
-                    recommendation.automatic
-                if let recommendationDate = displayState.input?.predictionStart,
-                    let manualRec = recommendation.manual
-                {
-                    dosingDecision.manualBolusRecommendation =
-                        ManualBolusRecommendationWithDate(
-                            recommendation: manualRec,
-                            date: recommendationDate
-                        )
-                }
-            case .failure(let error):
-                if let loopError = error as? LoopError {
-                    dosingDecision.errors.append(loopError.issue)
-                } else {
-                    dosingDecision.errors.append(
-                        .init(
-                            id: "error",
-                            details: ["description": error.localizedDescription]
-                        )
-                    )
-                }
-            }
-
-            dosingDecision.controllerStatus = UIDevice.current.controllerStatus
-
-            // Device status for the Nightscout devicestatus.pump payload.
-            dosingDecision.pumpManagerStatus =
-                deliveryDelegate?.pumpManagerStatus
-            if let pumpStatusHighlight = deliveryDelegate?.pumpStatusHighlight {
-                dosingDecision.pumpStatusHighlight =
-                    StoredDosingDecision.StoredDeviceHighlight(
-                        localizedMessage: pumpStatusHighlight.localizedMessage,
-                        imageName: pumpStatusHighlight.imageName,
-                        state: pumpStatusHighlight.state
-                    )
-            }
-            dosingDecision.cgmManagerStatus = deliveryDelegate?.cgmManagerStatus
-            dosingDecision.lastReservoirValue =
-                StoredDosingDecision.LastReservoirValue(
-                    doseStore.lastReservoirValue
-                )
-
-            self.logger.debug(
-                "Manual bolus rec = %{public}@",
-                String(describing: dosingDecision.manualBolusRecommendation)
-            )
-            await self.dosingDecisionStore.storeDosingDecision(dosingDecision)
-        }
+        await cycle.storeRemoteRecommendation(displayState: displayState, force: force)
     }
 
     // MARK: - Glucose Staleness
@@ -1439,14 +509,10 @@ final class LoopDataManager: ObservableObject {
 
     func startGlucoseValueStalenessTimerIfNeeded() {
         guard let fireDate = glucoseValueStaleDate,
-            glucoseValueStalenessTimer == nil
+              glucoseValueStalenessTimer == nil
         else { return }
 
-        glucoseValueStalenessTimer = Timer(
-            fire: fireDate,
-            interval: 0,
-            repeats: false
-        ) { (_) in
+        glucoseValueStalenessTimer = Timer(fire: fireDate, interval: 0, repeats: false) { (_) in
             Task { @MainActor in
                 self.notify(forChange: .glucose)
             }
@@ -1455,33 +521,48 @@ final class LoopDataManager: ObservableObject {
     }
 
     private var glucoseValueStaleDate: Date? {
-        guard let latestGlucoseDataDate = glucoseStore.latestGlucose?.startDate
-        else { return nil }
-        return latestGlucoseDataDate.addingTimeInterval(
-            LoopAlgorithm.inputDataRecencyInterval
-        )
+        guard let latestGlucoseDataDate = glucoseStore.latestGlucose?.startDate else { return nil }
+        return latestGlucoseDataDate.addingTimeInterval(LoopCoreConstants.inputDataRecencyInterval)
     }
 }
 
 // MARK: - Background task management
+extension LoopDataManager: LoopCycleHost {
+    var overrideHistory: TemporaryScheduleOverrideHistory {
+        temporaryPresetsManager.presetHistory
+    }
+
+    var activeOverride: TemporaryScheduleOverride? {
+        temporaryPresetsManager.activeOverride
+    }
+
+    var holdsPump: Bool {
+        true
+    }
+
+    var isClosedLoop: Bool {
+        settingsProvider.dosingEnabled
+    }
+
+    var controllerStatus: StoredDosingDecision.ControllerStatus {
+        UIDevice.current.controllerStatus
+    }
+}
+
 extension LoopDataManager: PersistenceControllerDelegate {
-    nonisolated func persistenceControllerWillSave(
-        _ controller: PersistenceController
-    ) {
+    nonisolated func persistenceControllerWillSave(_ controller: PersistenceController) {
         Task {
             await startBackgroundTask()
         }
     }
 
-    nonisolated func persistenceControllerDidSave(
-        _ controller: PersistenceController,
-        error: PersistenceController.PersistenceControllerError?
-    ) {
+    nonisolated func persistenceControllerDidSave(_ controller: PersistenceController, error: PersistenceController.PersistenceControllerError?) {
         Task {
             await endBackgroundTask()
         }
     }
 }
+
 
 // MARK: - Intake
 extension LoopDataManager {
@@ -1491,120 +572,29 @@ extension LoopDataManager {
     ///   - samples: The new glucose samples to store
     ///   - completion: A closure called once upon completion
     ///   - result: The stored glucose values
-    func addGlucose(_ samples: [NewGlucoseSample]) async throws
-        -> [StoredGlucoseSample]
-    {
+    func addGlucose(_ samples: [NewGlucoseSample]) async throws -> [StoredGlucoseSample] {
         return try await glucoseStore.addGlucoseSamples(samples)
     }
 
     /// Adds and stores carb data, and recommends a bolus if needed
     ///
     /// - Parameters:
-    /// Adds a new carbohydrate entry.
+    ///   - carbEntry: The new carb value, stored once however often it is retried
     func addCarbEntry(_ carbEntry: NewCarbEntry) async throws -> StoredCarbEntry {
         let storedCarbEntry = try await carbStore.addCarbEntry(carbEntry)
         self.temporaryPresetsManager.endPreMealOverride()
         return storedCarbEntry
     }
 
-    /// Replaces an existing carbohydrate entry with an update.
-    func replaceCarbEntry(
-        _ oldEntry: StoredCarbEntry,
-        with update: CarbEntryUpdate
-    ) async throws -> StoredCarbEntry {
-        let storedCarbEntry = try await carbStore.replaceCarbEntry(
-            oldEntry,
-            withEntry: update
-        )
+    func replaceCarbEntry(_ oldEntry: StoredCarbEntry, with update: CarbEntryUpdate) async throws -> StoredCarbEntry {
+        let storedCarbEntry = try await carbStore.replaceCarbEntry(oldEntry, withEntry: update)
         self.temporaryPresetsManager.endPreMealOverride()
         return storedCarbEntry
-    }
-
-    /// Adds or replaces a BolusPro secondary carbohydrate entry.
-    func addCarbEntry(
-        _ carbEntry: NewCarbEntry,
-        replacing replacingEntry: StoredCarbEntry?
-    ) async throws -> StoredCarbEntry {
-        let storedCarbEntry: StoredCarbEntry
-
-        if let replacingEntry {
-            storedCarbEntry = try await carbStore.replaceCarbEntry(
-                replacingEntry,
-                withEntry: CarbEntryUpdate(
-                    date: carbEntry.date,
-                    quantity: carbEntry.quantity,
-                    startDate: carbEntry.startDate,
-                    foodType: carbEntry.foodType,
-                    absorptionTime: carbEntry.absorptionTime,
-                    favoriteFoodID: carbEntry.favoriteFoodID
-                )
-            )
-        } else {
-            storedCarbEntry = try await carbStore.addCarbEntry(carbEntry)
-        }
-
-        self.temporaryPresetsManager.endPreMealOverride()
-        return storedCarbEntry
-    }
-
-    func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry? {
-        let entries = try await carbStore.getCarbEntries(
-            start: nil,
-            end: nil
-        )
-
-        return entries.first { $0.uuid == uuid }
     }
 
     @discardableResult
     func deleteCarbEntry(_ oldEntry: StoredCarbEntry) async throws -> Bool {
-        let secondaryIdentifier =
-            BolusProMealStore.shared.secondaryIdentifier(for: oldEntry)
-
-        if let secondaryIdentifier {
-            let entries = try await carbStore.getCarbEntries(
-                start: nil,
-                end: nil
-            )
-
-            let secondaryEntry: StoredCarbEntry?
-
-            if secondaryIdentifier.hasPrefix("sync:") {
-                let syncIdentifier = String(
-                    secondaryIdentifier.dropFirst("sync:".count)
-                )
-
-                secondaryEntry = entries.first {
-                    $0.syncIdentifier == syncIdentifier
-                }
-            } else if secondaryIdentifier.hasPrefix("uuid:") {
-                let uuidString = String(
-                    secondaryIdentifier.dropFirst("uuid:".count)
-                )
-
-                if let uuid = UUID(uuidString: uuidString) {
-                    secondaryEntry = entries.first {
-                        $0.uuid == uuid
-                    }
-                } else {
-                    secondaryEntry = nil
-                }
-            } else {
-                secondaryEntry = nil
-            }
-
-            if let secondaryEntry {
-                _ = try await carbStore.deleteCarbEntry(secondaryEntry)
-            }
-        }
-
-        let deleted = try await carbStore.deleteCarbEntry(oldEntry)
-
-        if deleted {
-            BolusProMealStore.shared.remove(for: oldEntry)
-        }
-
-        return deleted
+        try await carbStore.deleteCarbEntry(oldEntry)
     }
 
     /// Logs a new external bolus insulin dose in the DoseStore and HealthKit
@@ -1613,67 +603,29 @@ extension LoopDataManager {
     ///   - startDate: The date the dose was started at.
     ///   - value: The number of Units in the dose.
     ///   - insulinModel: The type of insulin model that should be used for the dose.
-    func addManuallyEnteredDose(
-        startDate: Date,
-        units: Double,
-        insulinType: InsulinType? = nil
-    ) async {
+    func addManuallyEnteredDose(startDate: Date, units: Double, insulinType: InsulinType? = nil) async {
         let syncIdentifier = Data(UUID().uuidString.utf8).hexadecimalString
-        let dose = DoseEntry(
-            type: .bolus,
-            startDate: startDate,
-            value: units,
-            unit: .units,
-            decisionId: nil,
-            syncIdentifier: syncIdentifier,
-            insulinType: insulinType,
-            manuallyEntered: true
-        )
+        let dose = DoseEntry(type: .bolus, startDate: startDate, value: units, unit: .units, decisionId: nil, syncIdentifier: syncIdentifier, insulinType: insulinType, manuallyEntered: true)
 
         do {
             try await doseStore.addDoses([dose], from: nil)
             self.notify(forChange: .insulin)
         } catch {
-            logger.error(
-                "Error storing manual dose: %{public}@",
-                error.localizedDescription
-            )
+            logger.error("Error storing manual dose: %{public}@", error.localizedDescription)
         }
     }
 
-
-    private var currentDosingStrategy: AutomaticDosingStrategy {
+    var currentDosingStrategy: AutomaticDosingStrategy {
         dosingStrategySelectionEnabled ? settingsProvider.settings.automaticDosingStrategy : .automaticBolus
     }
 
-
-    /// Glucose based partial application only affects automatic boluses, so it is in effect only with that strategy
-    private func algorithmExperiments(for dosingStrategy: AutomaticDosingStrategy, guardAndRunway: GuardAndRunwayOutput? = nil) -> [AlgorithmExperiment] {
-        enabledAlgorithmExperiments
-            .filter { $0 != .glucoseBasedApplicationFactor || dosingStrategy == .automaticBolus }
-            .sorted { $0.rawValue < $1.rawValue }
-            .map { experiment in
-                guard experiment == .guardAndRunway else {
-                    return AlgorithmExperiment(identifier: experiment.rawValue)
-                }
-                var parameters: [String: JSONValue] = [:]
-                if let baseline = volatilityBaseline?.value {
-                    parameters["volatilityBaseline"] = .number(baseline)
-                }
-                if let guardAndRunway {
-                    parameters["volatility"] = .number(guardAndRunway.volatility)
-                    parameters["bandApplied"] = .bool(guardAndRunway.bandApplied)
-                    parameters["bandGain"] = .number(guardAndRunway.bandGain)
-                    parameters["bandDepth"] = .number(guardAndRunway.bandDepth)
-                    parameters["runwayShift"] = .number(guardAndRunway.runwayShift)
-                    parameters["postLowRiseCutActive"] = .bool(guardAndRunway.postLowRiseCutActive)
-                }
-                return AlgorithmExperiment(identifier: experiment.rawValue, parameters: parameters.isEmpty ? nil : .object(parameters))
-            }
+    func algorithmExperiments(for dosingStrategy: AutomaticDosingStrategy, output: AlgorithmOutput<StoredCarbEntry>? = nil) -> [AlgorithmExperiment] {
+        AlgorithmExperiment.records(enabled: enabledAlgorithmExperiments, dosingStrategy: dosingStrategy,
+                                    volatilityBaseline: volatilityBaseline?.value, output: output)
     }
 
     /// The median σ5 over the last four weeks, for guard + runway's volatility band. Nil until there is a day of glucose.
-    private func currentVolatilityBaseline(at date: Date) async -> Double? {
+    func currentVolatilityBaseline(at date: Date) async -> Double? {
         if let volatilityBaseline, abs(date.timeIntervalSince(volatilityBaseline.date)) < (volatilityBaseline.value == nil ? .hours(1) : .days(1)) {
             return volatilityBaseline.value
         }
@@ -1688,42 +640,14 @@ extension LoopDataManager {
         }
     }
 
-    func storeManualBolusDosingDecision(
-        _ bolusDosingDecision: BolusDosingDecision,
-        withDate date: Date
-    ) async {
-        var dosingDecision = StoredDosingDecision(
-            id: bolusDosingDecision.id,
-            date: date,
-            reason: bolusDosingDecision.reason.rawValue,
-            settings: StoredDosingDecision.Settings(settingsProvider.settings),
-            scheduleOverride: bolusDosingDecision.scheduleOverride,
-            controllerStatus: UIDevice.current.controllerStatus,
-            pumpManagerStatus: deliveryDelegate?.pumpManagerStatus,
-            cgmManagerStatus: deliveryDelegate?.cgmManagerStatus,
-            lastReservoirValue: StoredDosingDecision.LastReservoirValue(
-                doseStore.lastReservoirValue
-            ),
-            historicalGlucose: bolusDosingDecision.historicalGlucose,
-            originalCarbEntry: bolusDosingDecision.originalCarbEntry,
-            carbEntry: bolusDosingDecision.carbEntry,
-            manualGlucoseSample: bolusDosingDecision.manualGlucoseSample,
-            carbsOnBoard: bolusDosingDecision.carbsOnBoard,
-            insulinOnBoard: bolusDosingDecision.insulinOnBoard,
-            glucoseTargetRangeSchedule: bolusDosingDecision
-                .glucoseTargetRangeSchedule,
-            predictedGlucose: bolusDosingDecision.predictedGlucose,
-            manualBolusRecommendation: bolusDosingDecision
-                .manualBolusRecommendation,
-            manualBolusRequested: bolusDosingDecision.manualBolusRequested
-        )
-        dosingDecision.algorithmExperiments = algorithmExperiments(for: currentDosingStrategy)
+    func storeManualBolusDosingDecision(_ bolusDosingDecision: BolusDosingDecision, withDate date: Date) async {
+        guard let dosingDecision = cycle.manualBolusDosingDecision(bolusDosingDecision, withDate: date) else { return }
         Task { await dosingDecisionStore.storeDosingDecision(dosingDecision) }
     }
 
+
     private func notify(forChange context: LoopUpdateContext) {
-        NotificationCenter.default.post(
-            name: .LoopDataUpdated,
+        NotificationCenter.default.post(name: .LoopDataUpdated,
             object: self,
             userInfo: [
                 type(of: self).LoopUpdateContextKey: context.rawValue
@@ -1732,35 +656,22 @@ extension LoopDataManager {
     }
 
     /// Estimate glucose effects of suspending insulin delivery over duration of insulin action starting at the specified date
-    func insulinDeliveryEffect(at date: Date, insulinType: InsulinType)
-        async throws -> [GlucoseEffect]
-    {
+    func insulinDeliveryEffect(at date: Date, insulinType: InsulinType) async throws -> [GlucoseEffect] {
         let startSuspend = date
-        let insulinEffectDuration = insulinModel(for: insulinType)
-            .effectDuration
+        let insulinEffectDuration = insulinModel(for: insulinType).effectDuration
         let endSuspend = startSuspend.addingTimeInterval(insulinEffectDuration)
 
         var suspendDoses: [BasalRelativeDose] = []
 
-        let basal = try await settingsProvider.getBasalHistory(
-            startDate: startSuspend,
-            endDate: endSuspend
-        )
-        let sensitivity =
-            try await settingsProvider.getInsulinSensitivityHistory(
-                startDate: startSuspend,
-                endDate: endSuspend
-            )
+        let basal = try await settingsProvider.getBasalHistory(startDate: startSuspend, endDate: endSuspend)
+        let sensitivity = try await settingsProvider.getInsulinSensitivityHistory(startDate: startSuspend, endDate: endSuspend)
 
         // Iterate over basal entries during suspension of insulin delivery
         for (index, basalItem) in basal.enumerated() {
             var startSuspendDoseDate: Date
             var endSuspendDoseDate: Date
 
-            guard
-                basalItem.endDate > startSuspend
-                    && basalItem.startDate < endSuspend
-            else {
+            guard basalItem.endDate > startSuspend && basalItem.startDate < endSuspend else {
                 continue
             }
 
@@ -1788,75 +699,50 @@ extension LoopDataManager {
 
         // Calculate predicted glucose effect of suspending insulin delivery
         return suspendDoses.glucoseEffects(
-            insulinSensitivityHistory: sensitivity
-        ).filterDateRange(startSuspend, endSuspend)
+            insulinSensitivityHistoryMgdlPerUnit: sensitivity.algorithmMgdlSchedule()
+        ).filterDateRange(startSuspend, endSuspend).map(\.loopKit)
     }
 
-    func computeSimpleBolusRecommendation(
-        at date: Date,
-        mealCarbs: LoopQuantity?,
-        manualGlucose: LoopQuantity?
-    ) -> BolusDosingDecision? {
+    func computeSimpleBolusRecommendation(at date: Date, mealCarbs: LoopQuantity?, manualGlucose: LoopQuantity?) -> BolusDosingDecision? {
 
         var dosingDecision = BolusDosingDecision(for: .simpleBolus)
 
         // Determine activeInsulin
         let activeInsulin: LoopQuantity
         if let iob = displayState.activeInsulin?.value {
-            activeInsulin = LoopQuantity.init(
-                unit: .internationalUnit,
-                doubleValue: iob
-            )
+            activeInsulin = LoopQuantity.init(unit: .internationalUnit, doubleValue: iob)
         } else if let input = displayState.input {
             let basal = input.basal
-            let dosesRelativeToBasal: [BasalRelativeDose] = input.doses
-                .annotated(with: basal)
+            let dosesRelativeToBasal: [BasalRelativeDose] = input.doses.annotated(with: basal)
             let iob = dosesRelativeToBasal.insulinOnBoard(at: date)
-            activeInsulin = LoopQuantity.init(
-                unit: .internationalUnit,
-                doubleValue: iob
-            )
+            activeInsulin = LoopQuantity.init(unit: .internationalUnit, doubleValue: iob)
         } else {
             return nil
         }
 
-        guard
-            let suspendThreshold = settingsProvider.settings.suspendThreshold?
-                .quantity,
-            let carbRatioSchedule = temporaryPresetsManager
-                .carbRatioScheduleApplyingOverrideHistory,
-            let correctionRangeSchedule =
-                temporaryPresetsManager.effectiveCorrectionRangeSchedule(
-                    presumingMealEntry: mealCarbs != nil
-                ),
-            let sensitivitySchedule = temporaryPresetsManager
-                .insulinSensitivityScheduleApplyingOverrideHistory
+
+        guard let suspendThreshold = settingsProvider.settings.suspendThreshold?.quantity,
+              let carbRatioSchedule = temporaryPresetsManager.carbRatioScheduleApplyingOverrideHistory,
+              let correctionRangeSchedule = temporaryPresetsManager.effectiveCorrectionRangeSchedule(presumingMealEntry: mealCarbs != nil),
+              let sensitivitySchedule = temporaryPresetsManager.insulinSensitivityScheduleApplyingOverrideHistory
         else {
             // Settings incomplete; should never get here; remove when therapy settings non-optional
             return nil
         }
 
-        if let scheduleOverride = temporaryPresetsManager.scheduleOverride,
-            !scheduleOverride.hasFinished()
-        {
-            dosingDecision.scheduleOverride =
-                temporaryPresetsManager.scheduleOverride
+        if let scheduleOverride = temporaryPresetsManager.scheduleOverride, !scheduleOverride.hasFinished() {
+            dosingDecision.scheduleOverride = temporaryPresetsManager.scheduleOverride
         }
 
         dosingDecision.glucoseTargetRangeSchedule = correctionRangeSchedule
 
         var notice: BolusRecommendationNotice? = nil
         if let manualGlucose = manualGlucose {
-            let glucoseValue = SimpleGlucoseValue(
-                startDate: date,
-                quantity: manualGlucose
-            )
+            let glucoseValue = SimpleGlucoseValue(startDate: date, quantity: manualGlucose)
             if manualGlucose < suspendThreshold {
                 notice = .glucoseBelowSuspendThreshold(minGlucose: glucoseValue)
             } else {
-                let correctionRange = correctionRangeSchedule.quantityRange(
-                    at: date
-                )
+                let correctionRange = correctionRangeSchedule.quantityRange(at: date)
                 if manualGlucose < correctionRange.lowerBound {
                     notice = .currentGlucoseBelowTarget(glucose: glucoseValue)
                 }
@@ -1870,211 +756,52 @@ extension LoopDataManager {
             carbRatioSchedule: carbRatioSchedule,
             correctionRangeSchedule: correctionRangeSchedule,
             sensitivitySchedule: sensitivitySchedule,
-            at: date
-        )
+            at: date)
 
-        dosingDecision.manualBolusRecommendation =
-            ManualBolusRecommendationWithDate(
-                recommendation: ManualBolusRecommendation(
-                    amount: bolusAmount.doubleValue(for: .internationalUnit),
-                    notice: notice
-                ),
-                date: now
-            )
+        dosingDecision.manualBolusRecommendation = ManualBolusRecommendationWithDate(
+            recommendation: ManualBolusRecommendation(amount: bolusAmount.doubleValue(for: .internationalUnit), notice: notice),
+            date: now
+        )
 
         return dosingDecision
     }
 
+
 }
 
-extension NewCarbEntry {
-    var asStoredCarbEntry: StoredCarbEntry {
-        StoredCarbEntry(
-            startDate: startDate,
-            quantity: quantity,
-            foodType: foodType,
-            absorptionTime: absorptionTime,
-            userCreatedDate: date
-        )
-    }
-}
-
-extension CarbEntryUpdate {
-    var asStoredCarbEntry: StoredCarbEntry {
-        StoredCarbEntry(
-            startDate: startDate,
-            quantity: quantity,
-            foodType: foodType,
-            absorptionTime: absorptionTime,
-            userCreatedDate: date
-        )
-    }
-}
-
-extension NewGlucoseSample {
-    var asStoredGlucoseSample: StoredGlucoseSample {
-        StoredGlucoseSample(
-            syncIdentifier: syncIdentifier,
-            syncVersion: syncVersion,
-            startDate: date,
-            quantity: quantity,
-            condition: condition,
-            trend: trend,
-            trendRate: trendRate,
-            isDisplayOnly: isDisplayOnly,
-            wasUserEntered: wasUserEntered,
-            device: device
-        )
-    }
-}
-
-extension StoredDataAlgorithmInput {
-
-    func addingDose(dose: InsulinDoseType?) -> StoredDataAlgorithmInput {
-        var rval = self
-        if let dose {
-            rval.doses = doses + [dose]
-        }
-        return rval
-    }
-
-    func addingGlucoseSample(sample: GlucoseType?) -> StoredDataAlgorithmInput {
-        var rval = self
-        if let sample {
-            rval.glucoseHistory.append(sample)
-        }
-        return rval
-    }
-
-    func addingCarbEntry(carbEntry: CarbType?) -> StoredDataAlgorithmInput {
-        var rval = self
-        if let carbEntry {
-            rval.carbEntries = carbEntries + [carbEntry]
-        }
-        return rval
-    }
-
-    func removingCarbEntry(carbEntry: CarbType?) -> StoredDataAlgorithmInput {
-        guard let carbEntry else {
-            return self
-        }
-        var rval = self
-        var currentEntries = self.carbEntries
-        if let index = currentEntries.firstIndex(of: carbEntry) {
-            currentEntries.remove(at: index)
-        }
-        rval.carbEntries = currentEntries
-        return rval
-    }
-
-    func predictGlucose(
-        effectsOptions: AlgorithmEffectsOptions = .all,
-        applyNegativeInsulinDamper: Bool = true
-    ) throws -> [PredictedGlucoseValue] {
-        let prediction = LoopAlgorithm.generatePrediction(
-            start: predictionStart,
-            glucoseHistory: glucoseHistory,
-            doses: doses,
-            carbEntries: carbEntries,
-            basal: basal,
-            sensitivity: sensitivity,
-            carbRatio: carbRatio,
-            algorithmEffectsOptions: effectsOptions,
-            useIntegralRetrospectiveCorrection: self
-                .useIntegralRetrospectiveCorrection,
-            useMidAbsorptionISF: true,
-            carbAbsorptionModel: self.carbAbsorptionModel.model,
-            negativeInsulinDamper: applyNegativeInsulinDamper
-                ? negativeInsulinDamper : nil,
-            experiments: experiments
-        )
-        return prediction.glucose
-    }
-}
-
-extension Notification.Name {
-    static let LoopDataUpdated = Notification.Name(
-        rawValue: "com.loopkit.Loop.LoopDataUpdated"
-    )
-    static let LoopRunning = Notification.Name(
-        rawValue: "com.loopkit.Loop.LoopRunning"
-    )
-    static let LoopCycleCompleted = Notification.Name(
-        rawValue: "com.loopkit.Loop.LoopCycleCompleted"
-    )
-}
 
 protocol BolusDurationEstimator: AnyObject {
     func estimateBolusDuration(bolusUnits: Double) -> TimeInterval?
 }
 
-extension TemporaryScheduleOverride {
-    fileprivate func isBasalRateScheduleOverriden(at date: Date) -> Bool {
-        guard isActive(at: date),
-            let basalRateMultiplier = settings.basalRateMultiplier
-        else {
+private extension TemporaryScheduleOverride {
+    func isBasalRateScheduleOverriden(at date: Date) -> Bool {
+        guard isActive(at: date), let basalRateMultiplier = settings.basalRateMultiplier else {
             return false
         }
         return abs(basalRateMultiplier - 1.0) >= .ulpOfOne
     }
 }
 
-extension StoredDosingDecision.LastReservoirValue {
-    fileprivate init?(_ reservoirValue: ReservoirValue?) {
-        guard let reservoirValue = reservoirValue else {
-            return nil
-        }
-        self.init(
-            startDate: reservoirValue.startDate,
-            unitVolume: reservoirValue.unitVolume
-        )
-    }
-}
-
 extension ManualBolusRecommendationWithDate {
-    init?(
-        _ bolusRecommendationDate: (
-            recommendation: ManualBolusRecommendation, date: Date
-        )?
-    ) {
+    init?(_ bolusRecommendationDate: (recommendation: ManualBolusRecommendation, date: Date)?) {
         guard let bolusRecommendationDate = bolusRecommendationDate else {
             return nil
         }
-        self.init(
-            recommendation: bolusRecommendationDate.recommendation,
-            date: bolusRecommendationDate.date
-        )
-    }
-}
-
-extension StoredDosingDecision.Settings {
-    fileprivate init?(_ settings: StoredSettings?) {
-        guard let settings = settings else {
-            return nil
-        }
-        self.init(syncIdentifier: settings.syncIdentifier)
+        self.init(recommendation: bolusRecommendationDate.recommendation, date: bolusRecommendationDate.date)
     }
 }
 
 extension LoopDataManager: ServicesManagerDelegate {
 
     // Remote Overrides
-    func enactOverride(
-        name: String,
-        duration: TemporaryScheduleOverride.Duration?,
-        remoteAddress: String
-    ) async throws {
+    func enactOverride(name: String, duration: TemporaryScheduleOverride.Duration?, remoteAddress: String) async throws {
 
-        guard
-            let preset = settingsProvider.settings.overridePresets.first(
-                where: { $0.name == name })
-        else {
+        guard let preset = settingsProvider.settings.overridePresets.first(where: { $0.name == name }) else {
             throw EnactOverrideError.unknownPreset(name)
         }
 
-        var remoteOverride = preset.createOverride(
-            enactTrigger: .remote(remoteAddress)
-        )
+        var remoteOverride = preset.createOverride(enactTrigger: .remote(remoteAddress))
 
         if let duration {
             remoteOverride.duration = duration
@@ -2083,9 +810,11 @@ extension LoopDataManager: ServicesManagerDelegate {
         temporaryPresetsManager.scheduleOverride = remoteOverride
     }
 
+
     func cancelCurrentOverride() async throws {
         temporaryPresetsManager.scheduleOverride = nil
     }
+
 
     enum EnactOverrideError: LocalizedError {
 
@@ -2094,33 +823,17 @@ extension LoopDataManager: ServicesManagerDelegate {
         var errorDescription: String? {
             switch self {
             case .unknownPreset(let presetName):
-                return String(
-                    format: NSLocalizedString(
-                        "Unknown preset: %1$@",
-                        comment:
-                            "Override error description: unknown preset (1: preset name)."
-                    ),
-                    presetName
-                )
+                return String(format: NSLocalizedString("Unknown preset: %1$@", comment: "Override error description: unknown preset (1: preset name)."), presetName)
             }
         }
     }
 
     //Carb Entry
 
-    func deliverCarbs(
-        amountInGrams: Double,
-        absorptionTime: TimeInterval?,
-        foodType: String?,
-        startDate: Date?
-    ) async throws {
+    func deliverCarbs(amountInGrams: Double, absorptionTime: TimeInterval?, foodType: String?, startDate: Date?) async throws {
 
-        let absorptionTime =
-            absorptionTime
-            ?? LoopCoreConstants.defaultCarbAbsorptionTimes.medium
-        if absorptionTime < LoopConstants.minCarbAbsorptionTime
-            || absorptionTime > LoopConstants.maxCarbAbsorptionTime
-        {
+        let absorptionTime = absorptionTime ?? LoopCoreConstants.defaultCarbAbsorptionTimes.medium
+        if absorptionTime < LoopConstants.minCarbAbsorptionTime || absorptionTime > LoopConstants.maxCarbAbsorptionTime {
             throw CarbActionError.invalidAbsorptionTime(absorptionTime)
         }
 
@@ -2128,33 +841,20 @@ extension LoopDataManager: ServicesManagerDelegate {
             throw CarbActionError.invalidCarbs
         }
 
-        guard
-            amountInGrams
-                <= LoopConstants.maxCarbEntryQuantity.doubleValue(for: .gram)
-        else {
+        guard amountInGrams <= LoopConstants.maxCarbEntryQuantity.doubleValue(for: .gram) else {
             throw CarbActionError.exceedsMaxCarbs
         }
 
         if let startDate = startDate {
-            let maxStartDate = now.addingTimeInterval(
-                LoopConstants.maxCarbEntryFutureTime
-            )
-            let minStartDate = now.addingTimeInterval(
-                LoopConstants.maxCarbEntryPastTime
-            )
-            guard startDate <= maxStartDate && startDate >= minStartDate else {
+            let maxStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryFutureTime)
+            let minStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryPastTime)
+            guard startDate <= maxStartDate  && startDate >= minStartDate else {
                 throw CarbActionError.invalidStartDate(startDate)
             }
         }
 
         let quantity = LoopQuantity(unit: .gram, doubleValue: amountInGrams)
-        let candidateCarbEntry = NewCarbEntry(
-            syncIdentifier: UUID().uuidString,
-            quantity: quantity,
-            startDate: startDate ?? now,
-            foodType: foodType,
-            absorptionTime: absorptionTime
-        )
+        let candidateCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: quantity, startDate: startDate ?? now, foodType: foodType, absorptionTime: absorptionTime)
 
         let _ = try await carbStore.addCarbEntry(candidateCarbEntry)
     }
@@ -2167,42 +867,17 @@ extension LoopDataManager: ServicesManagerDelegate {
         case invalidCarbs
 
         var errorDescription: String? {
-            switch self {
+            switch  self {
             case .exceedsMaxCarbs:
-                return NSLocalizedString(
-                    "Exceeds maximum allowed carbs",
-                    comment:
-                        "Carb error description: carbs exceed maximum amount."
-                )
+                return NSLocalizedString("Exceeds maximum allowed carbs", comment: "Carb error description: carbs exceed maximum amount.")
             case .invalidCarbs:
-                return NSLocalizedString(
-                    "Invalid carb amount",
-                    comment: "Carb error description: invalid carb amount."
-                )
+                return NSLocalizedString("Invalid carb amount", comment: "Carb error description: invalid carb amount.")
             case .invalidAbsorptionTime(let absorptionTime):
-                let absorptionHoursFormatted =
-                    Self.numberFormatter.string(from: absorptionTime.hours)
-                    ?? ""
-                return String(
-                    format: NSLocalizedString(
-                        "Invalid absorption time: %1$@ hours",
-                        comment:
-                            "Carb error description: invalid absorption time. (1: Input duration in hours)."
-                    ),
-                    absorptionHoursFormatted
-                )
+                let absorptionHoursFormatted = Self.numberFormatter.string(from: absorptionTime.hours) ?? ""
+                return String(format: NSLocalizedString("Invalid absorption time: %1$@ hours", comment: "Carb error description: invalid absorption time. (1: Input duration in hours)."), absorptionHoursFormatted)
             case .invalidStartDate(let startDate):
-                let startDateFormatted = Self.dateFormatter.string(
-                    from: startDate
-                )
-                return String(
-                    format: NSLocalizedString(
-                        "Start time is out of range: %@",
-                        comment:
-                            "Carb error description: invalid start time is out of range."
-                    ),
-                    startDateFormatted
-                )
+                let startDateFormatted = Self.dateFormatter.string(from: startDate)
+                return String(format: NSLocalizedString("Start time is out of range: %@", comment: "Carb error description: invalid start time is out of range."), startDateFormatted)
             }
         }
 
@@ -2234,45 +909,18 @@ extension LoopDataManager: SimpleBolusViewModelDelegate {
         settingsProvider.settings.suspendThreshold?.quantity
     }
 
-    func enactBolus(
-        units: Double,
-        decisionId: UUID?,
-        activationType: BolusActivationType
-    ) async throws {
+    func enactBolus(units: Double, decisionId: UUID?, activationType: BolusActivationType) async throws {
         let startDate = now
-        try await deliveryDelegate?.enactBolus(
-            units: units,
-            decisionId: decisionId,
-            activationType: activationType
-        )
+        try await deliveryDelegate?.enactBolus(units: units, decisionId: decisionId, activationType: activationType)
         lastManualBolus = LastManualBolus(amount: units, startDate: startDate)
     }
 
 }
 
 extension LoopDataManager: BolusEntryViewModelDelegate {
-    func getCarbEntry(
-        withSyncIdentifier syncIdentifier: String
-    ) async throws -> StoredCarbEntry? {
-        let entries = try await carbStore.getCarbEntries(
-            start: nil,
-            end: nil
-        )
-
-        return entries.first {
-            $0.syncIdentifier == syncIdentifier
-        }
-    }
-
-    func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws
-        -> LoopKit.StoredGlucoseSample
-    {
+    func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws -> LoopKit.StoredGlucoseSample {
         let storedSamples = try await addGlucose([sample])
-        let storedSample = storedSamples.first!
-
-        await loop()
-
-        return storedSample
+        return storedSamples.first!
     }
 
     var preMealOverride: TemporaryScheduleOverride? {
@@ -2288,22 +936,15 @@ extension LoopDataManager: BolusEntryViewModelDelegate {
         return date == .distantPast ? nil : date
     }
 
-    func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool)
-        -> GlucoseRangeSchedule?
-    {
-        temporaryPresetsManager.effectiveCorrectionRangeSchedule(
-            presumingMealEntry: presumingMealEntry
-        )
+    func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool) -> GlucoseRangeSchedule? {
+        temporaryPresetsManager.effectiveCorrectionRangeSchedule(presumingMealEntry: presumingMealEntry)
     }
 
     func generatePrediction(
         carbEntryChange: CarbEntryChange?,
         potentialDose: SimpleInsulinDose?,
         manualGlucose: NewGlucoseSample?
-    ) async throws -> (
-        historicGlucose: [StoredGlucoseSample],
-        predictedGlucose: [PredictedGlucoseValue]
-    ) {
+    ) async throws -> (historicGlucose: [StoredGlucoseSample], predictedGlucose: [PredictedGlucoseValue]) {
 
         var endingPremealOverride = false
 
@@ -2317,24 +958,22 @@ extension LoopDataManager: BolusEntryViewModelDelegate {
         var input = try await fetchData(
             for: now,
             presumePresetEndingNow: endingPremealOverride,
-            ensureDosingCoverageStart: nil
+            ensureCarbCoverageStart: carbEntryChange?.startDate
         )
 
         // Add potential bolus, carbs, manual glucose
-        input =
-            input
+        input = input
             .addingDose(dose: potentialDose)
             .addingGlucoseSample(sample: manualGlucose?.asStoredGlucoseSample)
             .removingCarbEntry(carbEntry: carbEntryChange?.originalEntry)
             .addingCarbEntry(carbEntry: carbEntryChange?.asStoredCarbEntry)
 
-        let prediction = try input.predictGlucose()
+        let prediction = try input.predictGlucose(sensitivityMultiplier: displayState.sensitivityMultiplier)
 
-        return (
-            historicGlucose: input.glucoseHistory, predictedGlucose: prediction
-        )
+        return (historicGlucose: input.glucoseHistory, predictedGlucose: prediction.map(\.loopKit))
     }
 }
+
 
 extension LoopDataManager: CarbEntryViewModelDelegate {
     func isScheduleOverrideActive(at date: Date) -> Bool {
@@ -2344,45 +983,24 @@ extension LoopDataManager: CarbEntryViewModelDelegate {
     var defaultAbsorptionTimes: DefaultAbsorptionTimes {
         LoopCoreConstants.defaultCarbAbsorptionTimes
     }
-    func getGlucoseSamples(start: Date?, end: Date?) async throws
-        -> [StoredGlucoseSample]
-    {
+    func getGlucoseSamples(start: Date?, end: Date?) async throws -> [StoredGlucoseSample] {
         try await glucoseStore.getGlucoseSamples(start: start, end: end)
     }
 }
 
 extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
-    func selectedFavoriteFoodLastEaten(_ favoriteFood: StoredFavoriteFood)
-        async throws -> Date?
-    {
-        try await carbStore.getCarbEntries(
-            start: nil,
-            end: nil,
-            dateAscending: false,
-            fetchLimit: 1,
-            with: favoriteFood.id
-        ).first?.startDate
+    func selectedFavoriteFoodLastEaten(_ favoriteFood: StoredFavoriteFood) async throws -> Date? {
+        try await carbStore.getCarbEntries(start: nil, end: nil, dateAscending: false, fetchLimit: 1, with: favoriteFood.id).first?.startDate
     }
 
-    func getFavoriteFoodCarbEntries(_ favoriteFood: StoredFavoriteFood)
-        async throws -> [LoopKit.StoredCarbEntry]
-    {
-        try await carbStore.getCarbEntries(
-            start: nil,
-            end: nil,
-            dateAscending: false,
-            fetchLimit: nil,
-            with: favoriteFood.id
-        )
+
+    func getFavoriteFoodCarbEntries(_ favoriteFood: StoredFavoriteFood) async throws -> [LoopKit.StoredCarbEntry] {
+        try await carbStore.getCarbEntries(start: nil, end: nil, dateAscending: false, fetchLimit: nil, with: favoriteFood.id)
     }
 
-    func getHistoricalChartsData(start: Date, end: Date) async throws
-        -> HistoricalChartsData
-    {
+    func getHistoricalChartsData(start: Date, end: Date) async throws -> HistoricalChartsData {
         // Need to get insulin data from any active doses that might affect this time range
-        var dosesStart = start.addingTimeInterval(
-            -InsulinMath.defaultInsulinActivityDuration
-        )
+        var dosesStart = start.addingTimeInterval(-InsulinMath.defaultInsulinActivityDuration)
         let doses = try await doseStore.getNormalizedDoseEntries(
             start: dosesStart,
             end: end
@@ -2390,44 +1008,25 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
 
         dosesStart = doses.map { $0.startDate }.min() ?? dosesStart
 
-        let basal = try await settingsProvider.getBasalHistory(
-            startDate: dosesStart,
-            endDate: end
-        )
+        let basal = try await settingsProvider.getBasalHistory(startDate: dosesStart, endDate: end)
 
-        let carbEntries = try await carbStore.getCarbEntries(
-            start: start,
-            end: end
-        )
+        let carbEntries = try await carbStore.getCarbEntries(start: start, end: end)
 
-        let carbRatio = try await settingsProvider.getCarbRatioHistory(
-            startDate: start,
-            endDate: end
-        )
+        let carbRatio = try await settingsProvider.getCarbRatioHistory(startDate: start, endDate: end)
 
-        let glucose = try await glucoseStore.getGlucoseSamples(
-            start: start,
-            end: end
-        )
+        let glucose = try await glucoseStore.getGlucoseSamples(start: start, end: end)
 
         let sensitivityStart = min(start, dosesStart)
 
-        let sensitivity =
-            try await settingsProvider.getInsulinSensitivityHistory(
-                startDate: sensitivityStart,
-                endDate: end
-            )
+        let sensitivity = try await settingsProvider.getInsulinSensitivityHistory(startDate: sensitivityStart, endDate: end)
 
-        let overrides = temporaryPresetsManager.presetHistory
-            .getOverrideHistory(startDate: sensitivityStart, endDate: end)
+        let overrides = temporaryPresetsManager.presetHistory.getOverrideHistory(startDate: sensitivityStart, endDate: end)
 
         guard !sensitivity.isEmpty else {
             throw LoopError.configurationError(.insulinSensitivitySchedule)
         }
 
-        let sensitivityWithOverrides = overrides.applySensitivity(
-            over: sensitivity
-        )
+        let sensitivityWithOverrides = overrides.applySensitivity(over: sensitivity)
 
         guard !basal.isEmpty else {
             throw LoopError.configurationError(.basalRateSchedule)
@@ -2443,61 +1042,51 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
         // annotated() can emit segments out of startDate order when input doses overlap (e.g. a bolus
         // during a temp basal, or overlapping pending/committed doses), so sort for downstream
         // binary-search filterDateRange.
-        let annotatedDoses =
-            doses
+        let annotatedDoses = doses
             .map({ $0.simpleDose(with: insulinModel(for: $0.insulinType)) })
-            .annotated(with: basalWithOverrides)
+            .annotated(with: basalWithOverrides.algorithmSchedule())
             .sorted { $0.startDate < $1.startDate }
 
         // Standard mid-absorption ISF model, matching LoopAlgorithm's prediction
         // path — keeps this review's carb absorption consistent with the
         // algorithm (dose-time `glucoseEffects` is legacy backwards-compat).
         let insulinEffects = annotatedDoses.glucoseEffectsMidAbsorptionISF(
-            insulinSensitivityHistory: sensitivityWithOverrides,
-            from: start.addingTimeInterval(
-                -CarbMath.maximumAbsorptionTimeInterval
-            ).dateFlooredToTimeInterval(GlucoseMath.defaultDelta),
-            to: nil
-        )
+            insulinSensitivityHistoryMgdlPerUnit: sensitivityWithOverrides.algorithmMgdlSchedule(),
+            from: start.addingTimeInterval(-CarbMath.maximumAbsorptionTimeInterval).dateFlooredToTimeInterval(GlucoseMath.defaultDelta),
+            to: nil)
 
         // ICE
-        let insulinCounteractionEffects = glucose.counteractionEffects(
-            to: insulinEffects
-        )
+        let insulinCounteractionEffects = glucose.counteractionEffects(to: insulinEffects)
 
         // Carb Effects
         let carbStatus = carbEntries.map(
             to: insulinCounteractionEffects,
-            carbRatio: carbRatioWithOverrides,
-            insulinSensitivity: sensitivityWithOverrides
+            carbRatio: carbRatioWithOverrides.algorithmSchedule(),
+            insulinSensitivityMgdlPerUnit: sensitivityWithOverrides.algorithmMgdlSchedule()
         )
 
         let carbEffects = carbStatus.dynamicGlucoseEffects(
             from: start,
-            to: end.addingTimeInterval(
-                InsulinMath.defaultInsulinActivityDuration
-            ),
-            carbRatios: carbRatioWithOverrides,
-            insulinSensitivities: sensitivityWithOverrides,
+            to: end.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration),
+            carbRatios: carbRatioWithOverrides.algorithmSchedule(),
+            insulinSensitivitiesMgdlPerUnit: sensitivityWithOverrides.algorithmMgdlSchedule(),
             absorptionModel: CarbAbsorptionModel.piecewiseLinear.model
         )
 
         let carbAbsorptionReview = CarbAbsorptionReview(
             carbEntries: carbEntries,
             carbStatuses: carbStatus,
-            effectsVelocities: insulinCounteractionEffects,
-            carbEffects: carbEffects
+            effectsVelocities: insulinCounteractionEffects.map(\.loopKit),
+            carbEffects: carbEffects.map(\.loopKit)
         )
 
         let trimmedDoses = annotatedDoses.filterDateRange(start, end)
-        let trimmedIOBValues = annotatedDoses.insulinOnBoardTimeline()
-            .filterDateRange(start, end)
+        let trimmedIOBValues = annotatedDoses.insulinOnBoardTimeline().filterDateRange(start, end).map(\.loopKit)
 
         let historicalChartsData = HistoricalChartsData(
             glucoseValues: glucose,
             carbEntries: carbEntries,
             doses: trimmedDoses,
-            rawDoses: doses,
             iobValues: trimmedIOBValues,
             carbAbsorptionReview: carbAbsorptionReview
         )
@@ -2529,57 +1118,8 @@ extension LoopDataManager: ManualDoseViewModelDelegate {
 
 }
 
-extension AutomaticDosingStrategy {
-    var recommendationType: DoseRecommendationType {
-        switch self {
-        case .tempBasalOnly:
-            return .tempBasal
-        case .automaticBolus:
-            return .automaticBolus
-        }
-    }
-}
 
-extension StoredDosingDecision {
-    mutating func updateFrom(
-        input: StoredDataAlgorithmInput,
-        output: AlgorithmOutput<StoredCarbEntry>
-    ) {
-        self.historicalGlucose = input.glucoseHistory.map {
-            HistoricalGlucoseValue(
-                startDate: $0.startDate,
-                quantity: $0.quantity
-            )
-        }
-        switch output.recommendationResult {
-        case .success(let recommendation):
-            self.automaticDoseRecommendation = recommendation.automatic
-        case .failure(let error):
-            self.appendError(error as? LoopError ?? .unknownError(error))
-        }
-        if let activeInsulin = output.activeInsulin {
-            self.insulinOnBoard = InsulinValue(
-                startDate: input.predictionStart,
-                value: activeInsulin
-            )
-        }
-        if let activeCarbs = output.activeCarbs {
-            self.carbsOnBoard = CarbValue(
-                startDate: input.predictionStart,
-                value: activeCarbs
-            )
-        }
-        self.predictedGlucose = output.predictedGlucose
-    }
-}
-
-enum CancelActiveTempBasalReason: String {
-    case automaticDosingDisabled
-    case unreliableCGMData
-    case maximumBasalRateChanged
-}
-
-extension LoopDataManager: AlgorithmDisplayStateProvider {
+extension LoopDataManager : AlgorithmDisplayStateProvider {
     var algorithmState: AlgorithmDisplayState {
         return displayState
     }
@@ -2609,64 +1149,39 @@ extension LoopDataManager: DiagnosticReportGenerator {
 
             "insulinCounteractionEffects: [",
             "* GlucoseEffectVelocity(start, end, mg/dL/min)",
-            (algoOutput?.effects.insulinCounteraction ?? []).reduce(
-                into: "",
-                { (entries, entry) in
-                    entries.append(
-                        "* \(entry.startDate), \(entry.endDate), \(entry.quantity.doubleValue(for: GlucoseEffectVelocity.unit))\n"
-                    )
-                }
-            ),
+            (algoOutput?.effects.insulinCounteraction ?? []).reduce(into: "", { (entries, entry) in
+                entries.append("* \(entry.startDate), \(entry.endDate), \(entry.mgdlPerSecond * 60)\n")
+            }),
             "]",
 
             "insulinEffect: [",
             "* GlucoseEffect(start, mg/dL)",
-            (algoOutput?.effects.insulin ?? []).reduce(
-                into: "",
-                { (entries, entry) in
-                    entries.append(
-                        "* \(entry.startDate), \(entry.quantity.doubleValue(for: .milligramsPerDeciliter))\n"
-                    )
-                }
-            ),
+            (algoOutput?.effects.insulin ?? []).reduce(into: "", { (entries, entry) in
+                entries.append("* \(entry.startDate), \(entry.mgdl)\n")
+            }),
             "]",
 
             "carbEffect: [",
             "* GlucoseEffect(start, mg/dL)",
-            (algoOutput?.effects.carbs ?? []).reduce(
-                into: "",
-                { (entries, entry) in
-                    entries.append(
-                        "* \(entry.startDate), \(entry.quantity.doubleValue(for: .milligramsPerDeciliter))\n"
-                    )
-                }
-            ),
+            (algoOutput?.effects.carbs ?? []).reduce(into: "", { (entries, entry) in
+                entries.append("* \(entry.startDate), \(entry.mgdl)\n")
+            }),
             "]",
 
             "predictedGlucose: [",
             "* PredictedGlucoseValue(start, mg/dL)",
-            (algoOutput?.predictedGlucose ?? []).reduce(
-                into: "",
-                { (entries, entry) in
-                    entries.append(
-                        "* \(entry.startDate), \(entry.quantity.doubleValue(for: .milligramsPerDeciliter))\n"
-                    )
-                }
-            ),
+            (algoOutput?.predictedGlucose ?? []).reduce(into: "", { (entries, entry) in
+                entries.append("* \(entry.startDate), \(entry.mgdl)\n")
+            }),
             "]",
 
             "integralRetrospectiveCorrectionEnabled: \(UserDefaults.standard.integralRetrospectiveCorrectionEnabled)",
 
             "retrospectiveCorrection: [",
             "* GlucoseEffect(start, mg/dL)",
-            (algoOutput?.effects.retrospectiveCorrection ?? []).reduce(
-                into: "",
-                { (entries, entry) in
-                    entries.append(
-                        "* \(entry.startDate), \(entry.quantity.doubleValue(for: .milligramsPerDeciliter))\n"
-                    )
-                }
-            ),
+            (algoOutput?.effects.retrospectiveCorrection ?? []).reduce(into: "", { (entries, entry) in
+                entries.append("* \(entry.startDate), \(entry.mgdl)\n")
+            }),
             "]",
 
             "glucoseMomentumEffect: \(algoOutput?.effects.momentum ?? [])",
@@ -2676,12 +1191,10 @@ extension LoopDataManager: DiagnosticReportGenerator {
             "insulinOnBoard: \(String(describing: algoOutput?.activeInsulin))",
             "error: \(String(describing: loopError))",
             "overrideInUserDefaults: \(String(describing: UserDefaults.appGroup?.intentExtensionOverrideToSet))",
-            "glucoseBasedApplicationFactorEnabled: \(UserDefaults.standard.glucoseBasedApplicationFactorEnabled)",
-            "integralRetrospectiveCorrectionEnabled: \(String(describing: algoInput.map { $0.useIntegralRetrospectiveCorrection || $0.experiments.contains(.integralRetrospectiveCorrection) }))",
             "algorithmExperiments: \(algoInput.map { $0.experiments.map(\.rawValue).sorted() } ?? [])",
             "volatilityBaseline: \(String(describing: algoInput?.volatilityBaseline))",
-            "",
-        ]
+            ""
+            ]
         return entries.joined(separator: "\n")
 
     }
@@ -2694,14 +1207,11 @@ extension LoopDataManager: LoopControl {
     }
 
     func currentBasalRate(at date: Date? = nil) -> Double? {
-        guard let scheduledBasalRate = scheduledBasalRate(at: date ?? now)
-        else {
+        guard let scheduledBasalRate = scheduledBasalRate(at: date ?? now) else {
             return nil
         }
 
-        return deliveryDelegate?.basalDeliveryState?.currentBasalRate(
-            currentScheduledBasalRate: scheduledBasalRate
-        )
+        return deliveryDelegate?.basalDeliveryState?.currentBasalRate(currentScheduledBasalRate: scheduledBasalRate)
     }
 
     var automatedTreatmentState: AutomatedTreatmentState? {
@@ -2713,10 +1223,8 @@ extension LoopDataManager: LoopControl {
 
         // need to compare amounts that the pump can actually deliver, instead of calculated amounts
         guard let neutralBasal = input.basal.closestPrior(to: now)?.value,
-            let deliverableNeutralBasal = deliveryDelegate?.roundBolusVolume(
-                units: neutralBasal
-            ),
-            let currentlyDeliveredBasalRate = currentBasalRate(at: now)
+              let deliverableNeutralBasal = deliveryDelegate?.roundBolusVolume(units: neutralBasal),
+              let currentlyDeliveredBasalRate = currentBasalRate(at: now)
         else {
             return nil
         }
@@ -2731,22 +1239,20 @@ extension LoopDataManager: LoopControl {
             }
         } else {
             let recentAutomaticBoluses = input.doses.filter({ dose in
-                dose.deliveryType == .bolus && dose.automatic
-                    && dose.startDate.addingTimeInterval(.minutes(5)) > now
+                dose.deliveryType == .bolus &&
+                dose.automatic &&
+                dose.startDate.addingTimeInterval(.minutes(5)) > now
             })
             if !recentAutomaticBoluses.isEmpty {
                 return .increasedInsulin
             }
-            return scheduledBasalRate(at: now) != deliverableNeutralBasal
-                ? .neutralOverride : .neutralNoOverride
+            return scheduledBasalRate(at: now) != deliverableNeutralBasal ? .neutralOverride : .neutralNoOverride
         }
     }
 }
 
 extension LoopDataManager: AutomationHistoryProvider {
-    func automationHistory(from start: Date, to end: Date) async throws
-        -> [AbsoluteScheduleValue<Bool>]
-    {
+    func automationHistory(from start: Date, to end: Date) async throws -> [AbsoluteScheduleValue<Bool>] {
         return automationHistory.toTimeline(from: start, to: end)
     }
 }

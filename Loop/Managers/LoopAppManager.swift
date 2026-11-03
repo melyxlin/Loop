@@ -17,7 +17,6 @@ import MockKit
 import HealthKit
 import WidgetKit
 import LoopCore
-import LoopAlgorithm
 import SwiftUI
 
 #if targetEnvironment(simulator)
@@ -244,7 +243,7 @@ class LoopAppManager: NSObject {
             healthStore: healthStore,
             observeHealthKitSamplesFromOtherApps: FeatureFlags.observeHealthKitCarbSamplesFromOtherApps, // At some point we should let the user decide which apps they would like to import from.
             type: HealthKitSampleStore.carbType,
-            observationStart: Date().addingTimeInterval(-CarbMath.maximumAbsorptionTimeInterval)
+            observationStart: Date().addingTimeInterval(-LoopCoreConstants.maximumCarbAbsorptionTimeInterval)
         )
 
         temporaryPresetsManager = TemporaryPresetsManager(settingsProvider: settingsManager, alertIssuer: alertManager)
@@ -265,7 +264,7 @@ class LoopAppManager: NSObject {
             healthStore: healthStore,
             observeHealthKitSamplesFromOtherApps: FeatureFlags.observeHealthKitDoseSamplesFromOtherApps,
             type: HealthKitSampleStore.insulinQuantityType,
-            observationStart: Date().addingTimeInterval(-CarbMath.maximumAbsorptionTimeInterval)
+            observationStart: Date().addingTimeInterval(-LoopCoreConstants.maximumCarbAbsorptionTimeInterval)
         )
 
         self.doseStore = await DoseStore(
@@ -494,7 +493,8 @@ class LoopAppManager: NSObject {
                 dosingStrategy: settingsManager.loopSettings.automaticDosingStrategy.analyticsValue,
                 integralRetrospectiveCorrection: UserDefaults.standard.integralRetrospectiveCorrectionEnabled,
                 glucoseBasedPartialApplication: UserDefaults.standard.glucoseBasedApplicationFactorEnabled,
-                guardAndRunway: UserDefaults.standard.guardAndRunwayEnabled
+                guardAndRunway: UserDefaults.standard.guardAndRunwayEnabled,
+                slowRetrospectiveCorrection: UserDefaults.standard.slowRetrospectiveCorrectionEnabled
             )
         }
         analyticsServicesManager.identifyState()
@@ -1088,12 +1088,6 @@ extension LoopAppManager: ResetLoopManagerDelegate {
             }
         }
     }
-    
-    func presentCouldNotResetLoopAlert(error: Error) {
-        Task {
-            await alertManager.presentCouldNotResetLoopAlert(error: error)
-        }
-    }
 }
 
 // MARK: - ServicesManagerDosingDelegate
@@ -1142,6 +1136,8 @@ extension LoopAppManager: DiagnosticReportGenerator {
             "",
             await alertManager.generateDiagnosticReport(),
             await deviceDataManager.generateDiagnosticReport(),
+            "",
+            remoteDataServicesManager.generateDiagnosticReport(),
             "",
             String(reflecting: self.watchManager!),
             "",

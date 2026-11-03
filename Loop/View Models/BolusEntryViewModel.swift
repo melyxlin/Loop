@@ -12,6 +12,7 @@ import LocalAuthentication
 import LoopAlgorithm
 import LoopCore
 import LoopKit
+import LoopAlgorithm
 import LoopKitUI
 import LoopUI
 import SwiftCharts
@@ -32,6 +33,7 @@ protocol BolusEntryViewModelDelegate: AnyObject {
         units: Double,
         insulinType: InsulinType?
     ) async
+    func effectiveGlucoseTargetRangeSchedule(presumingMealEntry: Bool) -> GlucoseRangeSchedule?
 
     func fetchData(
         for baseTime: Date?,
@@ -821,7 +823,7 @@ final class BolusEntryViewModel: ObservableObject {
                 startDate: startDate,
                 endDate: startDate,
                 volume: enteredBolus.doubleValue(for: .internationalUnit),
-                insulinModel: insulinModel
+                insulinModel: AlgorithmInsulinModel(insulinModel)
             )
 
             let (glucoseHistory, prediction) = try await delegate.generatePrediction(
@@ -1310,18 +1312,13 @@ extension BolusEntryViewModel.Alert: Identifiable {
 extension BolusEntryViewModel {
 
     var isGlucoseDataStale: Bool {
-        guard let latestGlucoseDataDate = delegate?.mostRecentGlucoseDataDate
-        else { return true }
-        return now().timeIntervalSince(latestGlucoseDataDate)
-            > LoopAlgorithm.inputDataRecencyInterval
+        guard let latestGlucoseDataDate = delegate?.mostRecentGlucoseDataDate else { return true }
+        return now().timeIntervalSince(latestGlucoseDataDate) > LoopCoreConstants.inputDataRecencyInterval
     }
 
     var isPumpDataStale: Bool {
-        guard let latestPumpDataDate = delegate?.mostRecentPumpDataDate else {
-            return true
-        }
-        return now().timeIntervalSince(latestPumpDataDate)
-            > LoopAlgorithm.inputDataRecencyInterval
+        guard let latestPumpDataDate = delegate?.mostRecentPumpDataDate else { return true }
+        return now().timeIntervalSince(latestPumpDataDate) > LoopCoreConstants.inputDataRecencyInterval
     }
 
     var isManualGlucosePromptVisible: Bool {

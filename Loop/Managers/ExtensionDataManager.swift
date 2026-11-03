@@ -6,7 +6,6 @@
 //  Copyright © 2016 Nathan Racklyeft. All rights reserved.
 //
 
-import LoopAlgorithm
 import UIKit
 import LoopKit
 import LoopCore
@@ -136,7 +135,7 @@ final class ExtensionDataManager {
         context.mostRecentGlucoseDataDate = loopDataManager.mostRecentGlucoseDataDate
         context.mostRecentPumpDataDate = loopDataManager.mostRecentPumpDataDate
 
-        context.isClosedLoop = self.settingsManager.dosingEnabled
+        context.isClosedLoop = self.deviceManager.isAutomaticDosingActive
 
         context.preMealPresetAllowed = self.settingsManager.dosingEnabled && self.settingsManager.settings.preMealTargetRange != nil
         context.preMealPresetActive = self.temporaryPresetsManager.isPreMealTargetActive()
@@ -149,7 +148,7 @@ final class ExtensionDataManager {
             let first = predictedGlucose[predictedGlucose.startIndex]
             let second = predictedGlucose[predictedGlucose.startIndex.advanced(by: 1)]
             context.predictedGlucose = PredictedGlucoseContext(
-                values: predictedGlucose.map { $0.quantity.doubleValue(for: glucoseUnit) },
+                values: predictedGlucose.map { $0.loopKit.quantity.doubleValue(for: glucoseUnit) },
                 unit: glucoseUnit,
                 startDate: first.startDate,
                 interval: second.startDate.timeIntervalSince(first.startDate))

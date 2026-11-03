@@ -6,8 +6,8 @@
 //  Copyright © 2024 LoopKit Authors. All rights reserved.
 //
 
-import LoopAlgorithm
 import LoopKit
+import LoopCore
 import LoopKitUI
 import SwiftUI
 

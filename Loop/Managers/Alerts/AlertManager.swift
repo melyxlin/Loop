@@ -59,6 +59,7 @@ public final class AlertManager {
     let alertStore: AlertStore
 
     private let bluetoothPoweredOffIdentifier = Alert.Identifier(managerIdentifier: managerIdentifier, alertIdentifier: "bluetoothPoweredOff")
+    static let bluetoothPoweredOffAlertDelay = TimeInterval(minutes: 10)
 
     var analyticsServicesManager: AnalyticsServicesManager
 
@@ -110,7 +111,8 @@ public final class AlertManager {
             .sink { [weak self] publisher in
                 if let loopDataManager = publisher.object as? LoopDataManager {
                     Task { @MainActor in
-                        await self?.loopDidComplete(loopDataManager.lastLoopCompleted)
+                        let manualTempBasalRunning = loopDataManager.deliveryDelegate?.isManualTempBasalRunning == true
+                        await self?.loopDidComplete(manualTempBasalRunning ? nil : loopDataManager.lastLoopCompleted)
                     }
                 }
             }
@@ -177,8 +179,8 @@ public final class AlertManager {
             await issueAlert(Alert(identifier: bluetoothPoweredOffIdentifier,
                              foregroundContent: fgcontent,
                              backgroundContent: bgcontent,
-                             trigger: .immediate,
-                             interruptionLevel: .critical))
+                             trigger: .delayed(interval: Self.bluetoothPoweredOffAlertDelay),
+                             interruptionLevel: .timeSensitive))
         }
     }
 
@@ -872,15 +874,6 @@ extension AlertManager {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
             cancelAction()
         }))
-        
-        await alertPresenter.present(alert, animated: true)
-    }
-    
-    func presentCouldNotResetLoopAlert(error: Error) async {
-        let titleString = String(format: NSLocalizedString("Could Not Restart %1$@", comment: "Format string for title of reset loop alert. (1: App name)"), Bundle.main.bundleDisplayName)
-        let message = String(format: NSLocalizedString("While trying to restart %1$@ an error occured.\n\n%2$@", comment: "Format string for message of reset loop alert. (1: App name) (2: error description)"), Bundle.main.bundleDisplayName, error.localizedDescription)
-        let alert = UIAlertController(title: titleString, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel button for reset loop alert"), style: .cancel))
         
         await alertPresenter.present(alert, animated: true)
     }
