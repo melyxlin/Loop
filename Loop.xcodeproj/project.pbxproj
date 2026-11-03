@@ -2127,7 +2127,6 @@
 				4328E0311CFC068900E199AA /* WatchContext+LoopKit.swift */,
 				A987CD4824A58A0100439ADC /* ZipArchive.swift */,
 				DDC065132B65871E0033FD88 /* Preferences.swift */,
-				C16F51182B891DB600EFD7A1 /* StoredDataAlgorithmInput.swift */,
 				C4C16D18C8806FF48331134C /* InsulinDeliveryHistory.swift */,
 				12CD655083D4816F87B13463 /* SetupChange.swift */,
 				22F7AB4EB9F6CCDF1593CB2E /* OutcomesPackage.swift */,
