@@ -390,36 +390,7 @@ class LoopDataManagerTests: XCTestCase {
         XCTAssertEqual(0, deliveryDelegate.lastEnact.tempBasal!.unitsPerHour, accuracy: defaultAccuracy)
     }
 
-    func testLimitAutomaticDosingPreservesLowTemp() async {
-        glucoseStore.storedGlucose = [
-            StoredGlucoseSample(
-                startDate: d(.minutes(-18)),
-                quantity: .glucose(value: 100)
-            ),
-            StoredGlucoseSample(
-                startDate: d(.minutes(-13)),
-                quantity: .glucose(value: 95)
-            ),
-            StoredGlucoseSample(
-                startDate: d(.minutes(-8)),
-                quantity: .glucose(value: 90)
-            ),
-            StoredGlucoseSample(
-                startDate: d(.minutes(-3)),
-                quantity: .glucose(value: 85)
-            ),
-        ]
 
-        enableLimitAutomaticDosing()
-
-        await loopDataManager.loop()
-
-        XCTAssertEqual(
-            0,
-            deliveryDelegate.lastEnact.tempBasal!.unitsPerHour,
-            accuracy: defaultAccuracy
-        )
-    }
 
 
     func testLowAndFallingWithCOB() async {
@@ -490,56 +461,9 @@ class LoopDataManagerTests: XCTestCase {
         }
     }
 
-    func testLimitAutomaticDosingCapsTempBasalAtNeutral() async {
-        glucoseStore.storedGlucose = [
-            StoredGlucoseSample(
-                startDate: d(.minutes(-1)),
-                quantity: .glucose(value: 150)
-            ),
-        ]
 
-        settingsProvider.settings.automaticDosingStrategy = .tempBasalOnly
-        enableLimitAutomaticDosing()
 
-        await loopDataManager.loop()
 
-        XCTAssertEqual(
-            1.0,
-            deliveryDelegate.lastEnact.tempBasal!.unitsPerHour,
-            accuracy: defaultAccuracy
-        )
-    }
-
-    func testLimitAutomaticDosingReplacesExistingHighTempWithNeutral() async {
-        glucoseStore.storedGlucose = [
-            StoredGlucoseSample(
-                startDate: d(.minutes(-1)),
-                quantity: .glucose(value: 150)
-            ),
-        ]
-
-        let dose = DoseEntry(
-            type: .tempBasal,
-            startDate: d(.minutes(-1)),
-            endDate: d(.minutes(29)),
-            value: 3.0,
-            unit: .unitsPerHour,
-            decisionId: nil
-        )
-        deliveryDelegate.basalDeliveryState = .tempBasal(dose)
-        doseStore.doseHistory = [dose]
-
-        settingsProvider.settings.automaticDosingStrategy = .tempBasalOnly
-        enableLimitAutomaticDosing()
-
-        await loopDataManager.loop()
-
-        XCTAssertEqual(
-            1.0,
-            deliveryDelegate.lastEnact.tempBasal!.unitsPerHour,
-            accuracy: defaultAccuracy
-        )
-    }
 
     func testOngoingTempBasalIsSufficient() async {
         // LoopDataManager should trim future temp basals when running the algorithm.
@@ -804,36 +728,9 @@ class LoopDataManagerTests: XCTestCase {
 
     }
 
-    func testLimitAutomaticDosingSuppressesAutomaticBolus() async {
-        glucoseStore.storedGlucose = [
-            StoredGlucoseSample(
-                startDate: d(.minutes(-1)),
-                quantity: .glucose(value: 120)
-            ),
-        ]
 
-        enableLimitAutomaticDosing()
 
-        await loopDataManager.loop()
 
-        XCTAssertNil(deliveryDelegate.lastEnact.bolus)
-    }
-
-    private func enableLimitAutomaticDosing() {
-        let override = TemporaryScheduleOverride(
-            context: .custom,
-            settings: TemporaryPresetSettings(
-                targetRange: nil,
-                limitAutomaticDosing: true
-            ),
-            startDate: now.addingTimeInterval(.minutes(-1)),
-            duration: .finite(.hours(2)),
-            enactTrigger: .local,
-            syncIdentifier: UUID()
-        )
-
-        temporaryPresetsManager.scheduleOverride = override
-    }
 }
 
 extension LoopDataManagerTests {

@@ -11,36 +11,11 @@ import LoopCore
 import LoopKitUI
 import LoopUI
 
-private enum StatisticsCategory: String, CaseIterable, Identifiable {
-    case glucose
-    case insulin
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .glucose:
-            return NSLocalizedString(
-                "Glucose",
-                comment: "Statistics category picker glucose option"
-            )
-
-        case .insulin:
-            return NSLocalizedString(
-                "Insulin",
-                comment: "Statistics category picker insulin option"
-            )
-        }
-    }
-}
-
 /// "How am I doing?" overview — an Ambulatory Glucose Profile report: summary
 /// metrics, a time-in-range breakdown, and the 24-hour percentile AGP chart,
 /// over a selectable look-back window.
 struct StatisticsView: View {
     @StateObject private var viewModel: StatisticsViewModel
-    @State private var selectedCategory: StatisticsCategory = .glucose
-    @State private var selectedInsulinDay: DailyInsulinTotal?
     @EnvironmentObject private var displayGlucosePreference: DisplayGlucosePreference
     
     // Statistics Range Settings
@@ -58,14 +33,12 @@ struct StatisticsView: View {
 
     init(
         glucoseStore: GlucoseStoreProtocol,
-        doseStore: DoseStoreProtocol? = nil,
         insulinDeliveryHistory: ((Int) async throws -> InsulinDeliveryHistory)? = nil,
         scheduledBasalTotal: Double? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: StatisticsViewModel(
                 glucoseStore: glucoseStore,
-                doseStore: doseStore,
                 insulinDeliveryHistory: insulinDeliveryHistory,
                 scheduledBasalTotal: scheduledBasalTotal
             )
@@ -87,31 +60,10 @@ struct StatisticsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: viewModel.selectedRange) { _ in
-                    selectedInsulinDay = nil
-                }
 
-                Picker(
-                    NSLocalizedString(
-                        "Category",
-                        comment: "Statistics category picker label"
-                    ),
-                    selection: $selectedCategory
-                ) {
-                    ForEach(StatisticsCategory.allCases) { category in
-                        Text(category.title).tag(category)
-                    }
-                }
-                .pickerStyle(.segmented)
             }
 
-            switch selectedCategory {
-            case .glucose:
-                glucoseStatisticsContent
-
-            case .insulin:
-                insulinStatisticsContent
-            }
+            glucoseStatisticsContent
 
             if viewModel.showsInsulin {
                 insulinSection
@@ -295,288 +247,8 @@ struct StatisticsView: View {
         }
     }
     
-    @ViewBuilder
-    private var insulinStatisticsContent: some View {
-        if let stats = viewModel.insulinStatistics,
-           stats.totalInsulin > 0 {
-
-            insulinUsageSection(stats)
-
-        } else if viewModel.isLoading {
-            Section {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
-                }
-            }
-
-        } else {
-            Section {
-                Text(
-                    NSLocalizedString(
-                        "No insulin data for this period.",
-                        comment: "Insulin statistics empty state"
-                    )
-                )
-                .foregroundColor(.secondary)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func insulinUsageSection(_ stats: InsulinStatistics) -> some View {
-        Section(
-            header: Text(
-                NSLocalizedString(
-                    "Insulin Usage",
-                    comment: "Insulin statistics section header"
-                )
-            ),
-            footer: Text(
-                NSLocalizedString(
-                    "Daily insulin delivery split between basal and bolus.",
-                    comment: "Insulin usage chart explanation"
-                )
-            )
-        ) {
-            InsulinUsageChartView(
-                dailyTotals: stats.dailyTotals,
-                selectedDay: $selectedInsulinDay
-            )
-            .frame(height: 240)
-            .padding(.vertical, 8)
-            if let selectedDay = selectedInsulinDay {
-                dailyInsulinCard(selectedDay)
-            }
-
-            HStack(spacing: 20) {
-                insulinLegend(
-                    title: NSLocalizedString(
-                        "Basal",
-                        comment: "Insulin statistics basal legend"
-                    ),
-                    color: .blue
-                )
-
-                insulinLegend(
-                    title: NSLocalizedString(
-                        "Bolus",
-                        comment: "Insulin statistics bolus legend"
-                    ),
-                    color: .purple
-                )
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.bottom, 4)
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ],
-                spacing: 12
-            ) {
-                insulinMetric(
-                    NSLocalizedString(
-                        "Average / Day",
-                        comment: "Average daily insulin metric title"
-                    ),
-                    value: stats.averageDailyInsulin
-                )
-
-                insulinMetric(
-                    NSLocalizedString(
-                        "Total",
-                        comment: "Total insulin metric title"
-                    ),
-                    value: stats.totalInsulin
-                )
-
-                insulinMetric(
-                    NSLocalizedString(
-                        "Basal / Day",
-                        comment: "Average daily basal insulin metric title"
-                    ),
-                    value: stats.averageDailyBasal,
-                    percentage: stats.basalPercentage
-                )
-
-                insulinMetric(
-                    NSLocalizedString(
-                        "Bolus / Day",
-                        comment: "Average daily bolus insulin metric title"
-                    ),
-                    value: stats.averageDailyBolus,
-                    percentage: stats.bolusPercentage
-                )
-            }
-            .listRowInsets(
-                EdgeInsets(
-                    top: 8,
-                    leading: 16,
-                    bottom: 8,
-                    trailing: 16
-                )
-            )
-            .listRowBackground(Color.clear)
-        }
-    }
-
-    private func insulinMetric(
-        _ title: String,
-        value: Double,
-        percentage: Double? = nil
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-
-            Text(String(format: "%.1f U", value))
-                .font(.system(.title2, design: .rounded).weight(.bold))
-                .monospacedDigit()
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-
-            if let percentage {
-                Text(String(format: "%.0f%% of insulin", percentage * 100))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(
-            RoundedRectangle(
-                cornerRadius: 12,
-                style: .continuous
-            )
-            .fill(Color(.secondarySystemGroupedBackground))
-        )
-    }
-
-    private func insulinLegend(
-        title: String,
-        color: Color
-    ) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(color)
-                .frame(width: 12, height: 12)
-
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-    private func dailyInsulinCard(
-        _ day: DailyInsulinTotal
-    ) -> some View {
-        let total = day.total
-
-        let basalPercentage = total > 0
-            ? day.basal / total
-            : 0
-
-        let bolusPercentage = total > 0
-            ? day.bolus / total
-            : 0
-
-        return VStack(alignment: .leading, spacing: 12) {
-            Text(
-                day.date.formatted(
-                    .dateTime
-                        .weekday(.wide)
-                        .month(.wide)
-                        .day()
-                )
-            )
-            .font(.headline)
-
-            HStack {
-                Text(
-                    NSLocalizedString(
-                        "Total",
-                        comment: "Daily insulin total label"
-                    )
-                )
-
-                Spacer()
-
-                Text(String(format: "%.1f U", total))
-                    .monospacedDigit()
-                    .fontWeight(.semibold)
-            }
-
-            Divider()
-
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(
-                        NSLocalizedString(
-                            "Basal",
-                            comment: "Daily insulin basal label"
-                        )
-                    )
-                    .font(.subheadline.weight(.semibold))
-
-                    Text(
-                        String(
-                            format: "%.0f%%",
-                            basalPercentage * 100
-                        )
-                    )
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Text(String(format: "%.1f U", day.basal))
-                    .monospacedDigit()
-            }
-
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(
-                        NSLocalizedString(
-                            "Bolus",
-                            comment: "Daily insulin bolus label"
-                        )
-                    )
-                    .font(.subheadline.weight(.semibold))
-
-                    Text(
-                        String(
-                            format: "%.0f%%",
-                            bolusPercentage * 100
-                        )
-                    )
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Text(String(format: "%.1f U", day.bolus))
-                    .monospacedDigit()
-            }
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(
-                cornerRadius: 12,
-                style: .continuous
-            )
-            .fill(Color(.secondarySystemGroupedBackground))
-        )
-    }
-
     private func units(_ value: Double) -> String {
-        String(format: NSLocalizedString("%@ U", comment: "Insulin amount in units (1: number)"), value.formatted(.number.precision(.fractionLength(1))))
+        value.formatted(.number.precision(.fractionLength(1))) + " U"
     }
 
     private func percent(_ part: Double, of total: Double) -> String {
@@ -622,7 +294,15 @@ struct StatisticsView: View {
             if !viewModel.insulinDays.isEmpty {
                 DailyInsulinChartView(days: viewModel.insulinDays, average: average?.total)
                     .frame(height: 220)
-                    .padding(.vertical, 8)
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
+                    .listRowInsets(EdgeInsets(
+                        top: 8, leading: 16, bottom: 8, trailing: 16
+                    ))
+                    .listRowBackground(Color.clear)
             }
         }
     }

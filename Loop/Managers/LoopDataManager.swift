@@ -918,6 +918,43 @@ extension LoopDataManager: SimpleBolusViewModelDelegate {
 }
 
 extension LoopDataManager: BolusEntryViewModelDelegate {
+    func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        carbEntryChange: CarbEntryChange?,
+        truncatingActiveOverride: Bool
+    ) async throws -> ManualBolusRecommendationResult {
+        let result = try await cycle.recommendManualBolusWithDetails(
+            manualGlucoseSample: manualGlucoseSample,
+            carbEntryChange: carbEntryChange,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+
+        return ManualBolusRecommendationResult(
+            recommendation: result.recommendation,
+            calculatedBolus: result.calculatedBolus,
+            momentumEffect: result.momentumEffect,
+            retrospectiveCorrectionEffect: result.retrospectiveCorrectionEffect
+        )
+    }
+
+    func getCarbEntry(
+        withUUID uuid: UUID
+    ) async throws -> StoredCarbEntry? {
+        let entries = try await carbStore.getCarbEntries(
+            start: nil,
+            end: nil
+        )
+        return entries.first { $0.uuid == uuid }
+    }
+
+
+    func getCarbEntry(
+        withSyncIdentifier syncIdentifier: String
+    ) async throws -> StoredCarbEntry? {
+        try await carbStore.carbEntry(
+            withSyncIdentifier: syncIdentifier
+        )
+    }
     func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws -> LoopKit.StoredGlucoseSample {
         let storedSamples = try await addGlucose([sample])
         return storedSamples.first!
@@ -1087,6 +1124,7 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
             glucoseValues: glucose,
             carbEntries: carbEntries,
             doses: trimmedDoses,
+            rawDoses: doses.filterDateRange(start, end),
             iobValues: trimmedIOBValues,
             carbAbsorptionReview: carbAbsorptionReview
         )

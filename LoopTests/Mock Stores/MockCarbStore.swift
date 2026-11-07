@@ -11,6 +11,14 @@ import LoopKit
 @testable import Loop
 
 class MockCarbStore: CarbStoreProtocol {
+    func carbEntry(
+        withSyncIdentifier syncIdentifier: String
+    ) async throws -> StoredCarbEntry? {
+        return carbHistory.first {
+            $0.syncIdentifier == syncIdentifier
+        }
+    }
+
     var defaultAbsorptionTimes = LoopCoreConstants.defaultCarbAbsorptionTimes
 
     var carbHistory: [StoredCarbEntry] = []

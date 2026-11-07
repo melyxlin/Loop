@@ -12,7 +12,6 @@ import LocalAuthentication
 import LoopAlgorithm
 import LoopCore
 import LoopKit
-import LoopAlgorithm
 import LoopKitUI
 import LoopUI
 import SwiftCharts
@@ -39,12 +38,9 @@ protocol BolusEntryViewModelDelegate: AnyObject {
         for baseTime: Date?,
         presumePresetEndingNow: Bool,
         ensureDosingCoverageStart: Date?,
+        ensureCarbCoverageStart: Date?,
         projectOngoingDoses: Bool
     ) async throws -> StoredDataAlgorithmInput
-
-    func effectiveGlucoseTargetRangeSchedule(
-        presumingMealEntry: Bool
-    ) -> GlucoseRangeSchedule?
 
     func addCarbEntry(
         _ carbEntry: NewCarbEntry
@@ -1097,6 +1093,7 @@ final class BolusEntryViewModel: ObservableObject {
                 for: now(),
                 presumePresetEndingNow: shouldEndPreMealOverride,
                 ensureDosingCoverageStart: nil,
+                ensureCarbCoverageStart: nil,
                 projectOngoingDoses: false
             )
             .addingGlucoseSample(
@@ -1121,17 +1118,10 @@ final class BolusEntryViewModel: ObservableObject {
 
             // Effective target at the start of the prediction.
             if let targetRange =
-                input.target.closestPrior(to: referenceDate)?.value
+                input.targetMgdl.closestPrior(to: referenceDate)?.value
             {
-                let lowerTarget =
-                    targetRange.lowerBound.doubleValue(
-                        for: .milligramsPerDeciliter
-                    )
-
-                let upperTarget =
-                    targetRange.upperBound.doubleValue(
-                        for: .milligramsPerDeciliter
-                    )
+                let lowerTarget = targetRange.lowerBound
+                let upperTarget = targetRange.upperBound
 
                 self.bolusCalculationDetails.targetGlucose =
                     (lowerTarget + upperTarget) / 2
@@ -1140,14 +1130,12 @@ final class BolusEntryViewModel: ObservableObject {
             }
 
             // ISF active at the start of the prediction.
-            if let sensitivity = input.sensitivity.first(where: {
+            if let sensitivity = input.sensitivityMgdlPerUnit.first(where: {
                 $0.startDate <= referenceDate &&
                     $0.endDate >= referenceDate
             })?.value {
                 self.bolusCalculationDetails.insulinSensitivity =
-                    sensitivity.doubleValue(
-                        for: .milligramsPerDeciliter
-                    )
+                    sensitivity
             } else {
                 self.bolusCalculationDetails.insulinSensitivity = nil
             }

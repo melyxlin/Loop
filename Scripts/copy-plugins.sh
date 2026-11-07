@@ -13,6 +13,13 @@ function copy_plugins {
     echo "Looking for plugins in $1"
     for f in "$1"/*.loopplugin; do
       plugin=$(basename "$f")
+      plugin_name="${plugin%.loopplugin}"
+
+      if [ ! -f "$f/$plugin_name" ] || [ ! -f "$f/Info.plist" ]; then
+        echo "Skipping incomplete plugin: $plugin"
+        continue
+      fi
+
       echo Copying plugin: $plugin to frameworks directory in app
       plugin_path="$(readlink -f "$f" || echo "$f")"
       plugin_as_framework_path="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/${plugin%.*}.framework"

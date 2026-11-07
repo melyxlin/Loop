@@ -9,6 +9,10 @@
 import LoopKit
 
 public protocol CarbStoreProtocol: AnyObject {
+    func carbEntry(
+        withSyncIdentifier syncIdentifier: String
+    ) async throws -> StoredCarbEntry?
+
 
     func getCarbEntries(start: Date?, end: Date?, dateAscending: Bool, fetchLimit: Int?, with favoriteFoodID: String?) async throws -> [StoredCarbEntry]
 

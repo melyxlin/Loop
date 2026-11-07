@@ -715,13 +715,11 @@ extension SettingsView {
 
     @ViewBuilder
     private var statisticsSection: some View {
-        if let glucoseStore = viewModel.deviceManager?.glucoseStore,
-           let doseStore = viewModel.deviceManager?.doseStore {
+        if let glucoseStore = viewModel.deviceManager?.glucoseStore {
             Section {
                 NavigationLink(
                     destination: StatisticsView(
                         glucoseStore: glucoseStore,
-                        doseStore: doseStore,
                         insulinDeliveryHistory: viewModel.insulinDeliveryHistory,
                         scheduledBasalTotal: viewModel.therapySettings().basalRateSchedule?.total()
                     )

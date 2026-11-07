@@ -114,6 +114,13 @@ final class DeviceDataManager {
 
     var deviceWhitelist = DeviceWhitelist()
 
+    @PersistedProperty(key: "CGMInputPaused")
+    var cgmInputPaused: Bool?
+
+    var isCGMInputPaused: Bool {
+        cgmInputPaused ?? false
+    }
+
     // MARK: - CGM
 
     var cgmManager: CGMManager? {
@@ -477,6 +484,12 @@ final class DeviceDataManager {
         var storedNewGlucose = false
         switch readingResult {
         case .newData(let values):
+            guard !isCGMInputPaused else {
+                log.default("Ignoring CGM glucose samples while CGM input is paused")
+                updatePumpManagerBLEHeartbeatPreference()
+                return false
+            }
+
             do {
                 let storedSamples = try await glucoseStore.addGlucoseSamples(values)
                 storedNewGlucose = !storedSamples.isEmpty
@@ -1417,6 +1430,9 @@ extension DeviceDataManager: TherapySettingsViewModelDelegate {
                                     maximumBolusVolumes: $0.supportedMaximumBolusVolumes,
                                     maximumBasalScheduleEntryCount: $0.maximumBasalScheduleEntryCount)
         }
+    }
+    func updateCurrentProfileName() {
+        // ProfileViewModel persists the active name in UserDefaults.
     }
 }
 

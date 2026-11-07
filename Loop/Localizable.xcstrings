@@ -5303,7 +5303,7 @@
       }
     },
     "Active Insulin" : {
-      "comment" : "Details for missing data error when active insulin amount is missing\nThe title of the Insulin On-Board graph\nTitle describing quantity of still-absorbing insulin",
+      "comment" : "The title of the Insulin On-Board graph\nTitle describing quantity of still-absorbing insulin",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9510,9 +9510,6 @@
     "Average" : {
       "comment" : "Average daily insulin metric title\nAverage glucose metric title"
     },
-    "Average / Day" : {
-      "comment" : "Average daily insulin metric title"
-    },
     "Average Glucose" : {
       "comment" : "Setup comparison row for average glucose"
     },
@@ -9523,10 +9520,7 @@
       "comment" : "Error message when scanning fails"
     },
     "Basal" : {
-      "comment" : "Average daily basal metric title\nDaily insulin basal label\nDaily insulin chart legend for basal delivery\nInsulin statistics basal legend"
-    },
-    "Basal / Day" : {
-      "comment" : "Average daily basal insulin metric title"
+      "comment" : "Average daily basal metric title\nDaily insulin chart legend for basal delivery"
     },
     "Basal Rate" : {
       "comment" : "Current profile basal rate"
@@ -10160,7 +10154,7 @@
       }
     },
     "Bolus" : {
-      "comment" : "Average daily bolus metric title\nDaily insulin bolus label\nInsulin statistics bolus legend\nLabel for bolus entry row on bolus screen\nLabel for bolus entry row on simple bolus screen\nTitle for bolus entry screen",
+      "comment" : "Average daily bolus metric title\nLabel for bolus entry row on bolus screen\nLabel for bolus entry row on simple bolus screen\nTitle for bolus entry screen",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10283,9 +10277,6 @@
           }
         }
       }
-    },
-    "Bolus / Day" : {
-      "comment" : "Average daily bolus insulin metric title"
     },
     "Bolus Calculation Details" : {
 
@@ -11050,7 +11041,7 @@
       "comment" : "Focus modes section title (1: app name)"
     },
     "Cancel" : {
-      "comment" : "Button label for cancel\nButton text to cancel\nCancel button for reset loop alert\nCancel export button title\nThe title of the cancel action in an action sheet\nThe title of the cancel button in the plugin picker",
+      "comment" : "Button label for cancel\nButton text to cancel\nCancel export button title\nThe title of the cancel action in an action sheet\nThe title of the cancel button in the plugin picker",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -11311,6 +11302,7 @@
     },
     "Carb effects" : {
       "comment" : "Details for missing data error when carb effects are missing",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -12190,9 +12182,6 @@
     },
     "Carbs shown for %@ x 1 medium item" : {
 
-    },
-    "Category" : {
-      "comment" : "Statistics category picker label"
     },
     "Caution" : {
       "localizations" : {
@@ -14180,6 +14169,7 @@
     },
     "Configuration Error: %1$@" : {
       "comment" : "The error message displayed for configuration errors. (1: configuration error details)",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -14785,6 +14775,7 @@
     },
     "Could Not Restart %1$@" : {
       "comment" : "Format string for title of reset loop alert. (1: App name)",
+      "extractionState" : "stale",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -15758,15 +15749,6 @@
     },
     "Daily Insulin" : {
       "comment" : "Daily insulin section header"
-    },
-    "Daily insulin delivery split between basal and bolus." : {
-      "comment" : "Insulin usage chart explanation"
-    },
-    "Daily insulin usage" : {
-      "comment" : "Accessibility label for daily insulin usage chart"
-    },
-    "Damper Strength: %1$@%%" : {
-      "comment" : "Format string describing damper strength. (1: damper strength percentage)"
     },
     "Data Policy" : {
       "comment" : "Link to the shared outcomes data policy"
@@ -18571,8 +18553,8 @@
         }
       }
     },
-    "Enable Guard + Runway" : {
-      "comment" : "Title for Guard + Runway toggle"
+    "Enable Guard + Runway v2" : {
+      "comment" : "Title for Guard + Runway toggle, second version"
     },
     "Enable Integral Retrospective Correction" : {
       "comment" : "Title for Integral Retrospective Correction toggle",
@@ -18633,8 +18615,8 @@
         }
       }
     },
-    "Enable Negative Insulin Damper" : {
-      "comment" : "Title for Negative Insulin Damper toggle"
+    "Enable Slow Retrospective Correction" : {
+      "comment" : "Title for Slow Retrospective Correction toggle"
     },
     "Enable this to show FoodFinder in the carb entry screen. Requires Internet connection. When disabled, the feature is hidden but settings are preserved." : {
 
@@ -21330,15 +21312,6 @@
     "For these activities, consider setting your insulin needs to **more than 100%**." : {
 
     },
-    "Forecast lowered by recent glucose volatility over the next 2 hours, and the automatic dosing target lowered when there is room above the suspend threshold" : {
-      "comment" : "Description of the prediction input effect for the guard and runway experiment"
-    },
-    "Forecast lowered up to %1$@ (recent volatility %2$@)" : {
-      "comment" : "Guard and runway band description. (1: The most the forecast is lowered)(2: Recent glucose volatility)"
-    },
-    "Forecast not lowered while carbs are active" : {
-      "comment" : "Guard and runway band description when active carbs keep it off"
-    },
     "Forecasted blood glucose may still be higher than target range." : {
       "localizations" : {
         "da" : {
@@ -21807,7 +21780,7 @@
       "comment" : "Name of a glucose alarm sound"
     },
     "Glucose" : {
-      "comment" : "Health access row label for glucose\nStatistics category picker glucose option\nThe title of the glucose and prediction graph\nTitle for predicted glucose chart on bolus screen",
+      "comment" : "Health access row label for glucose\nThe title of the glucose and prediction graph\nTitle for predicted glucose chart on bolus screen",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -22427,10 +22400,13 @@
 
     },
     "Guard + Runway" : {
-      "comment" : "Title for guard and runway experiment description\nTitle of guard and runway experiment\nTitle of the prediction input effect for the guard and runway experiment"
+      "comment" : "Title of guard and runway experiment"
     },
-    "Guard + Runway pairs a guard against lows with a little more automatic correction when there is room for it.\n\nAfter a low: for 12 hours after a reading below 70 mg/dL (3.9 mmol/L), while glucose is below 180 mg/dL (10 mmol/L), rises count less toward retrospective correction, so the rebound after treating a low is not taken as a lasting need for more insulin.\n\nVolatility: with no carbs on board, the first two hours of the forecast are lowered according to how much glucose has been varying recently, so Loop is more cautious when glucose is unsettled.\n\nRunway: at 150 mg/dL (8.3 mmol/L) or above with no carbs on board, Loop gives some extra automatic insulin when glucose is calm enough that suspending basal could still take it back before reaching your glucose safety limit.\n\nYour correction range, manual bolus recommendations and glucose safety limit are unchanged. This experiment has been evaluated in simulation and in replays of real data, not yet by people using it." : {
-      "comment" : "Description of Guard + Runway experiment."
+    "Guard + Runway pairs a guard against lows with a little more automatic correction when there is room for it.\n\nAfter a low: for 12 hours after a reading below 70 mg/dL (3.9 mmol/L), while glucose is below 180 mg/dL (10 mmol/L), rises count less toward retrospective correction, so the rebound after treating a low is not taken as a lasting need for more insulin.\n\nVolatility: with no carbs on board, the low guard checks the first two hours of the forecast lowered according to how much glucose has been varying recently, so Loop holds back insulin sooner when glucose is unsettled. The forecast you see and the size of corrections are not lowered.\n\nRunway: at 150 mg/dL (8.3 mmol/L) or above, Loop gives some extra automatic insulin when glucose is calm enough that suspending basal could still take it back before reaching your glucose safety limit. The extra shrinks as carbs on board rise, and stops at 20 g.\n\nNew in version 2: the volatility band only affects the low guard, and the runway fades out with carbs instead of stopping at any carbs.\n\nYour correction range, manual bolus recommendations and glucose safety limit are unchanged. This experiment has been evaluated in simulation and in replays of real data, not yet by people using it." : {
+      "comment" : "Description of Guard + Runway experiment, second version."
+    },
+    "Guard + Runway v2" : {
+      "comment" : "Title for guard and runway experiment description, second version\nTitle of guard and runway experiment, second version\nTitle of the prediction input effect for the guard and runway experiment, second version"
     },
     "Hard Saw Wave" : {
       "comment" : "Name of a glucose alarm sound"
@@ -23436,7 +23412,7 @@
       "comment" : "Error when quota is insufficient"
     },
     "Insulin" : {
-      "comment" : "Health access row label for insulin\nStatistics category picker insulin option\nTitle of the prediction input effect for insulin",
+      "comment" : "Health access row label for insulin\nTitle of the prediction input effect for insulin",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -23752,6 +23728,9 @@
     },
     "Insulin Automation" : {
       "comment" : "Closed loop settings button descriptive text"
+    },
+    "Insulin before the change is from %@, when the dose records start." : {
+      "comment" : "Note under insulin per day when the dose records start partway into the 3 weeks before the change (1: date)"
     },
     "Insulin delivered per day" : {
       "comment" : "Accessibility label for the daily insulin chart"
@@ -24252,6 +24231,12 @@
     "Insulin Sensitivity" : {
       "comment" : "Current profile insulin sensitivity"
     },
+    "Insulin sensitivity × %1$@\nUnexplained change %2$@ per 5 min, weighted over about a day" : {
+      "comment" : "Slow retrospective correction description. (1: The multiplier applied to insulin sensitivity)(2: The unexplained glucose change per 5 minutes)"
+    },
+    "Insulin sensitivity adjusted for glucose change your settings did not explain over the last 3 days" : {
+      "comment" : "Description of the prediction input effect for the slow retrospective correction experiment"
+    },
     "Insulin Sensitivity Factor (ISF)" : {
 
     },
@@ -24450,9 +24435,6 @@
           }
         }
       }
-    },
-    "Insulin Usage" : {
-      "comment" : "Insulin statistics section header"
     },
     "Integral Retrospective Correction" : {
       "comment" : "Title for integral retrospective correction experiment description\nTitle of integral retrospective correction experiment",
@@ -25100,6 +25082,7 @@
     },
     "Invalid glucose reading with a timestamp that is %1$@ in the future" : {
       "comment" : "The error message when glucose data is in the future. (1: glucose data time in future in minutes)",
+      "extractionState" : "stale",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -27060,9 +27043,6 @@
         }
       }
     },
-    "Loop is already looping." : {
-      "comment" : "The error message displayed for LoopError.loopInProgress errors."
-    },
     "Loop needs camera access to scan barcodes. Please enable camera access in Settings." : {
 
     },
@@ -27468,6 +27448,12 @@
           }
         }
       }
+    },
+    "Low guard checks the forecast lowered up to %1$@ (dotted line, recent volatility %2$@)" : {
+      "comment" : "Guard and runway band description. (1: The most the forecast the low guard checks is lowered)(2: Recent glucose volatility)"
+    },
+    "Low guard checks the forecast unchanged while carbs are active" : {
+      "comment" : "Guard and runway band description when active carbs keep it off"
     },
     "Make sure to keep Notifications and Time Sensitive Notifications turned ON in iOS Settings to receive essential safety and maintenance notifications." : {
       "comment" : "Time sensitive notifications callout message when Critical Alerts are unavailable"
@@ -28413,6 +28399,7 @@
     },
     "Momentum effects" : {
       "comment" : "Details for missing data error when momentum effects are missing",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -29133,12 +29120,6 @@
         }
       }
     },
-    "Negative Insulin Damper" : {
-      "comment" : "Title for negative insulin damper experiment description\nTitle of negative insulin damper experiment\nTitle of the prediction input effect for negative insulin damper"
-    },
-    "Negative Insulin Damper (NID) is used to mitigate the effects of temporarily increased insulin sensitivity. Such increases can result in spending significant times beneath target and eventually going low. Loop may erroneously predict glucose going too high, resulting in excess insulin being delivered. To counteract this, NID acts as a dynamic damper on increases to  predicted glucose. The strength of this damper is controlled by the total predicted rise in glucose due to negative insulin. The greater the amount of negative insulin, the stronger the damper and the bigger the reductions. The calculation is done with a 15 minute lag." : {
-      "comment" : "Description of Negative Insulin Damper toggle."
-    },
     "Network error: %@" : {
       "comment" : "Error for network failures\nError message for network failures"
     },
@@ -29508,6 +29489,7 @@
     },
     "No connected devices, or failure during device connection" : {
       "comment" : "The error message displayed for device connection errors.",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -29636,9 +29618,6 @@
     },
     "No glucose data for this period." : {
       "comment" : "Statistics empty state"
-    },
-    "No insulin data for this period." : {
-      "comment" : "Insulin statistics empty state"
     },
     "No keywords saved" : {
 
@@ -34651,9 +34630,6 @@
     "Records detailed activity detection events for troubleshooting." : {
 
     },
-    "Reduces increases in glucose. The damper is stronger when there is more negative insulin" : {
-      "comment" : "Description of the prediction input effect for negative insulin damper"
-    },
     "References" : {
       "comment" : "A heading for a list of references.",
       "isCommentAutoGenerated" : true
@@ -36932,6 +36908,12 @@
     "Skip to Chapter" : {
 
     },
+    "Slow Retrospective Correction" : {
+      "comment" : "Title for slow retrospective correction experiment description\nTitle of slow retrospective correction experiment\nTitle of the prediction input effect for the slow retrospective correction experiment"
+    },
+    "Slow Retrospective Correction looks back over the last 3 days for a lasting difference between what your settings expect and what your glucose did.\n\nWhen glucose has kept rising more than Loop's forecasts explained, Loop doses as if your insulin sensitivity were lower, giving more insulin. When glucose has kept falling more than expected, it gives less. The adjustment builds over about a day and stays between 0.7 and 1.3 times your insulin sensitivity.\n\nIt applies to the forecast, automatic dosing and bolus recommendations. Meals eaten without a carb entry in those 3 days look like unexplained rises and lead to more insulin. With less than 3 days of data it adjusts less.\n\nThis experiment has been evaluated in simulation and in replays of real data, not yet by people using it." : {
+      "comment" : "Description of Slow Retrospective Correction experiment."
+    },
     "Smaller glucose drop" : {
 
     },
@@ -39203,6 +39185,9 @@
         }
       }
     },
+    "The low guard checks the forecast lowered by recent glucose volatility over the next 2 hours (dotted line), and the automatic dosing target is lowered when there is room above the suspend threshold" : {
+      "comment" : "Description of the prediction input effect for the guard and runway experiment, second version"
+    },
     "The maximum allowed amount is %@ grams." : {
       "comment" : "Alert body displayed for quantity greater than max (1: maximum quantity in grams)",
       "localizations" : {
@@ -40203,9 +40188,6 @@
     },
     "Too many shares have been sent from this network recently. Please try again later." : {
       "comment" : "Outcomes share error when rate limited"
-    },
-    "Total" : {
-      "comment" : "Daily insulin total label\nTotal insulin metric title"
     },
     "Total\nBolus" : {
 
@@ -43552,6 +43534,7 @@
     },
     "While trying to restart %1$@ an error occured.\n\n%2$@" : {
       "comment" : "Format string for message of reset loop alert. (1: App name) (2: error description)",
+      "extractionState" : "stale",
       "localizations" : {
         "da" : {
           "stringUnit" : {
@@ -44820,6 +44803,9 @@
     },
     "Your pump and CGM will continue to operate, but the app will not adjust insulin dosing automatically.\n\nIf you wish for the app to automate your insulin, go to Settings and toggle Closed Loop to on." : {
       "comment" : "message when automation is off, glucose value is fresh and devices are good"
+    },
+    "Your pump and CGM will continue to operate, but the app will not adjust insulin dosing while a manual temporary basal is in progress.\n\nCancel the manual temporary basal if you wish for the app to restart automated dosing." : {
+      "comment" : "message when closed loop is on and a manual temp basal is in progress"
     },
     "Your pump data is stale. %1$@ cannot recommend a bolus amount." : {
       "comment" : "Caption for bolus screen notice when pump data is missing or stale",

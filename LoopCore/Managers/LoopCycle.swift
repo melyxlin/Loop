@@ -13,6 +13,25 @@ import LoopKit
 import LoopAlgorithm
 import os.log
 
+public struct DetailedManualBolusRecommendation {
+    public let recommendation: LoopKit.ManualBolusRecommendation?
+    public let calculatedBolus: Double?
+    public let momentumEffect: Double?
+    public let retrospectiveCorrectionEffect: Double?
+
+    public init(
+        recommendation: LoopKit.ManualBolusRecommendation?,
+        calculatedBolus: Double?,
+        momentumEffect: Double?,
+        retrospectiveCorrectionEffect: Double?
+    ) {
+        self.recommendation = recommendation
+        self.calculatedBolus = calculatedBolus
+        self.momentumEffect = momentumEffect
+        self.retrospectiveCorrectionEffect = retrospectiveCorrectionEffect
+    }
+}
+
 public protocol DeliveryDelegate: AnyObject {
     var isSuspended: Bool { get }
     var isManualTempBasalRunning: Bool { get }
@@ -369,19 +388,59 @@ public final class LoopCycle {
         truncatingActiveOverride: Bool = false,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> LoopKit.ManualBolusRecommendation? {
-        let input = try await manualBolusInput(manualGlucoseSample: manualGlucoseSample, carbEntryChange: carbEntryChange,
-                                               truncatingActiveOverride: truncatingActiveOverride)
+        let result = try await recommendManualBolusWithDetails(
+            manualGlucoseSample: manualGlucoseSample,
+            carbEntryChange: carbEntryChange,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+        return result.recommendation
+    }
+
+    public func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        carbEntryChange: CarbEntryChange?,
+        truncatingActiveOverride: Bool,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> DetailedManualBolusRecommendation {
+        let input = try await manualBolusInput(
+            manualGlucoseSample: manualGlucoseSample,
+            carbEntryChange: carbEntryChange,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
 
         try input.validateCarbScheduleCoverage()
         let output = Algorithm.run(input: input)
 
+        let momentumEffect = output.effects.momentum.last?.mgdl
+        let retrospectiveCorrectionEffect =
+            output.effects.totalRetrospectiveCorrectionEffect
+
         switch output.recommendationResult {
         case .success(let prediction):
-            guard var manualBolusRecommendation = prediction.manual else { return nil }
-            if let roundedAmount = requiredHost.deliveryDelegate?.roundBolusVolume(units: manualBolusRecommendation.amount) {
+            guard var manualBolusRecommendation = prediction.manual else {
+                return DetailedManualBolusRecommendation(
+                    recommendation: nil,
+                    calculatedBolus: nil,
+                    momentumEffect: momentumEffect,
+                    retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
+                )
+            }
+
+            let calculatedBolus = manualBolusRecommendation.amount
+
+            if let roundedAmount = requiredHost.deliveryDelegate?.roundBolusVolume(
+                units: manualBolusRecommendation.amount
+            ) {
                 manualBolusRecommendation.amount = roundedAmount
             }
-            return manualBolusRecommendation.loopKit
+
+            return DetailedManualBolusRecommendation(
+                recommendation: manualBolusRecommendation.loopKit,
+                calculatedBolus: calculatedBolus,
+                momentumEffect: momentumEffect,
+                retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
+            )
+
         case .failure(let error):
             throw error
         }

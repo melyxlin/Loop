@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import LoopAlgorithm
+import LoopKit
 
 struct NoActiveAdjustmentBanner: View {
     let profileName: String?
