@@ -24,6 +24,8 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
     @Published var name = ""
     
     @Published var carbsQuantity: Double? = nil
+    @Published var protein: Double = 0
+    @Published var fat: Double = 0
     var preferredCarbUnit = LoopUnit.gram
     var maxCarbEntryQuantity = LoopConstants.maxCarbEntryQuantity
     var warningCarbEntryQuantity = LoopConstants.warningCarbEntryQuantity
@@ -49,16 +51,20 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
             self.carbsQuantity = food.carbsQuantity.doubleValue(for: preferredCarbUnit)
             self.foodType = food.foodType
             self.absorptionTime = food.absorptionTime
+            self.protein = food.protein ?? 0
+            self.fat = food.fat ?? 0
         }
         else {
             self.absorptionTime = .hours(3)
         }
     }
     
-    init(carbsQuantity: Double?, foodType: String, absorptionTime: TimeInterval, onSave: @escaping (NewFavoriteFood) -> ()) {
+    init(carbsQuantity: Double?, foodType: String, absorptionTime: TimeInterval, protein: Double = 0, fat: Double = 0, onSave: @escaping (NewFavoriteFood) -> ()) {
         self.onSave = onSave
         self.carbsQuantity = carbsQuantity
         self.absorptionTime = absorptionTime
+        self.protein = protein
+        self.fat = fat
         
         // foodType of Apple 🍎 --> name: Apple, foodType: 🍎
         var name = foodType
@@ -71,22 +77,33 @@ final class FavoriteFoodAddEditViewModel: ObservableObject {
     var originalFavoriteFood: StoredFavoriteFood?
     var updatedFavoriteFood: NewFavoriteFood? {
         if let quantity = carbsQuantity, quantity != 0, name != "", foodType != "" {
-            if let o = originalFavoriteFood, o.name == name, o.carbsQuantity.doubleValue(for: preferredCarbUnit) == carbsQuantity && o.foodType == foodType && o.absorptionTime == absorptionTime {
-                return nil  // No changes were made
+            let savedProtein = protein > 0 ? protein : nil
+            let savedFat = fat > 0 ? fat : nil
+
+            if let original = originalFavoriteFood,
+               original.name == name,
+               original.carbsQuantity.doubleValue(for: preferredCarbUnit) == quantity,
+               original.foodType == foodType,
+               original.absorptionTime == absorptionTime,
+               original.protein == savedProtein,
+               original.fat == savedFat {
+                return nil
             }
-            
+
             return NewFavoriteFood(
                 name: name,
                 carbsQuantity: LoopQuantity(unit: preferredCarbUnit, doubleValue: quantity),
                 foodType: foodType,
-                absorptionTime: absorptionTime
+                absorptionTime: absorptionTime,
+                protein: savedProtein,
+                fat: savedFat
             )
         }
         else {
             return nil
         }
     }
-    
+
     func save() {
         guard let updatedFavoriteFood, absorptionTime <= maxAbsorptionTime else { return }
 

@@ -20,6 +20,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: - UIApplicationDelegate - Initialization
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        BolusPro_FeatureFlags.registerDefaults()
         log.default("%{public}@ with launchOptions: %{public}@", #function, String(describing: launchOptions))
 
         setenv("CFNETWORK_DIAGNOSTICS", "3", 1)

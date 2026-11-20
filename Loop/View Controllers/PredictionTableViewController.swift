@@ -81,6 +81,8 @@ class PredictionTableViewController: LoopChartsTableViewController, Identifiable
 
     private var slowRetrospectiveCorrection: SlowRetrospectiveCorrectionOutput?
 
+    private var negativeInsulinDamper: Double?
+
     private var refreshContext = RefreshContext.all
 
     private var chartStartDate: Date {
@@ -132,6 +134,7 @@ class PredictionTableViewController: LoopChartsTableViewController, Identifiable
         totalRetrospectiveCorrection = algoOutput?.effects.totalRetrospectiveCorrectionEffect.map { LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0) }
         self.guardAndRunway = algoOutput?.guardAndRunway
         self.slowRetrospectiveCorrection = algoOutput?.slowRetrospectiveCorrection
+        self.negativeInsulinDamper = algoInput?.negativeInsulinDamper
 
         let predictedGlucose = algoOutput?.predictedGlucose ?? []
         self.glucoseChart.setPredictedGlucoseValues(predictedGlucose.map(\.loopKit))
@@ -144,7 +147,7 @@ class PredictionTableViewController: LoopChartsTableViewController, Identifiable
 
         do {
             let sensitivityMultiplier = self.selectedInputs.contains(.slowRetrospectiveCorrection) ? self.slowRetrospectiveCorrection?.multiplier ?? 1 : 1
-            let glucose = try algoInput?.predictGlucose(effectsOptions: self.selectedInputs.algorithmEffectOptions, sensitivityMultiplier: sensitivityMultiplier) ?? []
+            let glucose = try self.alternatePrediction(for: algoInput, sensitivityMultiplier: sensitivityMultiplier)
             self.glucoseChart.setAlternatePredictedGlucoseValues(glucose.map(\.loopKit))
         } catch {
             self.refreshContext.update(with: .status)
@@ -213,11 +216,37 @@ class PredictionTableViewController: LoopChartsTableViewController, Identifiable
 
     // Removed .suspend from this list; LoopAlgorithm needs updates to support this. Also review
     // for better ways to support desired use cases. https://github.com/LoopKit/Loop/pull/2026
-    private lazy var availableInputs: [PredictionInputEffect] = [.carbs, .insulin, .momentum, .retrospection]
+    private lazy var availableInputs: [PredictionInputEffect] = [.carbs, .insulin]
+        + (UserDefaults.standard.negativeInsulinDamperEnabled ? [.damper] : [])
+        + [.momentum, .retrospection]
         + (UserDefaults.standard.guardAndRunwayEnabled ? [.guardAndRunway] : [])
         + (UserDefaults.standard.slowRetrospectiveCorrectionEnabled ? [.slowRetrospectiveCorrection] : [])
 
     private var selectedInputs = PredictionInputEffect.all
+
+    /// The prediction for the selected effects, including the Negative Insulin Damper experiment's
+    /// isolated-effect display when only that row is selected.
+    private func alternatePrediction(for algoInput: StoredDataAlgorithmInput?, sensitivityMultiplier: Double) throws -> [LoopAlgorithm.PredictedGlucoseValue] {
+        guard let algoInput else { return [] }
+        if selectedInputs == [.damper], let damper = algoInput.negativeInsulinDamper {
+            // Show the damper's isolated downward effect relative to the full (undamped) prediction.
+            let baseline = try algoInput.predictGlucose(effectsOptions: PredictionInputEffect.all.algorithmEffectOptions, sensitivityMultiplier: slowRetrospectiveCorrection?.multiplier ?? 1, applyNegativeInsulinDamper: false)
+            var damped = [LoopAlgorithm.PredictedGlucoseValue]()
+            var value = 0.0
+            for (offset, element) in baseline.enumerated() {
+                if offset == 0 {
+                    value = element.mgdl
+                    damped.append(element)
+                    continue
+                }
+                let delta = element.mgdl - baseline[offset - 1].mgdl
+                if delta > 0 { value -= damper * delta }
+                damped.append(LoopAlgorithm.PredictedGlucoseValue(startDate: element.startDate, mgdl: value))
+            }
+            return damped
+        }
+        return try algoInput.predictGlucose(effectsOptions: selectedInputs.algorithmEffectOptions, sensitivityMultiplier: sensitivityMultiplier, applyNegativeInsulinDamper: selectedInputs.contains(.damper))
+    }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         return Section.allCases.count
@@ -283,6 +312,19 @@ class PredictionTableViewController: LoopChartsTableViewController, Identifiable
         cell.accessoryType = selectedInputs.contains(input) ? .checkmark : .none
 
         var subtitleText = input.localizedDescription(forGlucoseUnit: glucoseChart.glucoseUnit) ?? ""
+
+        if input == .damper, let negativeInsulinDamper = negativeInsulinDamper {
+            let formatter = NumberFormatter()
+            formatter.minimumIntegerDigits = 1
+            formatter.maximumFractionDigits = 1
+            formatter.maximumSignificantDigits = 2
+
+            let damper = String(
+                format: NSLocalizedString("Damper Strength: %1$@%%", comment: "Format string describing damper strength. (1: damper strength percentage)"),
+                formatter.string(from: NSNumber(value: 100 * negativeInsulinDamper)) ?? "?"
+            )
+            subtitleText = String(format: "%@\n%@", subtitleText, damper)
+        }
 
         if input == .retrospection,
             let lastDiscrepancy = retrospectiveGlucoseDiscrepancies?.last,

@@ -135,6 +135,14 @@ public protocol LoopCycleHost: AnyObject {
 
     /// The device's battery, for the dosing decisions it stores.
     var controllerStatus: StoredDosingDecision.ControllerStatus { get }
+
+    /// Basal Lock: while glucose is above this threshold, the temp basal does not drop below the
+    /// scheduled rate. Nil when Basal Lock is off.
+    var basalLockThreshold: LoopKit.LoopQuantity? { get }
+}
+
+extension LoopCycleHost {
+    public var basalLockThreshold: LoopKit.LoopQuantity? { nil }
 }
 
 public final class LoopCycle {
@@ -267,6 +275,18 @@ public final class LoopCycle {
                 let scheduledBasalRate = input.basal.closestPrior(to: loopBaseTime)!.value
                 let activeOverride = host.overrideHistory.activeOverride(at: loopBaseTime)
 
+                // Basal Lock: while glucose is above the threshold, don't let the temp basal
+                // drop below the scheduled rate.
+                var shouldApplyBasalLock = false
+                if let basalLockThreshold = host.basalLockThreshold, let latestGlucose = input.glucoseHistory.last {
+                    shouldApplyBasalLock = latestGlucose.quantity > basalLockThreshold
+                        && basal.unitsPerHour < scheduledBasalRate
+                }
+                if shouldApplyBasalLock {
+                    // unrounded on purpose: must equal the neutralBasalRate passed below
+                    basal = type(of: basal).init(unitsPerHour: scheduledBasalRate, duration: Algorithm.tempBasalDuration)
+                }
+
                 let basalAdjustment = basal.loopKit.adjustForCurrentDelivery(
                     at: loopBaseTime,
                     neutralBasalRate: scheduledBasalRate,
@@ -277,6 +297,9 @@ public final class LoopCycle {
 
                 if let basalAdjustment {
                     recommendationToEnact.basalAdjustment = basalAdjustment.algorithm
+                    if shouldApplyBasalLock {
+                        recommendationToEnact.direction = .neutral // no longer a reduction
+                    }
                 }
 
                 output.recommendationResult = .success(.init(automatic: recommendationToEnact))
@@ -363,7 +386,76 @@ public final class LoopCycle {
         return input
     }
 
-    public func recommendManualBolus(
+    public struct DetailedManualBolusRecommendation {
+    public let recommendation: LoopKit.ManualBolusRecommendation?
+    public let calculatedBolus: Double?
+    public let momentumEffect: Double?
+    public let retrospectiveCorrectionEffect: Double?
+
+    public init(
+        recommendation: LoopKit.ManualBolusRecommendation?,
+        calculatedBolus: Double?,
+        momentumEffect: Double?,
+        retrospectiveCorrectionEffect: Double?
+    ) {
+        self.recommendation = recommendation
+        self.calculatedBolus = calculatedBolus
+        self.momentumEffect = momentumEffect
+        self.retrospectiveCorrectionEffect = retrospectiveCorrectionEffect
+    }
+}
+
+public func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        carbEntryChange: CarbEntryChange?,
+        truncatingActiveOverride: Bool,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> DetailedManualBolusRecommendation {
+        let input = try await manualBolusInput(
+            manualGlucoseSample: manualGlucoseSample,
+            carbEntryChange: carbEntryChange,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+
+        try input.validateCarbScheduleCoverage()
+        let output = Algorithm.run(input: input)
+
+        let momentumEffect = output.effects.momentum.last?.mgdl
+        let retrospectiveCorrectionEffect =
+            output.effects.totalRetrospectiveCorrectionEffect
+
+        switch output.recommendationResult {
+        case .success(let prediction):
+            guard var manualBolusRecommendation = prediction.manual else {
+                return DetailedManualBolusRecommendation(
+                    recommendation: nil,
+                    calculatedBolus: nil,
+                    momentumEffect: momentumEffect,
+                    retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
+                )
+            }
+
+            let calculatedBolus = manualBolusRecommendation.amount
+
+            if let roundedAmount = requiredHost.deliveryDelegate?.roundBolusVolume(
+                units: manualBolusRecommendation.amount
+            ) {
+                manualBolusRecommendation.amount = roundedAmount
+            }
+
+            return DetailedManualBolusRecommendation(
+                recommendation: manualBolusRecommendation.loopKit,
+                calculatedBolus: calculatedBolus,
+                momentumEffect: momentumEffect,
+                retrospectiveCorrectionEffect: retrospectiveCorrectionEffect
+            )
+
+        case .failure(let error):
+            throw error
+        }
+    }
+
+public func recommendManualBolus(
         manualGlucoseSample: NewGlucoseSample? = nil,
         carbEntryChange: CarbEntryChange? = nil,
         truncatingActiveOverride: Bool = false,

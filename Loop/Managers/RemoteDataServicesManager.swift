@@ -693,6 +693,9 @@ extension RemoteDataServicesManager {
     
     public func remoteNotificationWasReceived(_ notification: [String: AnyObject]) async throws {
         let service = try serviceForPushNotification(notification)
+        if let receiver = service as? RemoteProfileSwitchReceiver, receiver.isProfileSwitch(notification) {
+            return await receiver.profileSwitchWasReceived(notification)
+        }
         return try await service.remoteNotificationWasReceived(notification)
     }
     

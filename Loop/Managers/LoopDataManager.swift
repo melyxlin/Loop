@@ -104,7 +104,7 @@ final class LoopDataManager: ObservableObject {
     }
 
     private var insulinOnBoard: InsulinValue?
-    
+
     private var liveActivityManager: LiveActivityManagerProxy?
     var lastReservoirValue: ReservoirValue? {
         doseStore.lastReservoirValue
@@ -160,7 +160,7 @@ final class LoopDataManager: ObservableObject {
         self.publishedMostRecentGlucoseDataDate = glucoseStore.latestGlucose?.startDate
         self.dosingStrategySelectionEnabled = dosingStrategySelectionEnabled
         self.publishedMostRecentPumpDataDate = mostRecentPumpDataDate
-        
+
         if #available(iOS 16.2, *) {
             self.liveActivityManager = LiveActivityManager(
                 glucoseStore: self.glucoseStore,
@@ -177,7 +177,7 @@ final class LoopDataManager: ObservableObject {
                 self?.logger.error("Override Intent: Unable to find override named '%s'", String(describing: name))
                 return
             }
-            
+
             self?.logger.default("Override Intent: setting override named '%s'", String(describing: name))
             // TemporaryPresetsManager handles presetActivated/Deactivated observers automatically
             self?.temporaryPresetsManager.scheduleOverride = preset.createOverride(enactTrigger: .remote("Siri"))
@@ -243,7 +243,7 @@ final class LoopDataManager: ObservableObject {
         // Turn off preMeal when going into closed loop off mode
         // Cancel any active temp basal when going into closed loop off mode
         // The dispatch is necessary in case this is coming from a didSet already on the settings struct.
-        
+
         withObservationTracking(of: settingsProvider.dosingEnabled) { [weak self] enabled in
             if let self, self.automationHistory.last?.enabled != enabled {
                 self.automationHistory.append(AutomationHistoryEntry(startDate: self.now, enabled: enabled))
@@ -432,7 +432,27 @@ final class LoopDataManager: ObservableObject {
         logger.default("Loop ended")
     }
 
-    func recommendManualBolus(
+
+    func recommendManualBolusWithDetails(
+        manualGlucoseSample: NewGlucoseSample?,
+        carbEntryChange: CarbEntryChange?,
+        truncatingActiveOverride: Bool
+    ) async throws -> ManualBolusRecommendationResult {
+        let result = try await cycle.recommendManualBolusWithDetails(
+            manualGlucoseSample: manualGlucoseSample,
+            carbEntryChange: carbEntryChange,
+            truncatingActiveOverride: truncatingActiveOverride
+        )
+
+        return ManualBolusRecommendationResult(
+            recommendation: result.recommendation,
+            calculatedBolus: result.calculatedBolus,
+            momentumEffect: result.momentumEffect,
+            retrospectiveCorrectionEffect: result.retrospectiveCorrectionEffect
+        )
+    }
+
+func recommendManualBolus(
         manualGlucoseSample: NewGlucoseSample? = nil,
         carbEntryChange: CarbEntryChange? = nil,
         truncatingActiveOverride: Bool = false
@@ -506,12 +526,12 @@ final class LoopDataManager: ObservableObject {
         glucoseValueStalenessTimer?.invalidate()
         glucoseValueStalenessTimer = nil
     }
-       
+
     func startGlucoseValueStalenessTimerIfNeeded() {
         guard let fireDate = glucoseValueStaleDate,
               glucoseValueStalenessTimer == nil
         else { return }
-        
+
         glucoseValueStalenessTimer = Timer(fire: fireDate, interval: 0, repeats: false) { (_) in
             Task { @MainActor in
                 self.notify(forChange: .glucose)
@@ -546,6 +566,10 @@ extension LoopDataManager: LoopCycleHost {
 
     var controllerStatus: StoredDosingDecision.ControllerStatus {
         UIDevice.current.controllerStatus
+    }
+
+    var basalLockThreshold: LoopQuantity? {
+        Preferences.shared.isBasalLockEnabled ? Preferences.shared.basalLockThreshold : nil
     }
 }
 
@@ -594,7 +618,80 @@ extension LoopDataManager {
 
     @discardableResult
     func deleteCarbEntry(_ oldEntry: StoredCarbEntry) async throws -> Bool {
-        try await carbStore.deleteCarbEntry(oldEntry)
+        let mealStore = BolusProMealStore.shared
+
+        // Deleting an FPU entry directly.
+        if mealStore.isFPUEntry(oldEntry) {
+            let deleted = try await carbStore.deleteCarbEntry(oldEntry)
+
+            if deleted {
+                mealStore.removeMeal(forFPUEntry: oldEntry)
+            }
+
+            return deleted
+        }
+
+        // Deleting a primary entry: locate its paired FPU entry.
+        if let secondaryIdentifier = mealStore.secondaryIdentifier(for: oldEntry) {
+            let secondaryEntry: StoredCarbEntry?
+
+            if secondaryIdentifier.hasPrefix("sync:") {
+                let syncIdentifier = String(
+                    secondaryIdentifier.dropFirst("sync:".count)
+                )
+
+                secondaryEntry = try await getCarbEntry(
+                    withSyncIdentifier: syncIdentifier
+                )
+
+            } else if secondaryIdentifier.hasPrefix("uuid:") {
+                let uuidString = String(
+                    secondaryIdentifier.dropFirst("uuid:".count)
+                )
+
+                guard let uuid = UUID(uuidString: uuidString) else {
+                    return false
+                }
+
+                secondaryEntry = try await getCarbEntry(withUUID: uuid)
+
+            } else {
+                return false
+            }
+
+            // Delete the secondary entry first.
+            if let secondaryEntry {
+                let secondaryDeleted = try await carbStore.deleteCarbEntry(
+                    secondaryEntry
+                )
+
+                guard secondaryDeleted else {
+                    return false
+                }
+            }
+        }
+
+        // Now delete the primary entry.
+        let primaryDeleted = try await carbStore.deleteCarbEntry(oldEntry)
+
+        if primaryDeleted {
+            mealStore.remove(for: oldEntry)
+        }
+
+        return primaryDeleted
+    }
+
+
+    /// Finds a stored carb entry by the stable sync identifier used by BolusPro.
+    func getCarbEntry(withSyncIdentifier syncIdentifier: String) async throws -> StoredCarbEntry? {
+        let entries = try await carbStore.getCarbEntries(start: nil, end: nil)
+        return entries.first { $0.syncIdentifier == syncIdentifier }
+    }
+
+    /// Finds a stored carb entry by UUID for older entries without a sync identifier.
+    func getCarbEntry(withUUID uuid: UUID) async throws -> StoredCarbEntry? {
+        let entries = try await carbStore.getCarbEntries(start: nil, end: nil)
+        return entries.first { $0.uuid == uuid }
     }
 
     /// Logs a new external bolus insulin dose in the DoseStore and HealthKit
@@ -719,7 +816,7 @@ extension LoopDataManager {
         } else {
             return nil
         }
-        
+
 
         guard let suspendThreshold = settingsProvider.settings.suspendThreshold?.quantity,
               let carbRatioSchedule = temporaryPresetsManager.carbRatioScheduleApplyingOverrideHistory,
@@ -793,33 +890,33 @@ extension ManualBolusRecommendationWithDate {
 }
 
 extension LoopDataManager: ServicesManagerDelegate {
-    
+
     // Remote Overrides
     func enactOverride(name: String, duration: TemporaryScheduleOverride.Duration?, remoteAddress: String) async throws {
-        
+
         guard let preset = settingsProvider.settings.overridePresets.first(where: { $0.name == name }) else {
             throw EnactOverrideError.unknownPreset(name)
         }
-        
+
         var remoteOverride = preset.createOverride(enactTrigger: .remote(remoteAddress))
-        
+
         if let duration {
             remoteOverride.duration = duration
         }
 
         temporaryPresetsManager.scheduleOverride = remoteOverride
     }
-    
-    
+
+
     func cancelCurrentOverride() async throws {
         temporaryPresetsManager.scheduleOverride = nil
     }
-    
+
 
     enum EnactOverrideError: LocalizedError {
-        
+
         case unknownPreset(String)
-        
+
         var errorDescription: String? {
             switch self {
             case .unknownPreset(let presetName):
@@ -827,24 +924,24 @@ extension LoopDataManager: ServicesManagerDelegate {
             }
         }
     }
-    
+
     //Carb Entry
-    
+
     func deliverCarbs(amountInGrams: Double, absorptionTime: TimeInterval?, foodType: String?, startDate: Date?) async throws {
-        
+
         let absorptionTime = absorptionTime ?? LoopCoreConstants.defaultCarbAbsorptionTimes.medium
         if absorptionTime < LoopConstants.minCarbAbsorptionTime || absorptionTime > LoopConstants.maxCarbAbsorptionTime {
             throw CarbActionError.invalidAbsorptionTime(absorptionTime)
         }
-        
+
         guard amountInGrams > 0.0 else {
             throw CarbActionError.invalidCarbs
         }
-        
+
         guard amountInGrams <= LoopConstants.maxCarbEntryQuantity.doubleValue(for: .gram) else {
             throw CarbActionError.exceedsMaxCarbs
         }
-        
+
         if let startDate = startDate {
             let maxStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryFutureTime)
             let minStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryPastTime)
@@ -852,20 +949,20 @@ extension LoopDataManager: ServicesManagerDelegate {
                 throw CarbActionError.invalidStartDate(startDate)
             }
         }
-        
+
         let quantity = LoopQuantity(unit: .gram, doubleValue: amountInGrams)
         let candidateCarbEntry = NewCarbEntry(syncIdentifier: UUID().uuidString, quantity: quantity, startDate: startDate ?? now, foodType: foodType, absorptionTime: absorptionTime)
 
         let _ = try await carbStore.addCarbEntry(candidateCarbEntry)
     }
-    
+
     enum CarbActionError: LocalizedError {
-        
+
         case invalidAbsorptionTime(TimeInterval)
         case invalidStartDate(Date)
         case exceedsMaxCarbs
         case invalidCarbs
-        
+
         var errorDescription: String? {
             switch  self {
             case .exceedsMaxCarbs:
@@ -880,13 +977,13 @@ extension LoopDataManager: ServicesManagerDelegate {
                 return String(format: NSLocalizedString("Start time is out of range: %@", comment: "Carb error description: invalid start time is out of range."), startDateFormatted)
             }
         }
-        
+
         static var numberFormatter: NumberFormatter = {
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
             return formatter
         }()
-        
+
         static var dateFormatter: DateFormatter = {
             let formatter = DateFormatter()
             formatter.timeStyle = .medium
@@ -904,20 +1001,20 @@ extension LoopDataManager: SimpleBolusViewModelDelegate {
     var maximumBolus: Double? {
         settingsProvider.settings.maximumBolus
     }
-    
+
     var suspendThreshold: LoopQuantity? {
         settingsProvider.settings.suspendThreshold?.quantity
     }
-    
+
     func enactBolus(units: Double, metadata: DoseMetadata, activationType: BolusActivationType) async throws {
         let startDate = now
         try await deliveryDelegate?.enactBolus(units: units, metadata: metadata, activationType: activationType)
         lastManualBolus = LastManualBolus(amount: units, startDate: startDate)
     }
-    
+
 }
 
-extension LoopDataManager: BolusEntryViewModelDelegate {    
+extension LoopDataManager: BolusEntryViewModelDelegate {
     func saveGlucose(sample: LoopKit.NewGlucoseSample) async throws -> LoopKit.StoredGlucoseSample {
         let storedSamples = try await addGlucose([sample])
         return storedSamples.first!
@@ -979,7 +1076,7 @@ extension LoopDataManager: CarbEntryViewModelDelegate {
     func isScheduleOverrideActive(at date: Date) -> Bool {
         temporaryPresetsManager.isScheduleOverrideActive(at: date)
     }
-    
+
     var defaultAbsorptionTimes: DefaultAbsorptionTimes {
         LoopCoreConstants.defaultCarbAbsorptionTimes
     }
@@ -993,11 +1090,11 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
         try await carbStore.getCarbEntries(start: nil, end: nil, dateAscending: false, fetchLimit: 1, with: favoriteFood.id).first?.startDate
     }
 
-    
+
     func getFavoriteFoodCarbEntries(_ favoriteFood: StoredFavoriteFood) async throws -> [LoopKit.StoredCarbEntry] {
         try await carbStore.getCarbEntries(start: nil, end: nil, dateAscending: false, fetchLimit: nil, with: favoriteFood.id)
     }
-    
+
     func getHistoricalChartsData(start: Date, end: Date) async throws -> HistoricalChartsData {
         // Need to get insulin data from any active doses that might affect this time range
         var dosesStart = start.addingTimeInterval(-InsulinMath.defaultInsulinActivityDuration)
@@ -1072,17 +1169,17 @@ extension LoopDataManager: FavoriteFoodInsightsViewModelDelegate {
             insulinSensitivitiesMgdlPerUnit: sensitivityWithOverrides.algorithmMgdlSchedule(),
             absorptionModel: CarbAbsorptionModel.piecewiseLinear.model
         )
-        
+
         let carbAbsorptionReview = CarbAbsorptionReview(
             carbEntries: carbEntries,
             carbStatuses: carbStatus,
             effectsVelocities: insulinCounteractionEffects.map(\.loopKit),
             carbEffects: carbEffects.map(\.loopKit)
         )
-        
+
         let trimmedDoses = annotatedDoses.filterDateRange(start, end)
         let trimmedIOBValues = annotatedDoses.insulinOnBoardTimeline().filterDateRange(start, end).map(\.loopKit)
-        
+
         let historicalChartsData = HistoricalChartsData(
             glucoseValues: glucose,
             carbEntries: carbEntries,
@@ -1103,11 +1200,11 @@ extension LoopDataManager: ManualDoseViewModelDelegate {
     var settings: StoredSettings {
         settingsProvider.settings
     }
-    
+
     var scheduleOverride: TemporaryScheduleOverride? {
         temporaryPresetsManager.scheduleOverride
     }
-    
+
     func insulinActivityDuration(for type: InsulinType?) -> TimeInterval {
         return insulinModel(for: type).effectDuration
     }
@@ -1201,19 +1298,19 @@ extension LoopDataManager: DiagnosticReportGenerator {
 }
 
 extension LoopDataManager: LoopControl {
-    
+
     func scheduledBasalRate(at date: Date? = nil) -> Double? {
         settings.basalRateSchedule?.value(at: date ?? now)
     }
-    
+
     func currentBasalRate(at date: Date? = nil) -> Double? {
         guard let scheduledBasalRate = scheduledBasalRate(at: date ?? now) else {
             return nil
         }
-        
+
         return deliveryDelegate?.basalDeliveryState?.currentBasalRate(currentScheduledBasalRate: scheduledBasalRate)
     }
-    
+
     var automatedTreatmentState: AutomatedTreatmentState? {
         guard let input = displayState.input else {
             return nil
@@ -1247,6 +1344,76 @@ extension LoopDataManager: LoopControl {
                 return .increasedInsulin
             }
             return scheduledBasalRate(at: now) != deliverableNeutralBasal ? .neutralOverride : .neutralNoOverride
+        }
+    }
+}
+
+// MARK: - Remote carb delete and edit
+
+extension LoopDataManager: ServicesManagerCarbEditDelegate {
+    /// Remote edits and deletes may only target entries this app created within the last 24 hours.
+    static let remoteCarbEditWindow: TimeInterval = .hours(24)
+
+    func deleteCarbs(syncIdentifier: String) async throws -> StoredCarbEntry {
+        let entry = try await remoteEditableCarbEntry(syncIdentifier: syncIdentifier)
+        try await deleteCarbEntry(entry)
+        return entry
+    }
+
+    func replaceCarbs(syncIdentifier: String, amountInGrams: Double, absorptionTime: TimeInterval, foodType: String?, startDate: Date) async throws -> StoredCarbEntry {
+        let existing = try await remoteEditableCarbEntry(syncIdentifier: syncIdentifier)
+        try validateRemoteCarbEdit(amountInGrams: amountInGrams, absorptionTime: absorptionTime, startDate: startDate)
+
+        let quantity = LoopQuantity(unit: .gram, doubleValue: amountInGrams)
+        let update = CarbEntryUpdate(quantity: quantity, startDate: startDate, foodType: foodType ?? existing.foodType, absorptionTime: absorptionTime)
+
+        return try await replaceCarbEntry(existing, with: update)
+    }
+
+    /// The limits remote carb entries are checked against.
+    private func validateRemoteCarbEdit(amountInGrams: Double, absorptionTime: TimeInterval, startDate: Date) throws {
+        if absorptionTime < LoopConstants.minCarbAbsorptionTime || absorptionTime > LoopConstants.maxCarbAbsorptionTime {
+            throw CarbActionError.invalidAbsorptionTime(absorptionTime)
+        }
+
+        guard amountInGrams > 0.0 else {
+            throw CarbActionError.invalidCarbs
+        }
+
+        guard amountInGrams <= LoopConstants.maxCarbEntryQuantity.doubleValue(for: .gram) else {
+            throw CarbActionError.exceedsMaxCarbs
+        }
+
+        let maxStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryFutureTime)
+        let minStartDate = now.addingTimeInterval(LoopConstants.maxCarbEntryPastTime)
+        guard startDate <= maxStartDate && startDate >= minStartDate else {
+            throw CarbActionError.invalidStartDate(startDate)
+        }
+    }
+
+    private func remoteEditableCarbEntry(syncIdentifier: String) async throws -> StoredCarbEntry {
+        let now = now
+        let entries = try await carbStore.getCarbEntries(start: now.addingTimeInterval(-Self.remoteCarbEditWindow), end: now.addingTimeInterval(LoopConstants.maxCarbEntryFutureTime))
+        guard let entry = entries.first(where: { $0.syncIdentifier == syncIdentifier }) else {
+            throw RemoteCarbEditError.entryNotFound
+        }
+        guard entry.createdByCurrentApp else {
+            throw RemoteCarbEditError.entryNotEditable
+        }
+        return entry
+    }
+
+    enum RemoteCarbEditError: LocalizedError {
+        case entryNotFound
+        case entryNotEditable
+
+        var errorDescription: String? {
+            switch self {
+            case .entryNotFound:
+                return NSLocalizedString("Carb entry not found or older than 24 hours", comment: "Carb error description: remote edit target not found.")
+            case .entryNotEditable:
+                return NSLocalizedString("Carb entry was not created by Loop", comment: "Carb error description: remote edit target not created by this app.")
+            }
         }
     }
 }

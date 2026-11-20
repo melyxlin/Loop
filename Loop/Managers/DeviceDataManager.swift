@@ -1394,6 +1394,13 @@ extension DeviceDataManager: TherapySettingsViewModelDelegate {
         return try await pumpManager?.syncDeliveryLimits(limits: deliveryLimits) ?? deliveryLimits
     }
 
+    func updateCurrentProfileName() {
+        NotificationCenter.default.post(name: .LoopDataUpdated,
+            object: nil,
+            userInfo: [LoopDataManager.LoopUpdateContextKey: LoopUpdateContext.preferences.rawValue])
+        settingsManager.storeSettings()
+    }
+
     func saveCompletion(therapySettings: TherapySettings) {
         settingsManager.mutateLoopSettings { settings in
             settings.glucoseTargetRangeSchedule = therapySettings.glucoseTargetRangeSchedule

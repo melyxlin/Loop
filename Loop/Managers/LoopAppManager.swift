@@ -402,6 +402,7 @@ class LoopAppManager: NSObject {
 
         dosingDecisionStore.delegate = deviceDataManager
         remoteDataServicesManager.delegate = deviceDataManager
+        servicesManager.therapySettingsViewModelDelegate = deviceDataManager
 
         let criticalEventLogs: [CriticalEventLog] = [settingsManager.settingsStore!, glucoseStore, carbStore, dosingDecisionStore, doseStore, temporaryPresetsManager.presetHistory, deviceDataManager.deviceLog, alertManager.alertStore]
         criticalEventLogExportManager = CriticalEventLogExportManager(logs: criticalEventLogs,

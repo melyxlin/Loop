@@ -16,6 +16,9 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
     @Environment(\.guidanceColors) private var guidanceColors
 
     @ObservedObject var viewModel: CarbEntryViewModel
+
+    @AppStorage(BolusPro_FeatureFlags.Keys.isEnabled)
+    private var bolusProEnabled: Bool = false
         
     @State private var expandedRow: Row?
     
@@ -106,7 +109,14 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
         }
         .alert(item: $viewModel.alert, content: alert(for:))
         .sheet(isPresented: $showAddFavoriteFood, onDismiss: clearExpandedRow) {
-            FavoriteFoodAddEditView(carbsQuantity: $viewModel.carbsQuantity.wrappedValue, foodType: $viewModel.foodType.wrappedValue, absorptionTime: $viewModel.absorptionTime.wrappedValue, onSave: onFavoriteFoodSave(_:))
+            FavoriteFoodAddEditView(
+                carbsQuantity: $viewModel.carbsQuantity.wrappedValue,
+                foodType: $viewModel.foodType.wrappedValue,
+                absorptionTime: $viewModel.absorptionTime.wrappedValue,
+                protein: viewModel.bolusProState.macros.proteinGrams,
+                fat: viewModel.bolusProState.macros.fatGrams,
+                onSave: onFavoriteFoodSave(_:)
+            )
         }
         .sheet(isPresented: $showHowAbsorptionTimeWorks) {
             HowAbsorptionTimeWorksView()
@@ -147,6 +157,15 @@ struct CarbEntryView: View, HorizontalSizeClassOverride {
             
             AbsorptionTimePickerRow(absorptionTime: $viewModel.absorptionTime, isFocused: absorptionTimeFocused, validDurationRange: viewModel.absorptionRimesRange, showHowAbsorptionTimeWorks: $showHowAbsorptionTimeWorks)
                 .padding(.bottom, 2)
+
+            CardSectionDivider()
+            if bolusProEnabled {
+                BolusPro_CarbEntrySection(
+                    state: $viewModel.bolusProState,
+                    primaryCarbsGrams: viewModel.carbsQuantity,
+                    primaryAbsorptionTime: viewModel.absorptionTime
+                )
+            }
         }
         .padding(.vertical, 12)
         .padding(.horizontal)

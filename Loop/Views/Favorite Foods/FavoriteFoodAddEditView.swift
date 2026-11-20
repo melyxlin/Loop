@@ -27,8 +27,8 @@ struct FavoriteFoodAddEditView: View {
     }
     
     /// Initializer for presenting the `FavoriteFoodAddEditView` prepopulated from the `CarbEntryView`
-    init(carbsQuantity: Double?, foodType: String, absorptionTime: TimeInterval, onSave: @escaping (NewFavoriteFood) -> Void) {
-        self._viewModel = StateObject(wrappedValue: FavoriteFoodAddEditViewModel(carbsQuantity: carbsQuantity, foodType: foodType, absorptionTime: absorptionTime, onSave: onSave))
+    init(carbsQuantity: Double?, foodType: String, absorptionTime: TimeInterval, protein: Double = 0, fat: Double = 0, onSave: @escaping (NewFavoriteFood) -> Void) {
+        self._viewModel = StateObject(wrappedValue: FavoriteFoodAddEditViewModel(carbsQuantity: carbsQuantity, foodType: foodType, absorptionTime: absorptionTime, protein: protein, fat: fat, onSave: onSave))
     }
     
     var body: some View {
@@ -107,6 +107,20 @@ struct FavoriteFoodAddEditView: View {
 
             AbsorptionTimePickerRow(absorptionTime: $viewModel.absorptionTime, isFocused: absorptionTimeFocused, validDurationRange: viewModel.absorptionRimesRange, showHowAbsorptionTimeWorks: $showHowAbsorptionTimeWorks)
                 .padding(.bottom, 2)
+
+            CardSectionDivider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BolusPro")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                BolusPro_ManualMacroFields(
+                    fatGrams: $viewModel.fat,
+                    proteinGrams: $viewModel.protein
+                )
+            }
+
         }
         .padding(.vertical, 12)
         .padding(.horizontal)

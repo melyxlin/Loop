@@ -30,6 +30,7 @@ class ServicesManager {
     weak var servicesManagerDelegate: ServicesManagerDelegate?
     weak var servicesManagerDosingDelegate: ServicesManagerDosingDelegate?
     weak var supportManager: SupportManager?
+    weak var therapySettingsViewModelDelegate: TherapySettingsViewModelDelegate?
     
     private var services = [Service]()
 
@@ -384,6 +385,57 @@ extension ServicesManager: ServiceDelegate {
     }
 }
 
+// MARK: - RemoteCarbEditActionDelegate
+
+protocol ServicesManagerCarbEditDelegate: AnyObject {
+    func deleteCarbs(syncIdentifier: String) async throws -> StoredCarbEntry
+    func replaceCarbs(syncIdentifier: String, amountInGrams: Double, absorptionTime: TimeInterval, foodType: String?, startDate: Date) async throws -> StoredCarbEntry
+}
+
+extension ServicesManager: RemoteCarbEditActionDelegate {
+    func deleteRemoteCarbs(syncIdentifier: String) async throws {
+        do {
+            guard let carbEditDelegate = servicesManagerDelegate as? ServicesManagerCarbEditDelegate else {
+                throw RemoteCarbCommandError.internalError
+            }
+            let deleted = try await carbEditDelegate.deleteCarbs(syncIdentifier: syncIdentifier)
+            let body = String(format: NSLocalizedString("Remote Carbs Delete: %d grams removed", comment: "The notification body for a successful remote carb delete. (1: Carb amount in grams)"), Int(deleted.quantity.doubleValue(for: .gram)))
+            NotificationManager.sendRemoteCarbChangeNotification(body: body)
+            await remoteDataServicesManager.performUpload(for: .carb)
+        } catch {
+            let body = NSLocalizedString("Remote Carbs Delete", comment: "The notification body prefix for a failed remote carb delete")
+            NotificationManager.sendRemoteCarbChangeFailureNotification(body: body, error: error)
+            throw error
+        }
+    }
+
+    func replaceRemoteCarbs(syncIdentifier: String, amountInGrams: Double, absorptionTime: TimeInterval, foodType: String?, startDate: Date) async throws {
+        let body = String(format: NSLocalizedString("Remote Carbs Edit: %d grams", comment: "The carb amount message for a remote carb edit notification. (1: Carb amount in grams)"), Int(amountInGrams))
+        do {
+            guard let carbEditDelegate = servicesManagerDelegate as? ServicesManagerCarbEditDelegate else {
+                throw RemoteCarbCommandError.internalError
+            }
+            _ = try await carbEditDelegate.replaceCarbs(syncIdentifier: syncIdentifier, amountInGrams: amountInGrams, absorptionTime: absorptionTime, foodType: foodType, startDate: startDate)
+            NotificationManager.sendRemoteCarbChangeNotification(body: body)
+            await remoteDataServicesManager.performUpload(for: .carb)
+        } catch {
+            NotificationManager.sendRemoteCarbChangeFailureNotification(body: body, error: error)
+            throw error
+        }
+    }
+
+    enum RemoteCarbCommandError: LocalizedError {
+        case internalError
+
+        var errorDescription: String? {
+            switch self {
+            case .internalError:
+                return NSLocalizedString("Internal error", comment: "Remote carb command error description: internal error.")
+            }
+        }
+    }
+}
+
 extension ServicesManager: AlertIssuer {
     func issueAlert(_ alert: Alert) async {
         await alertManager.issueAlert(alert)
@@ -425,5 +477,75 @@ extension Service {
             "serviceIdentifier": pluginIdentifier,
             "state": rawState
         ]
+    }
+}
+
+// MARK: - RemoteProfileActionDelegate
+
+extension ServicesManager: RemoteProfileActionDelegate {
+    @MainActor
+    func activateRemoteProfile(name: String, verify: (GlucoseRangeSchedule, CarbRatioSchedule, BasalRateSchedule, InsulinSensitivitySchedule) throws -> Void) async throws {
+        do {
+            guard let therapySettingsViewModelDelegate else {
+                throw RemoteProfileActionError.unavailable
+            }
+            let viewModel = ProfileViewModel(therapySettings: settingsManager.therapySettings, delegate: therapySettingsViewModelDelegate)
+            guard therapySettingsViewModelDelegate.pumpSupportedIncrements() != nil else {
+                throw RemoteProfileActionError.noPump
+            }
+            guard let profile = try viewModel.savedProfile(named: name) else {
+                throw RemoteProfileActionError.profileNotFound(name)
+            }
+            try profile.verify(with: verify)
+            if case .failure(let error) = viewModel.validateProfile(profile) {
+                throw error
+            }
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                viewModel.loadProfile(profile: profile) { result in
+                    switch result {
+                    case .success:
+                        continuation.resume()
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            sendRemoteProfileNotification(name: name, error: nil)
+        } catch {
+            sendRemoteProfileNotification(name: name, error: error)
+            throw error
+        }
+    }
+
+    private func sendRemoteProfileNotification(name: String, error: Error?) {
+        let notification = UNMutableNotificationContent()
+        let title = String(format: NSLocalizedString("Remote Profile Switch: %1$@", comment: "The message for a remote profile switch notification. (1: profile name)"), name)
+        notification.body = [title, error?.localizedDescription ?? "Success!"].joined(separator: "\n")
+        notification.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: error == nil ? "com.loopkit.Loop.RemoteProfile" : "com.loopkit.Loop.RemoteProfileFailure",
+            content: notification,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    enum RemoteProfileActionError: LocalizedError {
+        case unavailable
+        case noPump
+        case profileNotFound(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .unavailable:
+                return NSLocalizedString("Profile switching is not available", comment: "Remote profile switch error description: profile view model delegate missing.")
+            case .noPump:
+                return NSLocalizedString("No pump is configured", comment: "Remote profile switch error description: no pump.")
+            case .profileNotFound(let name):
+                return String(format: NSLocalizedString("No saved profile named %1$@", comment: "Remote profile switch error description: profile not found. (1: profile name)"), name)
+            }
+        }
     }
 }

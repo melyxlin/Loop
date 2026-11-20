@@ -86,3 +86,9 @@ Loop\ Widget\ Extension/DerivedAssets.xcassets/*
 Loop/DerivedAssetsOverride.xcassets
 WatchApp/DerivedAssetsOverride.xcassets
 Loop\ Widget\ Extension/DerivedAssetsOverride.xcassets
+
+# Local development backups (do not commit)
+*.bak
+*.backup*
+*.pre-*
+*.boluspro-backup-*

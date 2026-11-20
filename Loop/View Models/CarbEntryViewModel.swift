@@ -50,6 +50,7 @@ final class CarbEntryViewModel: ObservableObject {
     
     @Published var alert: CarbEntryViewModel.Alert?
     @Published var warnings: Set<Warning> = []
+    @Published var bolusProState: BolusProEntryState = .off
 
     @Published var bolusViewModel: BolusEntryViewModel?
     
@@ -126,6 +127,7 @@ final class CarbEntryViewModel: ObservableObject {
     init(delegate: CarbEntryViewModelDelegate, originalCarbEntry: StoredCarbEntry) {
         self.delegate = delegate
         self.originalCarbEntry = originalCarbEntry
+        self.bolusProState = BolusProMealStore.shared.meal(for: originalCarbEntry)?.state ?? .off
         self.defaultAbsorptionTimes = delegate.defaultAbsorptionTimes
 
         self.carbsQuantity = originalCarbEntry.quantity.doubleValue(for: preferredCarbUnit)
@@ -147,12 +149,35 @@ final class CarbEntryViewModel: ObservableObject {
     
     var originalCarbEntry: StoredCarbEntry? = nil
     private let newEntrySyncIdentifier = UUID().uuidString
+    private let bolusProSecondarySyncIdentifier = UUID().uuidString
+
+    private var bolusProStateWasEdited: Bool {
+        guard let originalCarbEntry else { return false }
+        let originalState = BolusProMealStore.shared.meal(for: originalCarbEntry)?.state ?? .off
+        return bolusProState != originalState
+    }
+
+    /// A new FPU-only meal is valid without an ordinary primary carb entry.
+    /// The calculator must produce a meaningful delayed entry before Continue is enabled.
+    private var canSubmitFPUOnlyMeal: Bool {
+        guard originalCarbEntry == nil,
+              BolusPro_FeatureFlags.isEnabled,
+              carbsQuantity == nil || carbsQuantity == 0 else {
+            return false
+        }
+
+        return BolusPro_FPUCalculator.makeSecondaryEntry(
+            primaryStartDate: time,
+            state: bolusProState,
+            syncIdentifier: bolusProSecondarySyncIdentifier
+        ) != nil
+    }
 
     private var carbEntryChange: CarbEntryChange? {
         if let quantity = carbsQuantity, quantity != 0 {
             let favoriteFoodID = selectedFavoriteFoodIndex == -1 ? nil : favoriteFoods[selectedFavoriteFoodIndex].id
 
-            if let o = originalCarbEntry, o.quantity.doubleValue(for: preferredCarbUnit) == quantity && o.startDate == time && o.foodType == foodType && o.absorptionTime == absorptionTime, o.favoriteFoodID == favoriteFoodID {
+            if let o = originalCarbEntry, o.quantity.doubleValue(for: preferredCarbUnit) == quantity && o.startDate == time && o.foodType == foodType && o.absorptionTime == absorptionTime, o.favoriteFoodID == favoriteFoodID, !bolusProStateWasEdited {
                 return nil  // No changes were made
             }
 
@@ -195,12 +220,12 @@ final class CarbEntryViewModel: ObservableObject {
     }
     
     var continueButtonDisabled: Bool {
-        get { carbEntryChange == nil }
+        get { carbEntryChange == nil && !bolusProStateWasEdited && !canSubmitFPUOnlyMeal }
     }
     
     // MARK: - Continue to Bolus and Carb Quantity Warnings
     func continueToBolus() {
-        guard carbEntryChange != nil else {
+        guard carbEntryChange != nil || bolusProStateWasEdited || canSubmitFPUOnlyMeal else {
             return
         }
         
@@ -212,14 +237,18 @@ final class CarbEntryViewModel: ObservableObject {
             return
         }
         
-        guard let carbsQuantity, carbsQuantity > 0 else { return }
-        let quantity = LoopQuantity(unit: preferredCarbUnit, doubleValue: carbsQuantity)
-        if quantity.compare(maxCarbEntryQuantity) == .orderedDescending {
-            self.alert = .maxQuantityExceded
-            return
-        }
-        else if quantity.compare(warningCarbEntryQuantity) == .orderedDescending, selectedFavoriteFoodIndex == -1 {
-            self.alert = .warningQuantityValidation
+        if let carbsQuantity, carbsQuantity > 0 {
+            let quantity = LoopQuantity(unit: preferredCarbUnit, doubleValue: carbsQuantity)
+            if quantity.compare(maxCarbEntryQuantity) == .orderedDescending {
+                self.alert = .maxQuantityExceded
+                return
+            }
+            else if quantity.compare(warningCarbEntryQuantity) == .orderedDescending, selectedFavoriteFoodIndex == -1 {
+                self.alert = .warningQuantityValidation
+                return
+            }
+        } else if !canSubmitFPUOnlyMeal {
+            // Zero ordinary carbs are allowed only when BolusPro can create an FPU entry.
             return
         }
         
@@ -236,6 +265,18 @@ final class CarbEntryViewModel: ObservableObject {
             selectedCarbAbsorptionTimeEmoji: selectedDefaultAbsorptionTimeEmoji
         )
         
+        viewModel.bolusProState = bolusProState
+        viewModel.originalCarbEntry = originalCarbEntry
+
+        if BolusPro_FeatureFlags.isEnabled,
+           let secondary = BolusPro_FPUCalculator.makeSecondaryEntry(
+               primaryStartDate: carbEntryChange?.startDate ?? originalCarbEntry?.startDate ?? time,
+               state: bolusProState,
+               syncIdentifier: bolusProSecondarySyncIdentifier
+           ) {
+            viewModel.bolusProSecondaryEntry = secondary
+        }
+
         viewModel.analyticsServicesManager = analyticsServicesManager
         viewModel.deliveryDelegate = deliveryDelegate
         bolusViewModel = viewModel
@@ -256,7 +297,14 @@ final class CarbEntryViewModel: ObservableObject {
     
     // MARK: - Favorite Foods
     func onFavoriteFoodSave(_ food: NewFavoriteFood) {
-        let newStoredFood = StoredFavoriteFood(name: food.name, carbsQuantity: food.carbsQuantity, foodType: food.foodType, absorptionTime: food.absorptionTime)
+        let newStoredFood = StoredFavoriteFood(
+            name: food.name,
+            carbsQuantity: food.carbsQuantity,
+            foodType: food.foodType,
+            absorptionTime: food.absorptionTime,
+            protein: food.protein,
+            fat: food.fat
+        )
         favoriteFoods.append(newStoredFood)
         selectedFavoriteFoodIndex = favoriteFoods.count - 1
     }
@@ -290,6 +338,7 @@ final class CarbEntryViewModel: ObservableObject {
                 self.absorptionTime = defaultAbsorptionTimes.medium
                 self.absorptionTimeWasEdited = false
                 self.usesCustomFoodType = false
+                self.bolusProState = .off
             }
             self.foodType = ""
         }
@@ -300,6 +349,23 @@ final class CarbEntryViewModel: ObservableObject {
             self.absorptionTime = food.absorptionTime
             self.absorptionTimeWasEdited = true
             self.usesCustomFoodType = true
+
+            let fatGrams = food.fat ?? 0
+            let proteinGrams = food.protein ?? 0
+
+            if fatGrams > 0 || proteinGrams > 0 {
+                self.bolusProState = BolusProEntryState(
+                    enabled: true,
+                    macros: BolusProMacroInputs(
+                        fatGrams: fatGrams,
+                        proteinGrams: proteinGrams
+                    ),
+                    sliderCoverage: 1.0,
+                    autoDetected: false
+                )
+            } else {
+                self.bolusProState = .off
+            }
             updateFavoriteFoodLastEatenDate(for: food)
         }
     }

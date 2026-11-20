@@ -52,15 +52,30 @@ public struct FavoriteFoodDetailView: View {
         }
     }
     
-    private func informationSection(for food: StoredFavoriteFood) -> some View {
+        private func informationRows(for food: StoredFavoriteFood) -> [(field: String, value: String)] {
+        var rows: [(field: String, value: String)] = [
+            ("Name", food.name),
+            ("Carb Quantity", food.carbsString(formatter: viewModel.carbFormatter)),
+            ("Food Type", food.foodType),
+            ("Absorption Time", food.absorptionTimeString(formatter: viewModel.absorptionTimeFormatter))
+        ]
+
+        if let protein = food.protein, protein > 0 {
+            rows.append(("Protein", protein.formatted() + " g"))
+        }
+
+        if let fat = food.fat, fat > 0 {
+            rows.append(("Fat", fat.formatted() + " g"))
+        }
+
+        return rows
+    }
+
+private func informationSection(for food: StoredFavoriteFood) -> some View {
         Section("Information") {
             VStack(spacing: 16) {
-                let rows: [(field: String, value: String)] = [
-                    ("Name", food.name),
-                    ("Carb Quantity", food.carbsString(formatter: viewModel.carbFormatter)),
-                    ("Food Type", food.foodType),
-                    ("Absorption Time", food.absorptionTimeString(formatter: viewModel.absorptionTimeFormatter))
-                ]
+                let rows = informationRows(for: food)
+
                 ForEach(rows, id: \.field) { row in
                     HStack {
                         Text(row.field)

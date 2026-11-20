@@ -173,7 +173,15 @@ struct StatisticsView: View {
             if !viewModel.insulinDays.isEmpty {
                 DailyInsulinChartView(days: viewModel.insulinDays, average: average?.total)
                     .frame(height: 220)
-                    .padding(.vertical, 8)
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
+                    .listRowInsets(EdgeInsets(
+                        top: 8, leading: 16, bottom: 8, trailing: 16
+                    ))
+                    .listRowBackground(Color.clear)
             }
         }
     }

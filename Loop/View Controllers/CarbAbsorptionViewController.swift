@@ -468,7 +468,7 @@ final class CarbAbsorptionViewController: LoopChartsTableViewController, Identif
 
     // Entries older than the carb entry window are delete-only.
     private func canEdit(_ entry: StoredCarbEntry) -> Bool {
-        allowEditing && entry.createdByCurrentApp && entry.startDate >= Date().addingTimeInterval(LoopConstants.maxCarbEntryPastTime)
+        !BolusProMealStore.shared.isFPUEntry(entry) && allowEditing && entry.createdByCurrentApp && entry.startDate >= Date().addingTimeInterval(LoopConstants.maxCarbEntryPastTime)
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

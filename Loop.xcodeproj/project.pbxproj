@@ -681,6 +681,7 @@
 		C1F8B243223E73FD00DD66CF /* BolusProgressTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F8B1D122375E4200DD66CF /* BolusProgressTableViewCell.swift */; };
 		C1FAD5192E7E0C3400F7FAD9 /* ChartPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FAD5182E7E0C3100F7FAD9 /* ChartPageView.swift */; };
 		C1FB428C217806A400FAB378 /* StateColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FB428B217806A300FAB378 /* StateColorPalette.swift */; };
+		120490CB2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120490CA2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift */; };
 		C1FB428F217921D600FAB378 /* PumpManagerUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FB428E217921D600FAB378 /* PumpManagerUI.swift */; };
 		C9A47B0180AAB1FC572D3EFE /* CriticalAlertAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A47B0175B13A9543390BC5 /* CriticalAlertAudioPlayer.swift */; };
 		C9A47B0280AAB1FC572D3EFF /* GlucoseAlertManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A47B0275B13A9543390BC6 /* GlucoseAlertManager.swift */; };
@@ -690,6 +691,7 @@
 		CB1AF8155B1761A30ACA5591 /* Loop/Resources/Sounds/synth.caf in Resources */ = {isa = PBXBuildFile; fileRef = 83081FFB0497A4596F597830 /* Loop/Resources/Sounds/synth.caf */; };
 		D6E28676C2C7751C77C7F2FB /* Loop/Resources/Sounds/spring.caf in Resources */ = {isa = PBXBuildFile; fileRef = 9471E156FC10D6D0FF219C77 /* Loop/Resources/Sounds/spring.caf */; };
 		DD3DBD292A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3DBD282A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift */; };
+		DDC065142B65871E0033FD88 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC065132B65871E0033FD88 /* Preferences.swift */; };
 		DDBD0002000000000000BD02 /* BuildDetails.plist in Resources */ = {isa = PBXBuildFile; fileRef = C1EE9E802A38D0FB0064784A /* BuildDetails.plist */; };
 		A1B2C3D42E8F000100000002 /* GuardAndRunwaySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E8F000100000001 /* GuardAndRunwaySelectionView.swift */; };
 		883675B93130EED04D819D0A /* SlowRetrospectiveCorrectionSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1622757183D5C361AFB3FB5C /* SlowRetrospectiveCorrectionSelectionView.swift */; };
@@ -754,6 +756,18 @@
 		8DC1CE32F39301122B550325 /* LoopKitTypeAliases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35FAEFD820F50BFF211AC6D9 /* LoopKitTypeAliases.swift */; };
 		ABD9218EB98C9216FBB04382 /* LoopKitTypeAliases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35FAEFD820F50BFF211AC6D9 /* LoopKitTypeAliases.swift */; };
 		AF79DFAB0F55143D66022668 /* LoopKitTypeAliases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35FAEFD820F50BFF211AC6D9 /* LoopKitTypeAliases.swift */; };
+		E71A10000000000000000001 /* GraphDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71A10000000000000000003 /* GraphDetailViewModel.swift */; };
+		E71A10000000000000000002 /* GraphDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71A10000000000000000004 /* GraphDetailView.swift */; };
+		B01000000000000000000001 /* BolusPro_Models.swift in Sources */ = { isa = PBXBuildFile; fileRef = B02000000000000000000001; /* BolusPro_Models.swift in Sources */ };
+		B01000000000000000000002 /* BolusPro_MealStore.swift in Sources */ = { isa = PBXBuildFile; fileRef = B02000000000000000000002; /* BolusPro_MealStore.swift in Sources */ };
+		B01000000000000000000003 /* BolusPro_FPUCalculator.swift in Sources */ = { isa = PBXBuildFile; fileRef = B02000000000000000000003; /* BolusPro_FPUCalculator.swift in Sources */ };
+		B01000000000000000000004 /* BolusPro_FeatureFlags.swift in Sources */ = { isa = PBXBuildFile; fileRef = B02000000000000000000004; /* BolusPro_FeatureFlags.swift in Sources */ };
+
+				B0A000000000000000000001 /* BolusPro_CarbEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A100000000000000000001 /* BolusPro_CarbEntrySection.swift */; };
+		B0A000000000000000000002 /* BolusPro_ManualMacroFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A100000000000000000002 /* BolusPro_ManualMacroFields.swift */; };
+		B0A000000000000000000003 /* BolusPro_InfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A100000000000000000003 /* BolusPro_InfoSheet.swift */; };
+		B0A000000000000000000004 /* BolusPro_OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A100000000000000000004 /* BolusPro_OnboardingView.swift */; };
+		B0A000000000000000000005 /* BolusPro_SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A100000000000000000005 /* BolusPro_SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1521,6 +1535,7 @@
 		C1F8B1DB223862D500DD66CF /* BolusProgressTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BolusProgressTableViewCell.xib; sourceTree = "<group>"; };
 		C1FAD5182E7E0C3100F7FAD9 /* ChartPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartPageView.swift; sourceTree = "<group>"; };
 		C1FB428B217806A300FAB378 /* StateColorPalette.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StateColorPalette.swift; sourceTree = "<group>"; };
+		120490CA2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NegativeInsulinDamperSelectionView.swift; sourceTree = "<group>"; };
 		C1FB428E217921D600FAB378 /* PumpManagerUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpManagerUI.swift; sourceTree = "<group>"; };
 		C9A47B0175B13A9543390BC5 /* CriticalAlertAudioPlayer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CriticalAlertAudioPlayer.swift; sourceTree = "<group>"; };
 		C9A47B0275B13A9543390BC6 /* GlucoseAlertManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GlucoseAlertManager.swift; sourceTree = "<group>"; };
@@ -1570,6 +1585,7 @@
 		C9SCENED0000000000000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		CE102E23D8C1C1291EF66387 /* PluginPickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PluginPickerView.swift; sourceTree = "<group>"; };
 		DD3DBD282A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegralRetrospectiveCorrectionSelectionView.swift; sourceTree = "<group>"; };
+		DDC065132B65871E0033FD88 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		A1B2C3D42E8F000100000001 /* GuardAndRunwaySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardAndRunwaySelectionView.swift; sourceTree = "<group>"; };
 		1622757183D5C361AFB3FB5C /* SlowRetrospectiveCorrectionSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlowRetrospectiveCorrectionSelectionView.swift; sourceTree = "<group>"; };
 		DDC389FB2A2BC6670066E2E8 /* SettingsView+algorithmExperimentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView+algorithmExperimentsSection.swift"; sourceTree = "<group>"; };
@@ -1630,6 +1646,18 @@
 		35FAEFD820F50BFF211AC6D9 /* LoopKitTypeAliases.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoopKitTypeAliases.swift; sourceTree = "<group>"; };
 		36421A4B9676EF68CDDC4ECD /* AlgorithmBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AlgorithmBridge.swift; sourceTree = "<group>"; };
 		6C372374D3D3D9C5F8E3AD93 /* TemporaryScheduleOverrideAlgorithmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryScheduleOverrideAlgorithmTests.swift; sourceTree = "<group>"; };
+		E71A10000000000000000003 /* GraphDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphDetailViewModel.swift; sourceTree = "<group>"; };
+		E71A10000000000000000004 /* GraphDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphDetailView.swift; sourceTree = "<group>"; };
+		B02000000000000000000001 /* BolusPro_Models.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/BolusPro/BolusPro_Models.swift"; sourceTree = "<group>"; };
+		B02000000000000000000002 /* BolusPro_MealStore.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/BolusPro/BolusPro_MealStore.swift"; sourceTree = "<group>"; };
+		B02000000000000000000003 /* BolusPro_FPUCalculator.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/BolusPro/BolusPro_FPUCalculator.swift"; sourceTree = "<group>"; };
+		B02000000000000000000004 /* BolusPro_FeatureFlags.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Resources/BolusPro/BolusPro_FeatureFlags.swift"; sourceTree = "<group>"; };
+
+				B0A100000000000000000001 /* BolusPro_CarbEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_CarbEntrySection.swift; sourceTree = "<group>"; };
+		B0A100000000000000000002 /* BolusPro_ManualMacroFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_ManualMacroFields.swift; sourceTree = "<group>"; };
+		B0A100000000000000000003 /* BolusPro_InfoSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_InfoSheet.swift; sourceTree = "<group>"; };
+		B0A100000000000000000004 /* BolusPro_OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_OnboardingView.swift; sourceTree = "<group>"; };
+		B0A100000000000000000005 /* BolusPro_SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusPro_SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1922,6 +1950,7 @@
 				C1E3862428247B7100F561A4 /* StoredLoopNotRunningNotification.swift */,
 				4328E0311CFC068900E199AA /* WatchContext+LoopKit.swift */,
 				A987CD4824A58A0100439ADC /* ZipArchive.swift */,
+				DDC065132B65871E0033FD88 /* Preferences.swift */,
 				C4C16D18C8806FF48331134C /* InsulinDeliveryHistory.swift */,
 				12CD655083D4816F87B13463 /* SetupChange.swift */,
 				22F7AB4EB9F6CCDF1593CB2E /* OutcomesPackage.swift */,
@@ -1976,7 +2005,8 @@
 		43776F8E1B8022E90074EA36 /* Loop */ = {
 			isa = PBXGroup;
 			children = (
-				C16DA84022E8E104008624C2 /* Plugins */,
+								B03000000000000000000001 /* BolusPro */,
+C16DA84022E8E104008624C2 /* Plugins */,
 				B66D1F322E6A5D6600471149 /* Localizable.xcstrings */,
 				B66D1F382E6A5D6600471149 /* InfoPlist.xcstrings */,
 				43EDEE6B1CF2E12A00393BE3 /* Loop.entitlements */,
@@ -2217,6 +2247,8 @@
 		43F5C2CF1B92A2ED003EB13D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+								B0A200000000000000000001 /* BolusPro */,
+E71A10000000000000000004 /* GraphDetailView.swift */,
 				84213C732D932EF400642E78 /* Insulin Delivery Log */,
 				B4001CED28CBBC82002FB414 /* AlertManagementView.swift */,
 				A1E47000000000000000A002 /* AlertHistoryView.swift */,
@@ -2267,6 +2299,7 @@
 				C1AF062229426300002C1B19 /* ManualGlucoseEntryRow.swift */,
 				DDC389FD2A2C4C830066E2E8 /* GlucoseBasedApplicationFactorSelectionView.swift */,
 				DD3DBD282A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift */,
+				120490CA2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift */,
 				A1B2C3D42E8F000100000001 /* GuardAndRunwaySelectionView.swift */,
 				1622757183D5C361AFB3FB5C /* SlowRetrospectiveCorrectionSelectionView.swift */,
 				84DEB10C2C18FABA00170734 /* IOSFocusModesView.swift */,
@@ -2280,6 +2313,7 @@
 		43F5C2E41B93C5D4003EB13D /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				E71A10000000000000000003 /* GraphDetailViewModel.swift */,
 				B42D124228D371C400E43D22 /* AlertMuter.swift */,
 				1D6B1B6626866D89009AC446 /* AlertPermissionsChecker.swift */,
 				1DA6499D2441266400F61E75 /* Alerts */,
@@ -3056,6 +3090,31 @@
 			path = Fixtures;
 			sourceTree = "<group>";
 		};
+
+		B03000000000000000000001 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				B02000000000000000000001 /* BolusPro_Models.swift */,
+				B02000000000000000000002 /* BolusPro_MealStore.swift */,
+				B02000000000000000000003 /* BolusPro_FPUCalculator.swift */,
+				B02000000000000000000004 /* BolusPro_FeatureFlags.swift */,
+			);
+			name = BolusPro;
+			sourceTree = "<group>";
+		};
+
+				B0A200000000000000000001 /* BolusPro */ = {
+			isa = PBXGroup;
+			children = (
+				B0A100000000000000000001 /* BolusPro_CarbEntrySection.swift */,
+				B0A100000000000000000002 /* BolusPro_ManualMacroFields.swift */,
+				B0A100000000000000000003 /* BolusPro_InfoSheet.swift */,
+				B0A100000000000000000004 /* BolusPro_OnboardingView.swift */,
+				B0A100000000000000000005 /* BolusPro_SettingsView.swift */,
+			);
+			path = BolusPro;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -3719,6 +3778,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+								B0A000000000000000000001 /* BolusPro_CarbEntrySection.swift in Sources */,
+				B0A000000000000000000002 /* BolusPro_ManualMacroFields.swift in Sources */,
+				B0A000000000000000000003 /* BolusPro_InfoSheet.swift in Sources */,
+				B0A000000000000000000004 /* BolusPro_OnboardingView.swift in Sources */,
+				B0A000000000000000000005 /* BolusPro_SettingsView.swift in Sources */,
+B01000000000000000000001 /* BolusPro_Models.swift in Sources */,
+				B01000000000000000000002 /* BolusPro_MealStore.swift in Sources */,
+				B01000000000000000000003 /* BolusPro_FPUCalculator.swift in Sources */,
+				B01000000000000000000004 /* BolusPro_FeatureFlags.swift in Sources */,
+				E71A10000000000000000001 /* GraphDetailViewModel.swift in Sources */,
+				E71A10000000000000000002 /* GraphDetailView.swift in Sources */,
 				C17824A51E1AD4D100D9D25C /* ManualBolusRecommendation.swift in Sources */,
 				897A5A9624C2175B00C4E71D /* BolusEntryView.swift in Sources */,
 				4F70C2131DE90339006380B7 /* StatusExtensionContext.swift in Sources */,
@@ -3827,11 +3897,13 @@
 				A1E47000000000000000A001 /* AlertHistoryView.swift in Sources */,
 				C9A47B0380AAB1FC572D3F00 /* GlucoseAlertSettingsView.swift in Sources */,
 				E9C00EF524C623EF00628F35 /* LoopSettings+Loop.swift in Sources */,
+				DDC065142B65871E0033FD88 /* Preferences.swift in Sources */,
 				4389916B1E91B689000EEF90 /* ChartSettings+Loop.swift in Sources */,
 				C178249A1E1999FA00D9D25C /* CaseCountable.swift in Sources */,
 				C1F2CAAC2B7A980600D7F581 /* BasalRelativeDose.swift in Sources */,
 				B4F3D25124AF890C0095CE44 /* BluetoothStateManager.swift in Sources */,
 				1DDE273D24AEA4B000796622 /* SettingsViewModel.swift in Sources */,
+				120490CB2CBFB25A006BDF0A /* NegativeInsulinDamperSelectionView.swift in Sources */,
 				FEEDB0000000000000000001 /* StatisticsViewModel.swift in Sources */,
 				414E7082E6A6B9DA8CD11EF3 /* CurrentSetupViewModel.swift in Sources */,
 				DD3DBD292A33AFE9000F8B5B /* IntegralRetrospectiveCorrectionSelectionView.swift in Sources */,

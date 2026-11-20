@@ -220,6 +220,34 @@ extension NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
     
+    static func sendRemoteCarbChangeNotification(body: String) {
+        let notification = UNMutableNotificationContent()
+        notification.body = [body, "Success!"].joined(separator: "\n")
+        notification.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: LoopNotificationCategory.remoteCarbs.rawValue,
+            content: notification,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    static func sendRemoteCarbChangeFailureNotification(body: String, error: Error) {
+        let notification = UNMutableNotificationContent()
+        notification.body = [body, error.localizedDescription].joined(separator: "\n")
+        notification.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: LoopNotificationCategory.remoteCarbsFailure.rawValue,
+            content: notification,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request)
+    }
+
     static func sendMissedMealNotification(mealStart: Date, amountInGrams: Double, delay: TimeInterval? = nil) {
         let notification = UNMutableNotificationContent()
         /// Notifications should expire after the missed meal is no longer relevant

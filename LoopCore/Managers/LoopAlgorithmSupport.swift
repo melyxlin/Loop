@@ -139,7 +139,7 @@ public extension StoredDataAlgorithmInput {
     }
 
     /// `sensitivityMultiplier` is slow retrospective correction's, from the algorithm's last run.
-    func predictGlucose(effectsOptions: AlgorithmEffectsOptions = .all, sensitivityMultiplier: Double = 1) throws -> [LoopAlgorithm.PredictedGlucoseValue] {
+    func predictGlucose(effectsOptions: AlgorithmEffectsOptions = .all, sensitivityMultiplier: Double = 1, applyNegativeInsulinDamper: Bool = true) throws -> [LoopAlgorithm.PredictedGlucoseValue] {
         try validateCarbScheduleCoverage()
         let prediction = Algorithm.generatePrediction(
             start: predictionStart,
@@ -155,7 +155,8 @@ public extension StoredDataAlgorithmInput {
             useIntegralRetrospectiveCorrection: self.useIntegralRetrospectiveCorrection,
             useMidAbsorptionISF: true,
             carbAbsorptionModel: self.carbAbsorptionModel.model,
-            experiments: experiments
+            experiments: experiments,
+            negativeInsulinDamper: applyNegativeInsulinDamper ? negativeInsulinDamper : nil
         )
         return prediction.glucose
     }
@@ -428,7 +429,7 @@ public extension StoredDataAlgorithmInput {
         }
 
 
-        return StoredDataAlgorithmInput(
+        var input = StoredDataAlgorithmInput(
             glucoseHistory: glucose,
             doses: dosesWithModel,
             carbEntries: carbEntries,
@@ -448,6 +449,12 @@ public extension StoredDataAlgorithmInput {
             automaticBolusApplicationFactor: nil,
             experiments: experiments,
             volatilityBaseline: volatilityBaseline)
+
+        if UserDefaults.standard.negativeInsulinDamperEnabled {
+            input.negativeInsulinDamper = input.computeNegativeInsulinDamper()
+        }
+
+        return input
     }
 }
 

@@ -55,6 +55,7 @@ struct SettingsView: View {
             
             case favoriteFoods
             case presets
+            case profiles
         }
     }
     
@@ -62,6 +63,7 @@ struct SettingsView: View {
     @State private var alert: Destination.Alert?
     @State private var sheet: Destination.Sheet?
     @State private var pluginSelection: (() -> Void)?
+    @State private var showingPreferences = false
     @State private var setupChange: SetupChange?
     
     var localizedAppNameAndVersion: String
@@ -89,10 +91,14 @@ struct SettingsView: View {
                         therapySection
                     }
                     presetsSection
+                    bolusProSection
                     deviceSettingsSection
                     healthAccessSection
                     if FeatureFlags.allowExperimentalFeatures {
                         favoriteFoodsSection
+                    }
+                    if FeatureFlags.allowExperimentalFeatures {
+                        preferencesSection
                     }
                     if (viewModel.pumpManagerSettingsViewModel.isTestingDevice || viewModel.cgmManagerSettingsViewModel.isTestingDevice) && viewModel.showDeleteTestData {
                         deleteDataSection
@@ -156,6 +162,9 @@ struct SettingsView: View {
                         }
                     case .favoriteFoods:
                         FavoriteFoodsView(insightsDelegate: viewModel.favoriteFoodInsightsDelegate)
+                    case .profiles:
+                        ProfileView(viewModel: ProfileViewModel(therapySettings: self.viewModel.therapySettings(),
+                                                                delegate: self.viewModel.therapySettingsViewModelDelegate))
                     }
                 }
                 .environmentObject(displayGlucosePreference)
@@ -464,6 +473,11 @@ extension SettingsView {
                 .accessibilityIdentifier("button_TherapySettings")
             }
 
+            LargeButton(action: { sheet = .profiles },
+                        includeArrow: true,
+                        imageView: AnyView(Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 30, weight: .bold))),
+                        label: NSLocalizedString("Profiles", comment: "Title text for button to Profiles"),
+                        descriptiveText: NSLocalizedString("Switch between profiles for different scenarios", comment: "Descriptive text for Profiles"))
             ForEach(pluginMenuItems.filter {$0.section == .configuration}) { item in
                 item.view
             }
@@ -490,6 +504,27 @@ extension SettingsView {
         self.viewModel.availableSupports.flatMap { plugin in
             plugin.configurationMenuItems().enumerated().map { index, item in
                 PluginMenuItem(section: item.section, view: item.view, pluginIdentifier: plugin.pluginIdentifier, offset: index)
+            }
+        }
+    }
+
+    private var bolusProSection: some View {
+        Section {
+            NavigationLink(destination: BolusPro_SettingsView()) {
+                LargeButton(
+                    action: {},
+                    includeArrow: false,
+                    imageView: Image(systemName: "drop.halffull")
+                        .font(.system(size: 30)),
+                    label: NSLocalizedString(
+                        "BolusPro",
+                        comment: "Title text for button to BolusPro Settings"
+                    ),
+                    descriptiveText: NSLocalizedString(
+                        "Protein & fat-aware bolusing for long absorption meals",
+                        comment: "Descriptive text for BolusPro Settings"
+                    )
+                )
             }
         }
     }
@@ -545,6 +580,21 @@ extension SettingsView {
                         imageView: Image("Favorite Foods Icon").renderingMode(.template).foregroundColor(carbTintColor),
                         label: "Favorite Foods",
                         descriptiveText: "Simplify Carb Entry")
+        }
+    }
+
+    private var preferencesSection: some View {
+        Section {
+            LargeButton(action: { showingPreferences = true },
+                        includeArrow: true,
+                        imageView: Image(systemName: "gearshape.fill").font(.system(size: 30, weight: .bold)),
+                        label: NSLocalizedString("Preferences", comment: "Title text for button to Preferences"),
+                        descriptiveText: NSLocalizedString("Customize your Loop experience by adjusting additional settings", comment: "Descriptive text for Preferences"))
+        }
+        .sheet(isPresented: $showingPreferences) {
+            PreferencesView(viewModel: PreferencesViewModel(preferencesProvider: Preferences.shared))
+                .environmentObject(displayGlucosePreference)
+                .environment(\.dismissAction, { showingPreferences = false })
         }
     }
     
