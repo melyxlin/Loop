@@ -97,6 +97,7 @@ class LoopAppManager: NSObject {
     private var cgmEventStore: CgmEventStore!
     private var servicesManager: ServicesManager!
     private var remoteDataServicesManager: RemoteDataServicesManager!
+    private var exerciseDataSharing: ExerciseDataSharing!
     private var statefulPluginManager: StatefulPluginManager!
     private var criticalEventLogExportManager: CriticalEventLogExportManager!
     private var deviceLog: PersistentDeviceLog!
@@ -346,6 +347,8 @@ class LoopAppManager: NSObject {
         trustedTimeChecker = LoopTrustedTimeChecker(alertManager: alertManager, deviceLog: deviceLog)
 
 
+        let exerciseStore = ExerciseStore(healthStore: healthStore)
+
         remoteDataServicesManager = RemoteDataServicesManager(
             alertStore: alertManager.alertStore,
             carbStore: carbStore,
@@ -357,8 +360,11 @@ class LoopAppManager: NSObject {
             overrideHistory: temporaryPresetsManager.presetHistory,
             insulinDeliveryStore: doseStore.insulinDeliveryStore,
             deviceLog: deviceLog,
-            automationHistoryProvider: loopDataManager
+            automationHistoryProvider: loopDataManager,
+            exerciseStore: exerciseStore
         )
+
+        exerciseDataSharing = ExerciseDataSharing(exerciseStore: exerciseStore, healthStore: healthStore, remoteDataServicesManager: remoteDataServicesManager)
 
         settingsManager.remoteDataServicesManager = remoteDataServicesManager
 
@@ -608,6 +614,7 @@ class LoopAppManager: NSObject {
         )
         
         viewModel.favoriteFoodInsightsDelegate = loopDataManager
+        viewModel.exerciseDataSharing = exerciseDataSharing
         viewModel.insulinDeliveryHistory = { [weak loopDataManager] days in
             guard let loopDataManager else { throw CancellationError() }
             return try await loopDataManager.insulinDeliveryHistory(days: days)
@@ -619,7 +626,7 @@ class LoopAppManager: NSObject {
             let experiments = try await ExperimentsHistoryCache().records(since: start, now: now) { readFrom in
                 try await dosingDecisionStore?.getDosingDecisions(start: readFrom, end: now, as: ExperimentsRecord.self) ?? []
             }
-            return SetupHistory(settings: settings, experiments: experiments)
+            return SetupHistory(settings: settings, experiments: experiments, custom: CustomSetupChangeStore().changes)
         }
         viewModel.outcomesPackageBuilder = criticalEventLogExportManager.map { OutcomesPackageBuilder(logs: $0.logs) }
 
